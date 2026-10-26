@@ -21,31 +21,32 @@ describe('SubmoduleService', () => {
       execRead: async () => ({ stdout: ` ${SHA} libs/mid (heads/main)\n` }),
     });
 
-    it('initializes nested submodules only when recursive fetching is selected', async () => {
-      const { cli, writes } = mockGitCli();
-      const svc = new SubmoduleService(mockCliRegistry(REPO, cli));
-      await svc.add(REPO, {
-        url: 'https://example.test/lib.git', path: ' vendor/lib ', branch: '', recursive: true,
-      });
-      assert.deepEqual(writes, [
-        ['submodule', 'add', '--', 'https://example.test/lib.git', 'vendor/lib'],
-        ['submodule', 'update', '--init', '--recursive', '--', 'vendor/lib'],
-      ]);
-    });
-
-    it('surfaces recursive initialization failures', async () => {
-      const { cli } = mockGitCli({ execWrite: async (args) => {
-        if (args[1] === 'update') { throw new Error('Nested fetch failed'); }
-      } });
-      const svc = new SubmoduleService(mockCliRegistry(REPO, cli));
-      await assert.rejects(svc.add(REPO, {
-        url: 'https://example.test/lib.git', path: 'vendor/lib', branch: '', recursive: true,
-      }), /Nested fetch failed/);
-    });
     const entries = await new SubmoduleService(mockCliRegistry(REPO, cli)).list(REPO);
     assert.deepEqual(reads, [['submodule', 'status', '--recursive']]);
     assert.equal(entries[0]?.path, 'libs/mid');
     assert.equal(entries[0]?.status, 'ok');
+  });
+
+  it('initializes nested submodules only when recursive fetching is selected', async () => {
+    const { cli, writes } = mockGitCli();
+    const svc = new SubmoduleService(mockCliRegistry(REPO, cli));
+    await svc.add(REPO, {
+      url: 'https://example.test/lib.git', path: ' vendor/lib ', branch: '', recursive: true,
+    });
+    assert.deepEqual(writes, [
+      ['submodule', 'add', '--', 'https://example.test/lib.git', 'vendor/lib'],
+      ['submodule', 'update', '--init', '--recursive', '--', 'vendor/lib'],
+    ]);
+  });
+
+  it('surfaces recursive initialization failures', async () => {
+    const { cli } = mockGitCli({ execWrite: async (args) => {
+      if (args[1] === 'update') { throw new Error('Nested fetch failed'); }
+    } });
+    const svc = new SubmoduleService(mockCliRegistry(REPO, cli));
+    await assert.rejects(svc.add(REPO, {
+      url: 'https://example.test/lib.git', path: 'vendor/lib', branch: '', recursive: true,
+    }), /Nested fetch failed/);
   });
 
   it('inits, updates, and syncs selected paths', async () => {
