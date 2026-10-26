@@ -1,0 +1,62 @@
+name: Release Please
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    # Job-level so the publish steps can test whether a token exists in their `if`.
+    env:
+      VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      OVSX_PAT: ${{ secrets.OVSX_PAT }}
+    steps:
+      - id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - uses: actions/checkout@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+      - uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.release_created }}
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        if: ${{ steps.release.outputs.release_created }}
+      - run: npm run package
+        if: ${{ steps.release.outputs.release_created }}
+      - id: vsix
+        if: ${{ steps.release.outputs.release_created }}
+        run: echo "path=$(ls git-checkout-*.vsix)" >> "$GITHUB_OUTPUT"
+      - name: Attach VSIX to GitHub Release
+        if: ${{ steps.release.outputs.release_created }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag_name }}
+        run: gh release upload "$RELEASE_TAG" "${{ steps.vsix.outputs.path }}" --clobber
+      # Publishing needs tokens saved as repository secrets: VSCE_PAT for the Visual Studio Marketplace
+      # (publisher in package.json) and, optionally, OVSX_PAT for Open VSX. A step without its token is skipped.
+      - name: Publish to the Visual Studio Marketplace
+        if: ${{ steps.release.outputs.release_created && env.VSCE_PAT != '' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        with:
+          pat: ${{ env.VSCE_PAT }}
+          registryUrl: https://marketplace.visualstudio.com
+          extensionFile: ${{ steps.vsix.outputs.path }}
+      - name: Publish to Open VSX
+        if: ${{ steps.release.outputs.release_created && env.OVSX_PAT != '' }}
+        uses: HaaLeo/publish-vscode-extension@v2
+        with:
+          pat: ${{ env.OVSX_PAT }}
+          extensionFile: ${{ steps.vsix.outputs.path }}

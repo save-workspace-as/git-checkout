@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-20 -20 600 168" width="600" height="168" role="img" aria-label="git-checkout">
+  <style>.word,.accent{fill:#212121}</style>
+  <g fill="none" stroke="#212121">
+
+
+  <g stroke-width="10" stroke-linecap="butt">
+    <path d="M39.07 75.07L48.93 84.93"/>
+    <path d="M62.1 84.07L89.29 48.72"/>
+  </g>
+  <g stroke-width="8">
+    <circle cx="32" cy="68" r="10"/>
+    <circle cx="56" cy="92" r="10"/>
+  </g>
+  <circle cx="96" cy="40" r="11" stroke-width="10"/>
+  </g>
+  <text class="word" x="152" y="84" font-family="Roboto,'Google Sans','Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="64" font-weight="500">git<tspan class="accent">-checkout</tspan></text>
+</svg>

@@ -1,0 +1,2072 @@
+:root {
+  color: var(--vscode-foreground);
+  background-color: var(--vscode-editor-background);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  font-weight: var(--vscode-font-weight);
+  --graph-lane-0: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+  --graph-lane-1: var(--vscode-gitDecoration-modifiedResourceForeground, #e2c08d);
+  --graph-lane-2: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  --graph-lane-3: var(--vscode-textLink-foreground, #3794ff);
+  --graph-lane-4: var(--vscode-charts-purple, #b180d7);
+  --graph-lane-5: var(--vscode-charts-orange, #d18616);
+  --graph-lane-6: var(--vscode-charts-blue, #3794ff);
+  --graph-lane-7: var(--vscode-charts-green, #89d185);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+h1,
+h2,
+h3,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h2,
+h3 {
+  font-weight: 600;
+}
+
+code,
+.wd-diff-line,
+.wd-diff-side-cell,
+.details-log-preview {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.rebase-message-editor {
+  padding: 12px 14px 18px;
+}
+
+.operation-form,
+.rebase-shell {
+  padding: 0;
+}
+
+.operation-form {
+  position: relative;
+  padding: 0;
+}
+
+/* A settings-group pads itself. The dialog body adds none, or every row would be inset twice. */
+.operation-form-modal > .modal-body {
+  padding: 0;
+}
+
+.operation-form-description {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.operation-form-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+  margin: 0;
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.operation-form-notice-success {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.operation-form-notice-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+
+.modal.operation-form-modal {
+  width: min(520px, 100%);
+}
+
+.modal-title {
+  flex: 1;
+}
+
+/* A modal's own header controls and note sit in the shell's flow, as if they were its children. */
+.modal-extras,
+.modal-notes {
+  display: contents;
+}
+
+.operation-form-field {
+  position: relative;
+}
+
+.operation-form-field > .operation-form-error {
+  top: 100%;
+  left: 14px;
+  right: 14px;
+  visibility: hidden;
+}
+
+.operation-form-field:focus-within > .operation-form-error,
+.operation-form-field:hover > .operation-form-error {
+  visibility: visible;
+}
+
+.operation-form-actions > .operation-form-error {
+  bottom: 100%;
+  left: 0;
+  right: 0;
+}
+
+/* The shared forms use VS Code Elements, which draw their own borders, colors and focus. */
+.operation-form-field > vscode-textfield,
+.operation-form-field > vscode-textarea,
+.operation-form-field > vscode-single-select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.modal button:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.modal button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.operation-form-error {
+  position: absolute;
+  z-index: 1;
+  box-sizing: border-box;
+  overflow-wrap: anywhere;
+  margin: 0;
+  padding: 0.5em;
+  color: var(--vscode-errorForeground);
+  background: var(--vscode-inputValidation-errorBackground);
+  border: 1px solid var(--vscode-inputValidation-errorBorder);
+}
+
+.operation-form .hidden {
+  display: none;
+}
+
+.rebase-footer {
+  margin-top: 12px;
+}
+
+.operation-form-actions {
+  position: relative;
+  /* The horizontal variant indents a leading button by the label column. A settings row has no label column. */
+  --label-width: 0;
+  --label-right-margin: 0;
+}
+
+.rebase-shell button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  text-align: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.rebase-shell button:disabled {
+  color: var(--vscode-disabledForeground);
+  cursor: default;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: relative;
+}
+
+.operation-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em 8px;
+  padding: 6px 10px;
+  background: var(--vscode-inputValidation-warningBackground);
+  border-bottom: 1px solid var(--vscode-inputValidation-warningBorder);
+  color: var(--vscode-foreground);
+}
+
+.operation-banner.hidden,
+.operation-banner .hidden {
+  display: none;
+}
+
+.operation-banner vscode-icon {
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.operation-banner-title {
+  font-weight: 600;
+}
+
+.operation-banner-progress {
+  flex: 0 0 120px;
+}
+
+.operation-banner-message {
+  flex: 1 1 200px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.operation-banner-actions {
+  display: flex;
+  gap: 0.5em;
+  margin-left: auto;
+}
+
+.body {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: 1fr;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.body.dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.pane {
+  padding: 12px;
+  border-right: 1px solid var(--vscode-panel-border);
+  overflow: auto;
+}
+
+.commit-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 12px 0;
+}
+
+.tree-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.working-copy.details-focus {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.commit-details {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.commit-meta {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 12px 14px;
+  align-items: start;
+  margin-bottom: 12px;
+}
+
+.commit-avatar {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  justify-self: end;
+  align-self: center;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+
+.commit-avatar-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.commit-author {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.commit-author-label,
+.commit-author-email,
+.commit-author-date {
+  color: var(--vscode-descriptionForeground);
+}
+
+.commit-author-identity {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  min-width: 0;
+}
+
+.commit-author-name {
+  margin: 0;
+}
+
+.commit-author-name,
+.commit-author-email,
+.commit-author-date {
+  overflow-wrap: anywhere;
+}
+
+.commit-identity {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.commit-meta-row {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.commit-meta-key {
+  text-align: right;
+  color: var(--vscode-descriptionForeground);
+}
+
+.commit-meta-value {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.commit-sha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.commit-meta .commit-parent {
+  border: none;
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+  padding: 0 6px 0 0;
+  text-decoration: underline;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.commit-meta .commit-github {
+  border: none;
+  background: transparent;
+  color: var(--vscode-textLink-foreground);
+  padding: 0;
+  cursor: pointer;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.commit-meta .commit-github:hover:not(:disabled),
+.commit-meta .commit-parent:hover:not(:disabled) {
+  color: var(--vscode-textLink-activeForeground);
+  background: transparent;
+}
+
+.commit-github:focus-visible,
+.commit-parent:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: 2px;
+}
+
+.commit-file-diff {
+  flex: 1;
+  min-height: 0;
+  border-top: 1px solid var(--vscode-panel-border);
+  overflow: auto;
+  margin: 0;
+  background: var(--vscode-editor-background);
+  color: var(--commit-token-foreground, var(--vscode-editor-foreground));
+}
+
+.code-viewer {
+  /* One column as wide as the longest line, so every row's background spans the scrollable width. */
+  display: grid;
+  grid-template-columns: minmax(max-content, 1fr);
+  align-content: start;
+}
+
+.code-viewer.wrap-lines {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.code-viewer:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.code-viewer-message,
+.code-viewer-error {
+  padding: 8px;
+  white-space: pre-wrap;
+  color: var(--vscode-descriptionForeground);
+}
+
+.code-viewer-error {
+  color: var(--vscode-errorForeground);
+}
+
+/* Dark+ / Light+ token colors, same palette the editor uses before a theme override arrives. */
+body.vscode-dark,
+body.vscode-high-contrast {
+  --commit-token-keyword: #569cd6;
+  --commit-token-string: #ce9178;
+  --commit-token-number: #b5cea8;
+  --commit-token-comment: #6a9955;
+  --commit-token-type: #4ec9b0;
+  --commit-token-function: #dcdcaa;
+  --commit-token-variable: #9cdcfe;
+  --commit-token-comment-style: italic;
+}
+
+body.vscode-light,
+body.vscode-high-contrast-light {
+  --commit-token-keyword: #0000ff;
+  --commit-token-string: #a31515;
+  --commit-token-number: #098658;
+  --commit-token-comment: #008000;
+  --commit-token-type: #267f99;
+  --commit-token-function: #795e26;
+  --commit-token-variable: #001080;
+  --commit-token-comment-style: italic;
+}
+
+.commit-diff-line,
+.commit-diff-line code {
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+}
+
+.commit-diff-line {
+  display: flex;
+  white-space: pre;
+  min-width: max-content;
+}
+
+.commit-diff-lineno {
+  flex: 0 0 auto;
+  min-width: 6ch;
+  padding: 0 8px 0 12px;
+  text-align: right;
+  color: var(--vscode-editorLineNumber-foreground);
+  user-select: none;
+}
+
+.commit-diff-gutter {
+  flex: 0 0 auto;
+  width: 1.6em;
+  text-align: center;
+  color: var(--vscode-editorLineNumber-foreground);
+}
+
+.commit-diff-add {
+  background: color-mix(in srgb, var(--vscode-editorGutter-addedBackground) 14%, var(--vscode-editor-background));
+  box-shadow: inset 2px 0 0 var(--vscode-editorGutter-addedBackground);
+}
+
+.commit-diff-add .commit-diff-gutter {
+  color: var(--vscode-editorGutter-addedBackground);
+}
+
+.commit-diff-del {
+  background: color-mix(in srgb, var(--vscode-editorGutter-deletedBackground) 14%, var(--vscode-editor-background));
+  box-shadow: inset 2px 0 0 var(--vscode-editorGutter-deletedBackground);
+}
+
+.commit-diff-del .commit-diff-gutter {
+  color: var(--vscode-editorGutter-deletedBackground);
+}
+
+.commit-diff-hunk {
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editorWidget-background);
+  padding: 0 8px;
+}
+
+.commit-diff-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.commit-diff-empty {
+  background: var(--vscode-diffEditor-diagonalFill, var(--vscode-editor-background));
+}
+
+.hljs-keyword,
+.hljs-meta,
+.hljs-selector-tag,
+.hljs-literal {
+  color: var(--commit-token-keyword, #569cd6);
+}
+
+.hljs-string,
+.hljs-regexp {
+  color: var(--commit-token-string, #ce9178);
+}
+
+.hljs-number {
+  color: var(--commit-token-number, #b5cea8);
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: var(--commit-token-comment, #6a9955);
+  font-style: var(--commit-token-comment-style, italic);
+}
+
+.hljs-title.function_,
+.hljs-title.function {
+  color: var(--commit-token-function, #dcdcaa);
+}
+
+.hljs-title,
+.hljs-title.class_,
+.hljs-type,
+.hljs-built_in {
+  color: var(--commit-token-type, #4ec9b0);
+}
+
+.hljs-variable,
+.hljs-attr,
+.hljs-property,
+.hljs-params {
+  color: var(--commit-token-variable, #9cdcfe);
+}
+
+.commit-details-summary,
+.commit-details-empty {
+  margin: 0 0 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.commit-details-message {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.commit-details-message.hidden {
+  display: none;
+}
+
+.pane h2,
+.commit-subject {
+  margin: 0 0 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.placeholder {
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.headline {
+  margin: 0 0 8px;
+  color: var(--vscode-foreground);
+}
+
+.hint {
+  margin: 16px 0 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.pane-graph {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0;
+  border-right: none;
+}
+
+.graph-status.hidden {
+  display: none;
+}
+
+.graph-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 2px 8px;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  flex-shrink: 0;
+}
+
+.graph-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.graph-mode-banner.hidden {
+  display: none;
+}
+
+.graph-search {
+  display: block;
+  flex-shrink: 0;
+  width: auto;
+  margin: 6px 8px;
+}
+
+.graph-scroll {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.graph-scroll:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.graph-spacer {
+  width: 1px;
+  pointer-events: none;
+}
+
+.graph-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 22px;
+}
+
+.graph-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px calc(7ch + 24px) 170px;
+  align-items: center;
+}
+
+.graph-main {
+  position: relative;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.graph-columns {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 22px;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.graph-cell {
+  min-width: 0;
+  padding: 0 8px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.graph-row {
+  cursor: default;
+}
+
+.graph-row:hover:not(.graph-row-selected) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.graph-row-head .graph-subject {
+  font-weight: 600;
+}
+
+.graph-row-reflog {
+  color: var(--vscode-disabledForeground);
+}
+
+.graph-row-match {
+  background: var(--vscode-editor-findMatchHighlightBackground);
+}
+
+/* The same selection as the file lists: the active selection colours, kept when focus moves away. */
+.graph-row-selected {
+  color: var(--vscode-list-activeSelectionForeground);
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.graph-scroll:focus .graph-row-cursor {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.graph-row-bisect-good {
+  box-shadow: inset 3px 0 0 var(--vscode-testing-iconPassed);
+}
+
+.graph-row-bisect-bad {
+  box-shadow: inset 3px 0 0 var(--vscode-testing-iconFailed);
+}
+
+.graph-row-bisect-skip {
+  box-shadow: inset 3px 0 0 var(--vscode-disabledForeground);
+}
+
+.graph-bisect-tag {
+  margin-right: 6px;
+}
+
+.graph-bisect-tag-good {
+  color: var(--vscode-testing-iconPassed);
+}
+
+.graph-bisect-tag-bad {
+  color: var(--vscode-testing-iconFailed);
+}
+
+.graph-bisect-tag-skip {
+  color: var(--vscode-disabledForeground);
+}
+
+.graph-svg {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.graph-edge {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.graph-node-merge {
+  fill: var(--vscode-editor-background);
+  stroke-width: 1.5;
+}
+
+.graph-merge-hit {
+  fill: transparent;
+  stroke: none;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.graph-merge-mark {
+  fill: none;
+  stroke-width: 1.5;
+  pointer-events: none;
+}
+
+.graph-head-ring {
+  fill: none;
+  stroke-width: 1.5;
+}
+
+.graph-col-subject {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.graph-subject {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.github-ref {
+  color: var(--vscode-textLink-foreground);
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.github-ref:hover {
+  text-decoration: underline;
+}
+
+.graph-row-selected .github-ref,
+.path-history-row.selected .github-ref {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.graph-ref {
+  --ref-color: var(--graph-lane-3);
+  flex-shrink: 0;
+  max-width: 180px;
+  padding: 0 6px;
+  border-radius: 4px;
+  border: 1px solid var(--ref-color);
+  color: var(--vscode-foreground);
+  background: color-mix(in srgb, var(--ref-color) 22%, transparent);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.graph-ref vscode-icon {
+  flex-shrink: 0;
+  color: inherit;
+}
+
+.graph-ref-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.graph-ref-remote {
+  background: color-mix(in srgb, var(--ref-color) 10%, transparent);
+}
+
+.graph-ref-tag {
+  border-style: dashed;
+}
+
+.graph-ref-stash {
+  --ref-color: var(--graph-lane-4);
+}
+
+.graph-ref-current {
+  color: var(--vscode-badge-foreground);
+  background: var(--vscode-gitDecoration-addedResourceForeground);
+  border-color: var(--vscode-gitDecoration-addedResourceForeground);
+}
+
+.graph-col-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-author-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.graph-avatar {
+  position: relative;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  overflow: hidden;
+  /* Initials scale with the avatar icon, not the UI font. */
+  font-size: 8px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--vscode-editor-background);
+}
+
+.graph-avatar img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-col-hash {
+  color: var(--vscode-descriptionForeground);
+  text-overflow: clip;
+}
+
+.graph-col-date {
+  color: var(--vscode-descriptionForeground);
+}
+
+.empty-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+  background: var(--vscode-editor-background);
+}
+
+.empty-overlay.hidden {
+  display: none;
+}
+
+.empty-overlay h2 {
+  margin: 0 0 12px;
+  color: var(--vscode-foreground);
+}
+
+.empty-overlay p {
+  margin: 0;
+  max-width: 420px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.wd-list {
+  margin: 8px 0 12px;
+}
+
+.wd-group {
+  margin-top: 10px;
+}
+
+.wd-group h3 {
+  margin: 0 0 4px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.wd-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.wd-row-path {
+  word-break: break-all;
+}
+
+.wd-row-status {
+  margin-right: 6px;
+}
+
+.wd-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.wd-badge {
+  margin-left: 6px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.wd-empty {
+  margin: 4px 0 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.wd-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.wd-diff {
+  margin-left: 0.5rem;
+  padding: 0.35rem 0.5rem;
+  border-left: 2px solid var(--vscode-panel-border, #444);
+}
+
+.wd-diff-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.wd-diff-select {
+  margin-left: 0.25rem;
+}
+
+.wd-diff-word {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.wd-diff-side-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.wd-diff-side-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.25rem;
+}
+
+.wd-diff-side-cell {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-height: 1.2em;
+  padding: 0 0.15rem;
+  border-radius: 2px;
+}
+
+.wd-diff-side-cell.wd-diff-line-empty {
+  background: transparent;
+}
+
+.wd-diff-side-cell.wd-diff-line-add code {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+}
+
+.wd-diff-side-cell.wd-diff-line-del code {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.wd-diff-loading {
+  color: var(--vscode-descriptionForeground, #999);
+}
+
+.wd-hunk {
+  margin-bottom: 0.5rem;
+}
+
+.wd-hunk-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.wd-hunk-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.wd-diff-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.wd-diff-line-spacer {
+  display: inline-block;
+  width: 1rem;
+}
+
+.wd-diff-line-add code {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+}
+
+.wd-diff-line-del code {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.details-compare.hidden {
+  display: none;
+}
+
+.details-compare-title {
+  margin: 12px 0 6px;
+}
+
+.details-compare-counts {
+  margin: 0 0 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.details-log-preview {
+  margin: 0 0 8px;
+  padding: 8px;
+  background: var(--vscode-textCodeBlock-background);
+  border-radius: 3px;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.details-diff-stat {
+  margin: 0;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: var(--vscode-sideBar-dropBackground, var(--vscode-editor-background));
+}
+
+.modal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  width: min(760px, 100%);
+  max-height: min(85vh, 720px);
+  overflow: hidden;
+  border: 1px solid var(--vscode-editorWidget-border);
+  border-radius: 6px;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+  box-shadow: 0 8px 32px var(--vscode-widget-shadow);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+}
+
+.modal-title {
+  margin: 0;
+  font-weight: 600;
+  color: var(--vscode-foreground);
+}
+
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px 18px;
+}
+
+.rebase-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-family: var(--vscode-font-family);
+  color: var(--vscode-foreground);
+}
+
+.rebase-toolbar,
+.rebase-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  align-items: center;
+}
+
+.rebase-message-editor {
+  position: fixed;
+  margin: 0;
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  background: var(--vscode-editorWidget-background);
+  box-shadow: 0 4px 12px var(--vscode-widget-shadow);
+  font: inherit;
+}
+
+.rebase-message-editor[open] {
+  display: grid;
+  gap: 9px;
+}
+
+.rebase-message-editor::backdrop {
+  background: transparent;
+}
+
+.rebase-message-editor .rebase-actions {
+  justify-self: end;
+  width: fit-content;
+}
+
+.rebase-message {
+  display: block;
+  width: 100%;
+}
+
+.rebase-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5em;
+  margin: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.rebase-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: min(48vh, 420px);
+  overflow: auto;
+}
+
+.rebase-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 6px;
+  background: var(--vscode-editor-background);
+  border: 1px solid var(--vscode-panel-border);
+  border-radius: 3px;
+}
+
+.modal.rebase-editor-modal {
+  width: min(1100px, 100%);
+  max-height: min(85vh, 720px, calc(100vh - 48px));
+}
+
+.rebase-editor-modal > .modal-header {
+  flex-shrink: 0;
+}
+
+.rebase-editor-modal > .modal-body {
+  display: flex;
+  overflow: hidden;
+}
+
+.rebase-editor {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rebase-editor > :not(.rebase-list) {
+  flex-shrink: 0;
+}
+
+.rebase-editor .rebase-toolbar {
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  padding-bottom: 9px;
+}
+
+.rebase-editor label:has(> .rebase-input) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5em;
+  min-width: 0;
+}
+
+.rebase-editor .rebase-input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.rebase-editor .rebase-list {
+  gap: 0;
+  min-height: 0;
+  flex: 0 1 auto;
+  overscroll-behavior: contain;
+}
+
+.rebase-editor .rebase-row {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: 100px minmax(120px, 1fr) minmax(80px, 140px) 70px minmax(120px, 180px);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+
+.rebase-editor .rebase-row > [role='gridcell'] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rebase-editor .rebase-row > .rebase-subject-cell {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  overflow: visible;
+  gap: 8px;
+}
+
+.rebase-fold-connector {
+  position: relative;
+  flex: 0 0 20px;
+  color: var(--vscode-descriptionForeground);
+  align-self: stretch;
+}
+
+.rebase-fold-connector.incoming::before,
+.rebase-fold-connector.outgoing::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: -4px;
+  bottom: -4px;
+  border-left: 1px solid currentColor;
+}
+
+.rebase-fold-connector.outgoing:not(.incoming)::before {
+  top: 50%;
+}
+
+.rebase-fold-connector.incoming:not(.outgoing)::before {
+  bottom: calc(50% - 0.5px);
+  width: 12px;
+  border-bottom: 1px solid currentColor;
+  border-bottom-left-radius: 10px;
+}
+
+.rebase-fold-connector.source::after {
+  content: '';
+  position: absolute;
+  left: 1px;
+  top: calc(50% - 3px);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rebase-fold-connector.target::after {
+  content: '';
+  position: absolute;
+  left: 15px;
+  right: 0;
+  top: calc(50% - 4px);
+  height: 8px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.rebase-editor .rebase-row.rebase-fixup:not(.selected) .rebase-subject,
+.rebase-editor .rebase-row.rebase-fixup:not(.selected) .rebase-author,
+.rebase-editor .rebase-row.rebase-fixup:not(.selected) .rebase-date {
+  color: var(--vscode-descriptionForeground);
+}
+
+.rebase-editor .rebase-row.rebase-dropped :is(.rebase-subject, .rebase-author, .rebase-hash, .rebase-date) {
+  text-decoration: line-through;
+  color: inherit;
+}
+
+.rebase-editor .rebase-row.rebase-dropped:not(.selected) :is(.rebase-subject, .rebase-author, .rebase-hash, .rebase-date) {
+  color: var(--vscode-descriptionForeground);
+}
+
+.rebase-editor .rebase-row.selected {
+  color: var(--vscode-list-activeSelectionForeground);
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.rebase-editor .rebase-row.selected .rebase-hash,
+.rebase-editor .rebase-row.selected .rebase-fold-connector,
+.rebase-editor .rebase-row.selected .github-ref {
+  color: inherit;
+}
+
+.rebase-editor .rebase-row:hover:not(.selected) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.rebase-editor .rebase-subject {
+  display: block;
+  cursor: pointer;
+}
+
+.rebase-editor .rebase-subject:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.rebase-preview {
+  border-block: 1px solid var(--vscode-panel-border);
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+.rebase-preview .commit-details-message {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+}
+
+.rebase-preview .commit-details-message.hidden {
+  display: none;
+}
+
+.rebase-editor .rebase-footer {
+  justify-content: flex-end;
+}
+
+.rebase-editor .rebase-footer > .rebase-check {
+  margin-right: auto;
+}
+
+@media (max-width: 700px) {
+  .rebase-editor .rebase-row {
+    grid-template-columns: 100px minmax(120px, 1fr);
+  }
+
+  .rebase-editor .rebase-row > [role='gridcell']:nth-child(n+3) {
+    display: none;
+  }
+}
+
+.rebase-hash {
+  font-family: var(--vscode-editor-font-family);
+  color: var(--vscode-descriptionForeground);
+}
+
+.rebase-subject {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rebase-progress,
+.rebase-warning,
+.rebase-error {
+  padding: 6px 8px;
+  border-radius: 3px;
+}
+
+.rebase-progress.hidden,
+.rebase-warning.hidden,
+.rebase-error.hidden {
+  display: none;
+}
+
+.rebase-cmd {
+  width: 100%;
+  min-width: 0;
+}
+
+.rebase-warning {
+  background: var(--vscode-inputValidation-warningBackground);
+  color: var(--vscode-inputValidation-warningForeground);
+}
+
+.rebase-error {
+  background: var(--vscode-inputValidation-errorBackground);
+  color: var(--vscode-inputValidation-errorForeground);
+}
+
+button.hidden,
+vscode-button.hidden,
+vscode-button-group.hidden {
+  display: none;
+}
+
+.path-history {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.path-history-status,
+.path-history-empty {
+  margin: 0;
+  padding: 6px 8px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.path-history-empty.hidden {
+  display: none;
+}
+
+.path-history-scroll {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+}
+
+.path-history-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.path-history-row.selected {
+  color: var(--vscode-list-activeSelectionForeground);
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.path-history-subject {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.path-history-meta {
+  color: var(--vscode-descriptionForeground);
+}
+
+.path-history-row.selected .path-history-meta {
+  color: inherit;
+}
+
+.wd-nontext {
+  padding: 8px;
+}
+
+.wd-image-side-by-side {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.wd-image-cell {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+}
+
+.wd-image-cell img,
+.wd-image-swipe-stack img,
+.wd-image-onion img,
+.wd-image-pixel-diff canvas {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.wd-image-cell figcaption {
+  color: var(--vscode-descriptionForeground);
+  margin-bottom: 4px;
+}
+
+.commit-invisible,
+.commit-invisible-tab {
+  color: var(--vscode-editorWhitespace-foreground);
+}
+
+.commit-invisible-tab {
+  display: inline-block;
+  width: 4ch;
+}
+
+.show-invisibles .commit-diff-line code::after {
+  content: '¶';
+  color: var(--vscode-editorWhitespace-foreground);
+}
+
+.wrap-lines .commit-diff-line {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+.wrap-lines .commit-diff-line code {
+  flex: 1;
+  min-width: 0;
+}
+
+.wrap-lines .commit-diff-pair {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.commit-diff-truncated {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  position: sticky;
+  left: 0;
+  color: var(--vscode-descriptionForeground);
+  background: var(--vscode-editorWidget-background);
+}
+
+.commit-files {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.commit-files-summary {
+  flex-shrink: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.history-modal {
+  width: min(1200px, 100%);
+  height: min(85vh, 760px, calc(100vh - 48px));
+  max-height: none;
+}
+
+.history-modal .modal-header {
+  flex-shrink: 0;
+}
+
+.history-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-descriptionForeground);
+}
+
+.history-header-spacer {
+  flex: 1;
+}
+
+.history-options {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.history-option.hidden,
+.history-reset.hidden {
+  display: none;
+}
+
+.history-status {
+  flex-shrink: 0;
+  padding: 4px 12px;
+  color: var(--vscode-descriptionForeground);
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.history-body {
+  display: grid;
+  grid-template-columns: minmax(260px, 34%) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.history-list {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--vscode-panel-border);
+}
+
+.history-list:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.history-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+  cursor: default;
+}
+
+.history-row:hover:not(.selected) {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.history-row.selected {
+  color: var(--vscode-list-activeSelectionForeground);
+  background: var(--vscode-list-activeSelectionBackground);
+}
+
+.history-list:not(:focus) .history-row.selected {
+  color: var(--vscode-list-inactiveSelectionForeground);
+  background: var(--vscode-list-inactiveSelectionBackground);
+}
+
+.history-row-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.history-author {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-meta {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+.history-row.selected .history-meta {
+  color: inherit;
+}
+
+.history-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-open {
+  flex-shrink: 0;
+}
+
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.diff-toolbar {
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+/* The container lays the buttons out in a row; the first one takes the free space so they sit at the right. */
+.diff-toolbar > :first-child {
+  margin-left: auto;
+}
+
+.diff-toolbar + .commit-file-diff {
+  border-top: none;
+}
+
+.history-diff {
+  flex: 1;
+  min-height: 0;
+  border-top: none;
+}
+
+.changes {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.changes-panel {
+  height: 100vh;
+  overflow: hidden;
+}
+
+.changes-diff {
+  flex: 1;
+  min-height: 0;
+  border-top: none;
+}
+
+.changes-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.changes-form-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.changes-row-staged {
+  box-shadow: inset 2px 0 0 var(--vscode-gitDecoration-addedResourceForeground);
+}
+
+/* The commit form uses VS Code Elements, which draw their own control geometry and theme colors. */
+.changes .changes-subject,
+.changes .changes-description {
+  display: block;
+  width: 100%;
+}
+
+.changes .changes-subject-hint {
+  color: var(--vscode-descriptionForeground);
+}
+
+.changes .changes-form-footer {
+  gap: 8px;
+}
+
+.commit-diff-hunk-box {
+  position: relative;
+}
+
+.commit-diff-hunk-box:hover,
+.commit-diff-hunk-box:focus-within {
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
+}
+
+.commit-diff-hunk-actions {
+  position: absolute;
+  top: 2px;
+  right: 12px;
+  z-index: 1;
+  display: none;
+  width: fit-content;
+}
+
+.commit-diff-hunk-box:hover .commit-diff-hunk-actions,
+.commit-diff-hunk-box:focus-within .commit-diff-hunk-actions {
+  display: inline-block;
+}
+
+/* The generate button sits inside the subject field, like the clear button in a search box. */
+.changes .changes-generate {
+  --vscode-button-background: transparent;
+  --vscode-button-hoverBackground: var(--vscode-toolbar-hoverBackground);
+  --vscode-button-foreground: var(--vscode-icon-foreground);
+  --vscode-button-border: transparent;
+}
+
+.changes .changes-generate::part(base) {
+  padding: 2px 4px;
+}
+
+/* Modal shell: a dimmed backdrop, a size that does not depend on the tab, and a scroll instead of clipping in small tabs. */
+.modal-overlay {
+  overflow: auto;
+  align-items: safe center;
+  justify-content: safe center;
+}
+
+.modal-overlay > .modal-backdrop {
+  position: fixed;
+  background: var(--vscode-widget-shadow);
+  opacity: 0.6;
+}
+
+.modal-overlay .modal {
+  flex-shrink: 0;
+  max-width: 100%;
+  animation: modal-in 120ms ease-out;
+}
+
+.modal.operation-form-modal {
+  min-width: min(440px, 100%);
+  max-width: min(640px, 100%);
+}
+
+.operation-form {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The actions stay at the bottom of a long form. Their inset is the settings group's own padding. */
+.operation-form .operation-form-actions {
+  position: sticky;
+  bottom: 0;
+  background: var(--vscode-editorWidget-background);
+}
+
+.modal-close {
+  --vscode-button-background: transparent;
+  --vscode-button-hoverBackground: var(--vscode-toolbar-hoverBackground);
+  --vscode-button-foreground: var(--vscode-foreground);
+  --vscode-button-border: transparent;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay .modal {
+    animation: none;
+  }
+}
+
+@media (max-width: 520px), (max-height: 520px) {
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  .modal,
+  .modal.rebase-editor-modal,
+  .history-modal {
+    max-height: calc(100vh - 16px);
+  }
+
+  .history-modal {
+    height: calc(100vh - 16px);
+  }
+}
+
+/* The Tree tab is two views, Files and Preview, framed like the Commit and Changes tabs. */
+.git-file-status {
+  flex: 0 0 auto;
+}
+
+.git-file-path {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-file-row--added .git-file-status,
+.git-file-row--added .git-file-path {
+  color: var(--vscode-gitDecoration-addedResourceForeground);
+}
+
+.git-file-row--deleted .git-file-status,
+.git-file-row--deleted .git-file-path {
+  color: var(--vscode-gitDecoration-deletedResourceForeground);
+}
+
+.git-file-row--modified .git-file-status,
+.git-file-row--modified .git-file-path,
+.git-file-row--renamed .git-file-status,
+.git-file-row--renamed .git-file-path {
+  color: var(--vscode-gitDecoration-modifiedResourceForeground);
+}
+
+.git-file-row--untracked .git-file-status,
+.git-file-row--untracked .git-file-path {
+  color: var(--vscode-gitDecoration-untrackedResourceForeground);
+}
+
+.git-file-row--conflict .git-file-status,
+.git-file-row--conflict .git-file-path {
+  color: var(--vscode-gitDecoration-conflictingResourceForeground);
+}
+
+.git-file-row--neutral .git-file-status {
+  color: var(--vscode-descriptionForeground);
+}
+
+.commit-tree-preview-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+
+.blame-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The blame cell stays in view while a long line scrolls sideways under it. */
+.commit-diff-lead {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  width: min(36vw, 420px);
+  padding: 0 8px;
+  overflow: hidden;
+  background: var(--vscode-editor-background);
+  border-right: 1px solid var(--vscode-panel-border);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}
+
+.blame-hash {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--vscode-textLink-foreground);
+  font: inherit;
+  cursor: pointer;
+}
+
+.blame-hash:disabled {
+  color: var(--vscode-descriptionForeground);
+  cursor: default;
+}
+
+.blame-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.blame-date {
+  flex-shrink: 0;
+  color: var(--vscode-descriptionForeground);
+}
+
+
+
+
+.blame-modal .history-path {
+  flex: 1;
+}
+
+.blame-commit-select {
+  flex: 0 1 460px;
+  min-width: 160px;
+}
+
+/* A tabbed form: the tabs sit below the description, and each panel lines up with an untabbed form. */
+.operation-form-tabs {
+  margin-top: 0;
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="git-checkout" fill="none" stroke="#212121">
+  <g stroke-width="10" stroke-linecap="butt">
+    <path d="M39.07 75.07L48.93 84.93"/>
+    <path d="M62.1 84.07L89.29 48.72"/>
+  </g>
+  <g stroke-width="8">
+    <circle cx="32" cy="68" r="10"/>
+    <circle cx="56" cy="92" r="10"/>
+  </g>
+  <circle cx="96" cy="40" r="11" stroke-width="10"/>
+</svg>

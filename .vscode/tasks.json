@@ -1,0 +1,98 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "npm: compile",
+      "type": "npm",
+      "script": "compile",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "silent"
+      },
+      "problemMatcher": ["$esbuild-watch"]
+    },
+    {
+      "label": "npm: test:unit",
+      "type": "npm",
+      "script": "test:unit",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: test:integration",
+      "type": "npm",
+      "script": "test:integration",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: test:e2e",
+      "type": "shell",
+      "command": "npm run test:e2e -- --grep '${input:e2eTestName}'",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: package (vsix)",
+      "type": "npm",
+      "script": "package",
+      "detail": "Compiles and builds git-checkout-<version>.vsix in the repository root",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "npm: watch",
+      "dependsOn": ["watch: extension", "watch: webview"],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "watch: extension",
+      "type": "npm",
+      "script": "watch:extension",
+      "isBackground": true,
+      "problemMatcher": ["$esbuild-watch"]
+    },
+    {
+      "label": "watch: webview",
+      "type": "npm",
+      "script": "watch:webview",
+      "isBackground": true,
+      "problemMatcher": ["$esbuild-watch"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "e2eTestName",
+      "type": "promptString",
+      "description": "E2E test name or pattern (leave empty to run all)",
+      "default": ""
+    }
+  ]
+}

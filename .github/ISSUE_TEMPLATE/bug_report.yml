@@ -1,0 +1,46 @@
+name: Bug report
+description: Something does not work as it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw. Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a repository
+        2. Right-click a commit in the graph
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: extension
+    attributes:
+      label: Git Checkout version
+      description: From the Extensions view.
+    validations:
+      required: true
+  - type: input
+    id: vscode
+    attributes:
+      label: VS Code version and operating system
+      description: Help > About, for example 1.105.0 on macOS 15. Say if it is a remote window (SSH, WSL, Dev Containers).
+    validations:
+      required: true
+  - type: input
+    id: git
+    attributes:
+      label: Git version
+      description: Output of `git --version`.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log output
+      description: Run "Git Checkout: Show Output", set the log level to Trace with "Developer: Set Log Level…", repeat the problem, and paste the log. Remove anything private.
+      render: text

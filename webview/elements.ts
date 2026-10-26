@@ -1,0 +1,22 @@
+// Registers the VS Code Elements the webviews use. Each webview entry imports it once.
+import '@vscode-elements/elements/dist/vscode-button/index.js';
+import '@vscode-elements/elements/dist/vscode-button-group/index.js';
+import '@vscode-elements/elements/dist/vscode-checkbox/index.js';
+import '@vscode-elements/elements/dist/vscode-checkbox-group/index.js';
+import '@vscode-elements/elements/dist/vscode-form-container/index.js';
+import '@vscode-elements/elements/dist/vscode-form-group/index.js';
+import '@vscode-elements/elements/dist/vscode-form-helper/index.js';
+import '@vscode-elements/elements/dist/vscode-icon/index.js';
+import '@vscode-elements/elements/dist/vscode-label/index.js';
+import '@vscode-elements/elements/dist/vscode-option/index.js';
+import '@vscode-elements/elements/dist/vscode-progress-bar/index.js';
+import '@vscode-elements/elements/dist/vscode-radio/index.js';
+import '@vscode-elements/elements/dist/vscode-radio-group/index.js';
+import '@vscode-elements/elements/dist/vscode-single-select/index.js';
+import '@vscode-elements/elements/dist/vscode-tab-header/index.js';
+import '@vscode-elements/elements/dist/vscode-tab-panel/index.js';
+import '@vscode-elements/elements/dist/vscode-tabs/index.js';
+import '@vscode-elements/elements/dist/vscode-textarea/index.js';
+import '@vscode-elements/elements/dist/vscode-textfield/index.js';
+import '@vscode-elements/elements/dist/vscode-toolbar-button/index.js';
+import '@vscode-elements/elements/dist/vscode-toolbar-container/index.js';
