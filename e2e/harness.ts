@@ -84,7 +84,7 @@ export interface GitCheckoutApi {
   } | undefined;
 }
 
-export const EXTENSION_ID = 'rkonit.git-checkout';
+export const EXTENSION_ID = 'rkonit.gitcheckout';
 /** Webview panel viewType from createWebviewPanel, not a command id. */
 export const PANEL_VIEW_TYPE = 'gitCheckout.main';
 const PANEL_TITLE = 'Git Checkout';
