@@ -12,7 +12,7 @@ import { createLogger } from '../log';
 const log = createLogger('git-extension');
 
 const GIT_EXTENSION_ID = 'vscode.git';
-const OUR_EXTENSION_ID = 'rkonit.git-checkout';
+const OUR_EXTENSION_ID = 'save-workspace-as.git-checkout';
 
 export class GitExtensionService implements vscode.Disposable {
   private readonly _onDidChangeDiagnostics = new vscode.EventEmitter<void>();

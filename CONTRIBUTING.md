@@ -34,7 +34,7 @@ This produces:
 2. Press **F5** (configuration **Run Extension**).
 3. In the Extension Development Host window:
    - Run **Git Checkout: Show Output** from the Command Palette, or open **Output** → channel **Git Checkout**.
-   - Run **Developer: Show Running Extensions** and confirm **Git Checkout** (`rkonit.git-checkout`) is listed as a **workspace** extension.
+   - Run **Developer: Show Running Extensions** and confirm **Git Checkout** (`save-workspace-as.git-checkout`) is listed as a **workspace** extension.
    - With the Git Checkout panel focused: **Ctrl+P** (**Cmd+P** on macOS) Quick Launch and **Ctrl+Shift+Alt+`** open the repository in a terminal.
 
 > **Debugger not attaching?** If VS Code shows "Extension host did not start in 10 seconds" and **Show Running Extensions** stays empty, the host is stuck waiting for the debugger to attach. Use **Run > Run Without Debugging** (or `Cmd/Ctrl+F5`) instead of **F5** — the extension activates normally without an attached debugger.

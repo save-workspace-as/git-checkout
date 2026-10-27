@@ -172,7 +172,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     vscode.commands.registerCommand('gitCheckout.refresh', () => panelManager.refreshAll()),
     // Shortcuts are changed where VS Code keeps all of them: its Keyboard Shortcuts editor, filtered to ours.
     vscode.commands.registerCommand('gitCheckout.openKeyboardShortcuts', () =>
-      vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', '@ext:rkonit.git-checkout'),
+      vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', '@ext:save-workspace-as.git-checkout'),
     ),
   );
 
