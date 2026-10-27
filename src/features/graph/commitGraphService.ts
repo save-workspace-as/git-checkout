@@ -149,6 +149,25 @@ export class CommitGraphService {
     return repo?.headName ?? null;
   }
 
+  /**
+   * The branch checked out in `repoRoot`. When `vscode.git` has not read the repository's HEAD yet (right after
+   * the repository opens, or on a slow machine), Git itself is asked, so a form never starts from `HEAD`
+   * while a branch is checked out. Null when HEAD is detached.
+   */
+  async currentBranch(repoRoot: string): Promise<string | null> {
+    const known = this.resolveHeadRef(repoRoot);
+    if (known) {
+      return known;
+    }
+    try {
+      const out = await this.cliRegistry.getOrCreate(repoRoot).execRead(['branch', '--show-current']);
+      return out.stdout.trim() || null;
+    } catch (error) {
+      log.debug('could not read the current branch; treating HEAD as detached', error);
+      return null;
+    }
+  }
+
   getFilterRef(repoRoot: string): string {
     return getFilterRef(this.context, repoRoot) ?? ALL_COMMITS_FILTER;
   }

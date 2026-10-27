@@ -64,5 +64,7 @@ export function buildQuickLaunchItems(
     description: l10n.t('Custom {0} command', command.context),
     customCommand: command,
   }));
-  return [...builtinItems(remote), ...custom];
+  // The reveal action is worded per system, so its place in the list depends on the system; sorting here keeps the order right everywhere.
+  const builtin = [...builtinItems(remote)].sort((a, b) => a.label.localeCompare(b.label));
+  return [...builtin, ...custom];
 }

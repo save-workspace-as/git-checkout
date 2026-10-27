@@ -27,7 +27,7 @@ export class RefsService {
 
   async loadSnapshot(repoRoot: string): Promise<RefsSnapshotDto> {
     const cli = this.cliForRoot(repoRoot);
-    const headRef = this.graphService.resolveHeadRef(repoRoot);
+    const headRef = await this.graphService.currentBranch(repoRoot);
 
     const [branchOut, remoteBranchOut, tagOut, remoteListOut] = await Promise.all([
       cli.execRead([

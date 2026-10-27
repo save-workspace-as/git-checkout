@@ -31,6 +31,7 @@ import {
 function mockGraphService(headRef: string | null, filterRef?: string): CommitGraphService {
   return {
     resolveHeadRef: () => headRef,
+    currentBranch: async () => headRef,
     getFilterRef: () => filterRef ?? headRef ?? 'HEAD',
   } as unknown as CommitGraphService;
 }

@@ -7,7 +7,12 @@ import { installDom } from './testing/dom';
 // An entry script runs when it is imported: it finds #root, asks VS Code for its API and listens for messages.
 const sent: WebviewMessage[] = [];
 const receive = (message: HostMessage): boolean => window.dispatchEvent(new MessageEvent('message', { data: message }));
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+/** Waits for the highlighter, which loads its grammar asynchronously and takes longer on a cold start. */
+const highlighted = async (): Promise<void> => {
+  for (let tries = 0; tries < 200 && !document.querySelector('code .hljs-keyword'); tries++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+};
 type El = HTMLElement & Record<string, any>;
 
 before(async () => {
@@ -34,7 +39,7 @@ describe('Tree tab wiring', () => {
       type: 'commitTreeFilePreview',
       preview: { revision: 'abc123', path: 'app.ts', text: 'export const value = 1;\n' },
     });
-    await settle();
+    await highlighted();
     assert.match(document.querySelector('code')?.innerHTML ?? '', /hljs-keyword/);
     const colors = { ...editorTokenColorsFromRules([], undefined), keyword: '#123456' };
     receive({ type: 'editorTokenColors', colors });

@@ -6,7 +6,12 @@ import { installDom } from './testing/dom';
 
 const sent: WebviewMessage[] = [];
 const receive = (message: HostMessage): boolean => window.dispatchEvent(new MessageEvent('message', { data: message }));
-const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
+/** Waits for the highlighter, which loads its grammar asynchronously and takes longer on a cold start. */
+const highlighted = async (): Promise<void> => {
+  for (let tries = 0; tries < 200 && !document.querySelector('code .hljs-keyword'); tries++) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+};
 
 before(async () => {
   installDom();
@@ -49,7 +54,7 @@ describe('Commit tab code-viewer wiring', () => {
         { kind: 'add', text: 'const after = 2;', line: 1 },
       ],
     } as HostMessage);
-    await settle();
+    await highlighted();
     const viewer = document.querySelector('.code-viewer')!;
     assert.match(viewer.querySelector('code')?.innerHTML ?? '', /hljs-keyword/);
     receive({ type: 'commitDiffView', options: { ...DEFAULT_COMMIT_DIFF_VIEW, sideBySide: true } });

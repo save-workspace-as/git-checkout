@@ -24,5 +24,7 @@ if (files.length === 0) {
 
 const require = createRequire(__filename);
 const tsxCli = require.resolve('tsx/cli');
-const result = spawnSync(process.execPath, [tsxCli, '--test', ...flags, ...files], { stdio: 'inherit' });
+// Results print as a readable list on every run, a terminal or not.
+const reporters = ['--test-reporter=spec', '--test-reporter-destination=stdout'];
+const result = spawnSync(process.execPath, [tsxCli, '--test', ...reporters, ...flags, ...files], { stdio: 'inherit' });
 process.exit(result.status === null ? 1 : result.status);
