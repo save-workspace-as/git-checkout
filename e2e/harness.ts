@@ -148,16 +148,28 @@ async function gitRepositoryRoots(): Promise<readonly string[]> {
   return api.getAPI(1).repositories.map((repository) => repository.rootUri.fsPath);
 }
 
+/**
+ * Changes the workspace folders. VS Code refuses (returns false) while an earlier change is still being applied,
+ * which a slow machine hits when one test's cleanup is followed at once by the next test's setup, so this asks
+ * again until it is accepted.
+ */
+export async function updateWorkspaceFolders(
+  start: number,
+  deleteCount: number | undefined | null,
+  ...folders: { uri: vscode.Uri; name?: string }[]
+): Promise<void> {
+  await waitFor('VS Code to accept the workspace folder change', async () =>
+    (vscode.workspace.updateWorkspaceFolders(start, deleteCount, ...folders) ? true : undefined),
+  );
+}
+
 /** Opens a new fixture repository for this test. */
 export async function openFreshFixture(): Promise<void> {
   const next = createFixtureRepo();
   const folders = vscode.workspace.workspaceFolders ?? [];
   const index = folders.findIndex((folder) => !isSentinelFolder(folder.uri.fsPath));
   assert.ok(index >= 0, 'e2e fixture folder is missing');
-  assert.ok(
-    vscode.workspace.updateWorkspaceFolders(index, 1, { uri: vscode.Uri.file(next) }),
-    'could not open a fresh e2e repository',
-  );
+  await updateWorkspaceFolders(index, 1, { uri: vscode.Uri.file(next) });
   await waitFor('fresh repository', async () => {
     const fixture = vscode.workspace.workspaceFolders?.find(
       (folder) => !isSentinelFolder(folder.uri.fsPath),

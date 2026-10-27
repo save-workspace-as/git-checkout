@@ -93,7 +93,8 @@ jobs:
             set -e
             kill "$xvfb_pid" >/dev/null 2>&1 || true
             wait "$xvfb_pid" >/dev/null 2>&1 || true
-            cat "$log"
+            # VS Code and Chromium print thousands of lines of their own; show the test results, keep the full log.
+            grep -vE 'bus\.cc|ChatModelSelection|quota_database|AccountPolicyGate|agentHostClientProxy|chat participant registry|NativeExtensionHostFactory|DeprecationWarning|trace-deprecation' "$log" || true
             if [ "$status" -eq 0 ]; then
               exit 0
             fi

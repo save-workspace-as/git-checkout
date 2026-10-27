@@ -7,14 +7,14 @@ import * as vscode from 'vscode';
 
 import { answer } from './graphMenu';
 import { createFixtureRepo, isSentinelFolder } from './fixtureRepo';
-import { bindExtension, git, readyTree, repoRoot, waitFor } from './harness';
+import { bindExtension, git, readyTree, repoRoot, updateWorkspaceFolders, waitFor } from './harness';
 
 /** Puts `folder` where the fixture repository was, which is how a test chooses what the workspace holds. */
 async function replaceFixtureFolder(folder: string): Promise<void> {
   const folders = vscode.workspace.workspaceFolders ?? [];
   const index = folders.findIndex((entry) => !isSentinelFolder(entry.uri.fsPath));
   assert.ok(index >= 0, 'e2e fixture folder is missing');
-  assert.ok(vscode.workspace.updateWorkspaceFolders(index, 1, { uri: vscode.Uri.file(folder) }));
+  await updateWorkspaceFolders(index, 1, { uri: vscode.Uri.file(folder) });
 }
 
 describe('Workspace shapes', () => {
@@ -133,13 +133,13 @@ describe('Workspace shapes', () => {
       const second = createFixtureRepo();
       cleanup.push(() => rmSync(second, { recursive: true, force: true }));
       const folders = vscode.workspace.workspaceFolders ?? [];
-      assert.ok(vscode.workspace.updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) }));
+      await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
       await waitFor('both repositories', async () => ((await ctx.api.panelState()).repositories.length === 2 ? true : undefined));
       await ctx.api.selectRepository(second);
       await vscode.commands.executeCommand('gitCheckout.open');
 
       const secondIndex = (vscode.workspace.workspaceFolders ?? []).findIndex((entry) => entry.uri.fsPath === vscode.Uri.file(second).fsPath);
-      assert.ok(vscode.workspace.updateWorkspaceFolders(secondIndex, 1));
+      await updateWorkspaceFolders(secondIndex, 1);
       await waitFor('one repository', async () => ((await ctx.api.panelState()).repositories.length === 1 ? true : undefined));
       // Commands that act on "the" repository now act on the one that is left.
       await vscode.commands.executeCommand('gitCheckout.copyActiveRepoPath');

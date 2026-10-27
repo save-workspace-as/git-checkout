@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 
 import { createFixtureRepo } from './fixtureRepo';
 import { basename } from 'node:path';
-import { bindExtension, findByRef, git, loadTree, openTabSummary, PANEL_VIEW_TYPE, readyTree, repoRoot, waitFor, type SidebarNode } from './harness';
+import { bindExtension, findByRef, git, loadTree, openTabSummary, PANEL_VIEW_TYPE, readyTree, repoRoot, updateWorkspaceFolders, waitFor, type SidebarNode } from './harness';
 
 function gitIn(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -43,7 +43,7 @@ describe('One sidebar view per repository', () => {
     const second = createFixtureRepo();
     gitIn(second, 'branch', 'topic-b');
     const folders = vscode.workspace.workspaceFolders ?? [];
-    assert.ok(vscode.workspace.updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) }));
+    await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     try {
       const rows = await waitFor('second repository view', async () => {
         const found = await viewRows(ctx.api.sidebars[1]);
@@ -75,7 +75,7 @@ describe('One sidebar view per repository', () => {
     await readyTree(ctx.api);
     const second = createFixtureRepo();
     const folders = vscode.workspace.workspaceFolders ?? [];
-    assert.ok(vscode.workspace.updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) }));
+    await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     try {
       await waitFor('second repository view', async () =>
         (await viewRows(ctx.api.sidebars[1])).length > 0 ? true : undefined,
@@ -113,7 +113,7 @@ describe('One sidebar view per repository', () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const second = createFixtureRepo();
     const folders = vscode.workspace.workspaceFolders ?? [];
-    assert.ok(vscode.workspace.updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) }));
+    await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     const windowTitles = (): string[] => vscode.window.tabGroups.all
       .flatMap((group) => group.tabs)
       .filter((tab) => (tab.input as { viewType?: string } | undefined)?.viewType?.includes(PANEL_VIEW_TYPE))
@@ -152,7 +152,7 @@ describe('One sidebar view per repository', () => {
     await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const second = createFixtureRepo();
     const folders = vscode.workspace.workspaceFolders ?? [];
-    assert.ok(vscode.workspace.updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) }));
+    await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     const windowCount = (): number => vscode.window.tabGroups.all
       .flatMap((group) => group.tabs)
       .filter((tab) => (tab.input as { viewType?: string } | undefined)?.viewType?.includes(PANEL_VIEW_TYPE)).length;
