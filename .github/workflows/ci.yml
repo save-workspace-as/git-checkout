@@ -23,7 +23,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: git-checkout-vsix
-          path: git-checkout-*.vsix
+          path: gitcheckout-*.vsix
           if-no-files-found: error
           retention-days: 14
 
@@ -58,12 +58,7 @@ jobs:
       - run: npm run test:integration
 
   e2e:
-    name: e2e (${{ matrix.label }})
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        label: [stable, minimum]
     permissions:
       actions: write
       contents: read
@@ -77,12 +72,12 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .vscode-test
-          key: vscode-test-${{ runner.os }}-${{ matrix.label }}-${{ hashFiles('.vscode-test.mjs', 'package-lock.json') }}
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('.vscode-test.mjs', 'package-lock.json') }}
       - name: Run e2e tests
         run: |
           set -uo pipefail
           for attempt in 1 2 3; do
-            log="e2e-${{ matrix.label }}-attempt-${attempt}.log"
+            log="e2e-attempt-${attempt}.log"
             display=99
             while [ -e "/tmp/.X${display}-lock" ]; do
               display=$((display + 1))
@@ -93,13 +88,12 @@ jobs:
             xvfb_pid=$!
             export DISPLAY=":${display}"
             set +e
-            npm run test:e2e -- --label "${{ matrix.label }}" >"$log" 2>&1
+            npm run test:e2e >"$log" 2>&1
             status=$?
             set -e
             kill "$xvfb_pid" >/dev/null 2>&1 || true
             wait "$xvfb_pid" >/dev/null 2>&1 || true
-            # VS Code and Chromium print thousands of lines of their own; show the test results, keep the full log.
-            grep -vE 'bus\.cc|ChatModelSelection|quota_database|AccountPolicyGate|agentHostClientProxy|chat participant registry|NativeExtensionHostFactory|DeprecationWarning|trace-deprecation' "$log" || true
+            cat "$log"
             if [ "$status" -eq 0 ]; then
               exit 0
             fi
@@ -112,7 +106,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: e2e-logs-${{ matrix.label }}
-          path: e2e-*-attempt-*.log
+          name: e2e-logs
+          path: e2e-attempt-*.log
           if-no-files-found: ignore
           retention-days: 14

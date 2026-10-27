@@ -129,7 +129,7 @@ Git Checkout runs git with `api.git.path` from `vscode.git` on the workspace hos
 
 Confirm the host:
 
-1. **Developer: Show Running Extensions** lists **Git Checkout** (`rkonit.git-checkout`) on the **remote** host, with extension kind **workspace**.
+1. **Developer: Show Running Extensions** lists **Git Checkout** (`rkonit.gitcheckout`) on the **remote** host, with extension kind **workspace**.
 2. **Git Checkout: Show Output**, or the status-bar tooltip, shows `remote`, `extension kind`, and `git.path`. `git.path` must be a binary on that host.
 
 If `git.path` is `(unavailable)` and the output mentions a Windows path, `vscode.git` reported your local Windows git. On the remote, set `git.path` to that host's git (or clear the User value) and reload the window.

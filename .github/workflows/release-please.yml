@@ -38,7 +38,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
       - id: vsix
         if: ${{ steps.release.outputs.release_created }}
-        run: echo "path=$(ls git-checkout-*.vsix)" >> "$GITHUB_OUTPUT"
+        run: echo "path=$(ls gitcheckout-*.vsix)" >> "$GITHUB_OUTPUT"
       - name: Attach VSIX to GitHub Release
         if: ${{ steps.release.outputs.release_created }}
         env:

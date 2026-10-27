@@ -5136,7 +5136,7 @@
   "license": "MIT",
   "main": "./dist/extension.js",
   "l10n": "./l10n",
-  "name": "git-checkout",
+  "name": "gitcheckout",
   "publisher": "rkonit",
   "icon": "resources/icon.png",
   "repository": {
@@ -5159,7 +5159,7 @@
     "watch:extension": "node esbuild.extension.mjs --watch",
     "watch:webview": "node esbuild.webview.mjs --watch"
   },
-  "version": "0.2.0",
+  "version": "0.1.0",
   "overrides": {
     "@vscode-elements/elements": {
       "@vscode/codicons": "$@vscode/codicons"
