@@ -97,6 +97,25 @@ describe('Keyboard shortcuts', () => {
     await waitFor('the pushed commit', async () => (gitIn(remote, 'log', '-1', '--format=%s', 'main') === 'Commit-and-push' ? true : undefined));
   });
 
+  it('Commit and push… commits, then opens the Push form without pushing', async () => {
+    await readyTree(ctx.api);
+    const { remote } = withRemote();
+    const before = gitIn(remote, 'rev-parse', 'main');
+    writeFileSync(join(repoRoot(), 'form.txt'), 'form\n');
+    await ctx.api.sendPanelMessage({ type: 'changesActions', actions: [{ op: 'stage', path: 'form.txt' }] });
+    await waitFor('staged file', async () => (git('diff', '--cached', '--name-only') === 'form.txt' ? true : undefined));
+    // The message is handled until the Push form closes, so it is awaited after the form is canceled.
+    const handled = ctx.api.sendPanelMessage({ type: 'changesCommit', subject: 'Push-form', description: '', amend: false, pushForm: true });
+    const form = await waitFor('the Push form', async () => ctx.api.operationFormState());
+    assert.equal(form.form.title, 'Push');
+    assert.equal(git('log', '-1', '--format=%s'), 'Push-form');
+    assert.equal(gitIn(remote, 'rev-parse', 'main'), before);
+    await ctx.api.sendPanelMessage({
+      type: 'operationFormMessage', sessionId: form.sessionId, message: { type: 'formCancel' },
+    });
+    await handled;
+  });
+
   it('a commit alone does not push', async () => {
     await readyTree(ctx.api);
     const { remote } = withRemote();

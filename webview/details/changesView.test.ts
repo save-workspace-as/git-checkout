@@ -72,6 +72,20 @@ describe('Changes tab diff and commit form', () => {
     assert.equal(q('.changes-description').value, '');
   });
 
+  it('offers Commit and push… beside Commit, which commits and asks for the Push form', () => {
+    const { posted, view, q } = mount();
+    assert.equal(q('.changes-commit').parentElement?.localName, 'vscode-button-group');
+    assert.equal(q('.changes-commit-push').parentElement, q('.changes-commit').parentElement);
+    assert.equal(q('.changes-commit-push').hasAttribute('disabled'), true);
+    view.applyHostMessage(snapshot(entries));
+    typeInto(q('.changes-subject'), 'Ship it');
+    assert.equal(q('.changes-commit-push').hasAttribute('disabled'), false);
+    q('.changes-commit-push').click();
+    assert.deepEqual(plain(posted.at(-1)), {
+      type: 'changesCommit', subject: 'Ship it', description: '', amend: false, pushForm: true,
+    });
+  });
+
   it('presses Commit with Cmd or Ctrl+Enter, and Commit and Push with Shift', () => {
     const { posted, view, q } = mount();
     view.applyHostMessage(snapshot(entries));

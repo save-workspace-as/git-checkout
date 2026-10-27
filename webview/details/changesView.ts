@@ -117,13 +117,19 @@ export function mountChangesView(
                 if (form.amend) { postMessage({ type: 'changesAmend' }); }
                 paint();
               }}></vscode-checkbox>
-            <vscode-button type="button" class="changes-commit" ?disabled=${blocker() !== undefined} title=${commitTitle()}
-              @click=${() => submit()}>${l10n.t('Commit')}</vscode-button>
+            <vscode-button-group>
+              <vscode-button type="button" class="changes-commit" ?disabled=${blocker() !== undefined} title=${commitTitle()}
+                @click=${() => submit()}>${l10n.t('Commit')}</vscode-button>
+              <vscode-button type="button" secondary class="changes-commit-push" ?disabled=${blocker() !== undefined}
+                title=${l10n.t('Commit, then choose what to push')}
+                @click=${() => submit(false, true)}>${l10n.t('Commit and push…')}</vscode-button>
+            </vscode-button-group>
           </div>
         </div>`, container);
     }
 
-    function submit(push = false): void {
+    /** `push` pushes at once with the usual choices; `pushForm` opens the Push form after the commit. */
+    function submit(push = false, pushForm = false): void {
       if (blocker() !== undefined) {
         return;
       }
@@ -133,6 +139,7 @@ export function mountChangesView(
         description: form.description.trim(),
         amend: form.amend,
         ...(push ? { push } : {}),
+        ...(pushForm ? { pushForm } : {}),
       });
     }
 
