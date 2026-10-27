@@ -320,7 +320,7 @@ export class ChangesController {
   }
 
   /** Commits from the Changes tab's form. */
-  async runChangesCommit(subject: string, description: string, amend: boolean, push = false): Promise<void> {
+  async runChangesCommit(subject: string, description: string, amend: boolean, push = false, pushForm = false): Promise<void> {
     let committed = false;
     await this.ctx.sync.runSyncOp(l10n.t('Commit'), async (root) => {
       if (!amend && !(await this.ctx.workingTreeService.hasStagedChanges(root))) {
@@ -333,6 +333,11 @@ export class ChangesController {
         await this.sendWorkingCopySnapshot();
       }
     });
+    // The Push form lets the person choose, including a force push, so it opens after an amend too.
+    if (committed && pushForm) {
+      await this.ctx.sync.runPush();
+      return;
+    }
     // An amended commit is not pushed on its own: that would need a force push, which the person should ask for.
     if (committed && (push || (!amend && this.ctx.gitSettings.commitPushAfterCommit()))) {
       await this.ctx.sync.runQuick('push');

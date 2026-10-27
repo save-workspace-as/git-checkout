@@ -779,7 +779,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
         await this.changes.runChangesHunk(message.op, message.patch);
         break;
       case 'changesCommit':
-        await this.changes.runChangesCommit(message.subject, message.description, message.amend, message.push === true);
+        await this.changes.runChangesCommit(message.subject, message.description, message.amend, message.push === true, message.pushForm === true);
         break;
       case 'changesGenerateMessage':
         await this.changes.generateChangesMessage();
@@ -1459,7 +1459,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
       return;
     }
-    await this.graph.revealRefInGraph((await this.graphService.currentBranch(root)) ?? 'HEAD');
+    await this.graph.revealRefInGraph(this.graphService.resolveHeadRef(root) ?? 'HEAD');
   }
 
   /** Shows the repository's folder in the system's file manager. */
