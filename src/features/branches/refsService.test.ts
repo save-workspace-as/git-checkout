@@ -15,6 +15,7 @@ const REPO = '/repo';
 function mockGraphService(): CommitGraphService {
   return {
     resolveHeadRef: () => 'main',
+    currentBranch: async () => 'main',
     getFilterRef: () => 'main',
   } as unknown as CommitGraphService;
 }

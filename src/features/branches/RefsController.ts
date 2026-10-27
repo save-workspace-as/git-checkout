@@ -192,7 +192,7 @@ export class RefsController {
       return;
     }
     const cli = this.ctx.cliRegistry.forRepository(repo);
-    const headRef = this.ctx.graphService.resolveHeadRef(root);
+    const headRef = await this.ctx.graphService.currentBranch(root);
     const defaultStart = defaultStartRef(this.ctx.graphService.shownRef(root), headRef);
     const ok = await runRefsMutation(cli, mutate, headRef, defaultStart, this.ctx.operationForm.show);
     if (!ok) {

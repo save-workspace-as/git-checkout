@@ -220,7 +220,7 @@ export class SyncController {
     if (!root || !this.ctx.graphReady()) {
       return;
     }
-    if (this.ctx.graphService.resolveHeadRef(root) === branchName) {
+    if ((await this.ctx.graphService.currentBranch(root)) === branchName) {
       await this.runPull();
       return;
     }

@@ -587,3 +587,26 @@ describe('CommitGraphService.resolveHeadRef', () => {
     assert.equal(svc.resolveHeadRef(), 'appstore');
   });
 });
+
+describe('CommitGraphService.currentBranch', () => {
+  const unread = { getDiagnostics: () => ({ repositories: [{ rootPath: REPO, headName: null }] }) };
+
+  it('uses the branch vscode.git reports without asking Git', async () => {
+    const { cli, reads } = mockGitCli();
+    const known = { getDiagnostics: () => ({ repositories: [{ rootPath: REPO, headName: 'main' }] }) };
+    const svc = new CommitGraphService(mockExtensionContext(), known as never, mockCliRegistry(REPO, cli));
+    assert.equal(await svc.currentBranch(REPO), 'main');
+    assert.deepEqual(reads, []);
+  });
+
+  it('asks Git when vscode.git has not read HEAD yet, and is null when detached', async () => {
+    const named = mockGitCli({ execRead: async () => ({ stdout: 'main\n' }) });
+    const svc = new CommitGraphService(mockExtensionContext(), unread as never, mockCliRegistry(REPO, named.cli));
+    assert.equal(await svc.currentBranch(REPO), 'main');
+    assert.deepEqual(named.reads, [['branch', '--show-current']]);
+
+    const detached = mockGitCli({ execRead: async () => ({ stdout: '\n' }) });
+    const other = new CommitGraphService(mockExtensionContext(), unread as never, mockCliRegistry(REPO, detached.cli));
+    assert.equal(await other.currentBranch(REPO), null);
+  });
+});
