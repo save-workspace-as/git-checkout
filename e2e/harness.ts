@@ -199,6 +199,16 @@ export function bindExtension(): {
     ctx.api = activated.api;
   });
   beforeEach(openFreshFixture);
+  // A test that fails while a form is open leaves it open. The next test would then find that form instead of its
+  // own and wait out its timeout, and so would every test after it, so a form still open is canceled here.
+  afterEach(async () => {
+    const open = ctx.api.operationFormState();
+    if (open) {
+      await ctx.api.sendPanelMessage({
+        type: 'operationFormMessage', sessionId: open.sessionId, message: { type: 'formCancel' },
+      });
+    }
+  });
   return ctx;
 }
 
