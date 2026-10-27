@@ -5137,7 +5137,7 @@
   "main": "./dist/extension.js",
   "l10n": "./l10n",
   "name": "git-checkout",
-  "publisher": "save-workspace-as",
+  "publisher": "rkonit",
   "icon": "resources/icon.png",
   "repository": {
     "type": "git",
