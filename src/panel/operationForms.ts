@@ -509,3 +509,22 @@ export function submoduleFormRequest(values: OperationFormValues): SubmoduleAddR
 export function validateSubmoduleForm(values: OperationFormValues): OperationFormErrors {
   return validateSubmoduleAdd(submoduleFormRequest(values));
 }
+
+export function applyPatchForm(): OperationFormDefinition {
+  return {
+    title: l10n.t('Apply Patch'),
+    submitLabel: l10n.t('Apply'),
+    values: { location: '', createCommit: true },
+    fields: [
+      {
+        id: 'location', type: 'text', label: l10n.t('Location'), required: true, pickLabel: l10n.t('Choose patch file'),
+        placeholder: l10n.t('Path to a .patch or .diff file'),
+        description: l10n.t('The patch file to apply to this repository.'),
+      },
+      {
+        id: 'createCommit', type: 'checkbox', label: l10n.t('Create commit'),
+        description: l10n.t('Keep the commit information of a patch made by Git; other patches only change the files.'),
+      },
+    ],
+  };
+}

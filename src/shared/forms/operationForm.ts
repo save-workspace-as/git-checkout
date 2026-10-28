@@ -46,7 +46,7 @@ export interface OperationFormDefinition {
 export type OperationFormHostMessage =
   | { type: 'formInit'; form: OperationFormDefinition }
   | { type: 'formValidation'; version: number; errors: OperationFormErrors }
-  | { type: 'formPicked'; version: number; field: string; value: string }
+  | { type: 'formPicked'; version: number; field: string; value: string; notice?: OperationFormDefinition['notice'] | null }
   | { type: 'formStatus'; busy: boolean; error?: string; errors?: OperationFormErrors };
 
 export type OperationFormModalHostMessage =

@@ -367,6 +367,20 @@ describe('Operation banner', () => {
       await bannerGone();
     });
 
+    it('restores the branch when the rebase is aborted after its conflict was resolved', async () => {
+      const { topic } = await startConflictingRebase();
+      await banner(/^Rebasing/);
+      writeFileSync(join(repoRoot(), 'c.txt'), 'one\nboth\nthree\n');
+      git('add', 'c.txt');
+      await bannerReadyToContinue();
+
+      await ctx.api.sendPanelMessage({ type: 'operationAbort' });
+      await waitFor('the rebase to be aborted', async () => (existsSync(gitDir('rebase-merge')) ? undefined : true));
+      assert.equal(git('rev-parse', 'HEAD'), topic);
+      assert.equal(git('status', '--porcelain'), '');
+      await bannerGone();
+    });
+
     it('restores the branch to where it was when the rebase is aborted', async () => {
       const { topic } = await startConflictingRebase();
       await banner(/^Rebasing/);

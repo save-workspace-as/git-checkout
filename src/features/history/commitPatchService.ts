@@ -9,6 +9,7 @@ import {
   gitArgsForPatchApply,
   gitArgsForPatchExport,
   mapPatchApplyError,
+  PATCH_CHECK_ARGS,
 } from './commitRangePatch';
 import { createLogger } from '../../log';
 import * as l10n from '@vscode/l10n';
@@ -52,13 +53,29 @@ export class CommitPatchService {
     return this.exportRange(repoRoot, range, format);
   }
 
-  async applyFromText(repoRoot: string, patchText: string): Promise<void> {
+  /** What stops the patch from applying, or `undefined` when it applies cleanly. */
+  async checkApply(repoRoot: string, patchText: string): Promise<string | undefined> {
+    try {
+      detectPatchApplyKind(patchText);
+      const cli = this.cliRegistry.getOrCreate(repoRoot);
+      await cli.execWriteWithInput(PATCH_CHECK_ARGS, patchText, { showErrorToast: false });
+      return undefined;
+    } catch (error) {
+      log.debug('patch does not apply', error);
+      if (error instanceof GitCliError) {
+        return mapPatchApplyError(error.stderr ?? '', error.exitCode);
+      }
+      return error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  async applyFromText(repoRoot: string, patchText: string, createCommit = true): Promise<void> {
     const kind = detectPatchApplyKind(patchText);
     log.info(`apply patch (${kind})`);
     try {
       await this.cliRegistry.runWrite(repoRoot, async () => {
         const cli = this.cliRegistry.getOrCreate(repoRoot);
-        const args = gitArgsForPatchApply(kind);
+        const args = gitArgsForPatchApply(kind, createCommit);
         await cli.execWriteWithInput(args, patchText, { showErrorToast: false });
       });
     } catch (error) {

@@ -69,6 +69,8 @@
   "command.gitCheckout.bisect.skip.category": "Git Checkout",
   "command.gitCheckout.bisect.reset.title": "Reset Bisect",
   "command.gitCheckout.bisect.reset.category": "Git Checkout",
+  "command.gitCheckout.applyPatch.title": "Apply Patch…",
+  "command.gitCheckout.applyPatch.category": "Git Checkout",
   "command.gitCheckout.applyPatchFromClipboard.title": "Apply Patch from Clipboard",
   "command.gitCheckout.applyPatchFromClipboard.category": "Git Checkout",
   "command.gitCheckout.compare.copyPatch.title": "Copy Compare as Patch",

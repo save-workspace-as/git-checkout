@@ -271,6 +271,25 @@ describe('shared operation form modal controller', () => {
     assert.equal(await pending, false);
   });
 
+  it('sends the notice a picker handler gives for the picked value', async () => {
+    const h = harness();
+    const pending = h.generic({
+      validate: () => ({}),
+      pick: async () => '/a.patch',
+      noticeAfterPick: async (field, value) => ({ kind: 'success', message: `${field}: ${value}` }),
+      submit: async () => true,
+    }, { ...h.form, fields: [{ id: 'location', type: 'text', label: 'Location', pickLabel: 'Choose' }], values: { location: '' } });
+    await h.receive({ type: 'formReady' });
+    await h.receive({ type: 'formPick', field: 'location', version: 1, values: { location: '' } });
+    const picked = h.messages.find((message) => message.type === 'formPicked');
+    assert.deepEqual(picked && JSON.parse(JSON.stringify(picked)), {
+      type: 'formPicked', version: 1, field: 'location', value: '/a.patch',
+      notice: { kind: 'success', message: 'location: /a.patch' },
+    });
+    await h.receive({ type: 'formCancel' });
+    assert.equal(await pending, false);
+  });
+
   it('tests a URL without a complete remote name or any writes and retains the draft', async () => {
     const h = harness();
     const cli = mockGitCli();

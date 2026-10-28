@@ -213,6 +213,12 @@
         "title": "%command.gitCheckout.bisect.reset.title%"
       },
       {
+        "category": "%command.gitCheckout.applyPatch.category%",
+        "command": "gitCheckout.applyPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.applyPatch.title%"
+      },
+      {
         "category": "%command.gitCheckout.applyPatchFromClipboard.category%",
         "command": "gitCheckout.applyPatchFromClipboard",
         "enablement": "!gitCheckout.repoOperationActive",
@@ -2280,6 +2286,10 @@
         {
           "command": "gitCheckout.bisect.reset",
           "when": "gitCheckout.bisectActive"
+        },
+        {
+          "command": "gitCheckout.applyPatch",
+          "when": "false"
         },
         {
           "command": "gitCheckout.applyPatchFromClipboard",

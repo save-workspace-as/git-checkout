@@ -42,17 +42,21 @@ export function detectPatchApplyKind(text: string): PatchApplyKind {
   return 'unified';
 }
 
-export function gitArgsForPatchApply(kind: PatchApplyKind): string[] {
-  if (kind === 'mbox') {
+/** `createCommit` only matters for a patch saved with commit information; others change the files only. */
+export function gitArgsForPatchApply(kind: PatchApplyKind, createCommit = true): string[] {
+  if (kind === 'mbox' && createCommit) {
     return ['am', '--3way'];
   }
   return ['apply', '--3way'];
 }
 
+/** Applies nothing. Without `--3way`, which exits 0 when it leaves conflict markers, so a clash fails. */
+export const PATCH_CHECK_ARGS = ['apply', '--check'];
+
 export function mapPatchApplyError(stderr: string, exitCode: number | null): string {
   const lower = stderr.toLowerCase();
   if (lower.includes('unrecognized input') || lower.includes('corrupt patch')) {
-    return l10n.t('The clipboard does not contain a valid Git patch.');
+    return l10n.t('This is not a valid Git patch.');
   }
   if (lower.includes('patch is empty') || lower.includes('already applied')) {
     return l10n.t('The patch is empty or already applied.');

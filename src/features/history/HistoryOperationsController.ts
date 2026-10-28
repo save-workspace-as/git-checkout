@@ -14,7 +14,7 @@ import { promptHistorySha, runCherryPick, runRangeOp, runRevert } from '../graph
 import { promptBranchDropAction, promptIntegrateRef, runMergeIntoHead, runRebaseOnto } from '../branches/integrateHost';
 import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
-import { applyPatchFromClipboard, copyCommitPatch, saveCommitPatch } from './patchHost';
+import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, saveCommitPatch } from './patchHost';
 import { MERGE_TYPE_FAST_FORWARD, mergeForm, rebaseForm, resetForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
@@ -310,6 +310,19 @@ export class HistoryOperationsController {
       return;
     }
     await applyPatchFromClipboard(this.ctx.commitPatchService, root);
+    await this.refreshAfterPatch();
+  }
+
+  async runApplyPatch(): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    await applyPatchInForm(this.ctx.operationForm.show, this.ctx.commitPatchService, root, () => this.refreshAfterPatch());
+  }
+
+  private async refreshAfterPatch(): Promise<void> {
     await this.ctx.changes.sendWorkingCopySnapshot();
     void this.ctx.reloadGraphOnHeadChange();
     await this.ctx.postState('state');

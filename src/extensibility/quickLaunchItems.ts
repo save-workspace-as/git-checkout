@@ -15,7 +15,7 @@ export interface QuickLaunchItem {
 
 /** Repository actions only, sorted by label, and named like the commands they run. */
 const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
-  { label: l10n.t('Apply Patch…'), command: 'gitCheckout.applyPatchFromClipboard' },
+  { label: l10n.t('Apply Patch…'), command: 'gitCheckout.applyPatch' },
   { label: l10n.t('Bisect…'), command: 'gitCheckout.bisect.start' },
   { label: l10n.t('Blame…'), command: 'gitCheckout.blame.file' },
   { label: l10n.t('Checkout Branch…'), command: 'gitCheckout.checkout' },

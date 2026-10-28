@@ -298,6 +298,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     vscode.commands.registerCommand('gitCheckout.applyPatchFromClipboard', () => {
       void panelManager.runApplyPatchFromClipboard();
     }),
+    vscode.commands.registerCommand('gitCheckout.applyPatch', () => panelManager.runApplyPatch()),
     vscode.commands.registerCommand('gitCheckout.compare.copyPatch', () => {
       void panelManager.runCompareCopyPatch();
     }),

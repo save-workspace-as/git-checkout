@@ -5,6 +5,7 @@ import {
   buildBranchCommitRange,
   buildRangeFromOrderedShas,
   detectPatchApplyKind,
+  gitArgsForPatchApply,
   gitArgsForPatchExport,
   mapPatchApplyError,
 } from './commitRangePatch';
@@ -37,6 +38,12 @@ describe('commitRangePatch', () => {
       'mbox',
     );
     assert.equal(detectPatchApplyKind('diff --git a/foo b/foo\n--- a/foo\n+++ b/foo'), 'unified');
+  });
+
+  it('applies a Git patch as a commit only when asked to', () => {
+    assert.deepEqual(gitArgsForPatchApply('mbox'), ['am', '--3way']);
+    assert.deepEqual(gitArgsForPatchApply('mbox', false), ['apply', '--3way']);
+    assert.deepEqual(gitArgsForPatchApply('unified', true), ['apply', '--3way']);
   });
 
   it('maps apply errors to user-facing text', () => {
