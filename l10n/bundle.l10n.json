@@ -796,7 +796,6 @@
   "The branch whose head moves.": "The branch whose head moves.",
   "The built-in Git extension is disabled. Enable vscode.git (do not set git.enabled to false).": "The built-in Git extension is disabled. Enable vscode.git (do not set git.enabled to false).",
   "The change is removed from the file in your working tree.": "The change is removed from the file in your working tree.",
-  "The clipboard does not contain a valid Git patch.": "The clipboard does not contain a valid Git patch.",
   "The current worktree cannot be deleted.": "The current worktree cannot be deleted.",
   "The current worktree stays open in this window.": "The current worktree stays open in this window.",
   "The development branch must differ from the production branch.": "The development branch must differ from the production branch.",
