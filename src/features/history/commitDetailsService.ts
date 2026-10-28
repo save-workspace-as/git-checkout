@@ -8,7 +8,7 @@ import { parseUnifiedDiff } from '../../core/gitDiffParser';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { GitCliError } from '../../core/gitCliError';
 import { sliceBinaryForPostMessage } from '../../shared/diff/binaryPayload';
-import { MAX_INLINE_BINARY_BYTES } from '../../shared/diff/binaryDiffLimits';
+import { MAX_IMAGE_PREVIEW_BYTES, MAX_INLINE_BINARY_BYTES } from '../../shared/diff/binaryDiffLimits';
 import { detectContentKind } from '../../shared/diff/contentKind';
 import { DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS } from '../../shared/diff/diffViewOptions';
 import type { WorkingCopyBinaryBlobDto, WorkingCopyFileDiffDto } from '../../shared/changes/workingCopyProtocol';
@@ -249,6 +249,38 @@ export class CommitDetailsService {
       lfsComparison: lfs ? { old: sides[0].kind.lfs, new: sides[1].kind.lfs } : undefined,
       hunks: [],
     };
+  }
+
+  /**
+   * The picture stored at `revision:filePath`, when the file is one. Its size is read first, so a huge file is never
+   * pulled into memory. `undefined` means this is not a picture the preview can draw, and the caller shows text.
+   */
+  async readImage(
+    repoRoot: string,
+    revision: string,
+    filePath: string,
+  ): Promise<{ kind: 'image'; mimeType: string; bytes: Uint8Array } | { kind: 'too-large'; byteLength: number } | undefined> {
+    const cli = this.cliRegistry.getOrCreate(repoRoot);
+    const spec = `${revision}:${filePath}`;
+    let byteLength: number;
+    try {
+      byteLength = Number.parseInt((await cli.execRead(['cat-file', '-s', spec])).stdout.trim(), 10);
+    } catch (error) {
+      // The path is not a file at this revision; the text preview reports that.
+      log.debug(`no ${filePath} at ${revision}`, error);
+      return undefined;
+    }
+    if (!Number.isFinite(byteLength)) {
+      return undefined;
+    }
+    if (byteLength > MAX_IMAGE_PREVIEW_BYTES) {
+      return { kind: 'too-large', byteLength };
+    }
+    const bytes = (await cli.execRead(['show', spec], { binaryStdout: true })).stdoutBytes ?? new Uint8Array();
+    const detected = detectContentKind(bytes);
+    return detected.kind === 'image' && detected.mimeType
+      ? { kind: 'image', mimeType: detected.mimeType, bytes }
+      : undefined;
   }
 
   /** First parent, or null for a root commit. */

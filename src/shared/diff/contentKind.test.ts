@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { detectContentKind } from './contentKind';
+import { detectContentKind, hasImageExtension } from './contentKind';
 
 describe('detectContentKind', () => {
   it('detects PNG magic', () => {
@@ -20,4 +20,25 @@ size 1
     assert.equal(result.kind, 'lfs-pointer');
     assert.ok(result.lfs);
   });
+});
+
+describe('hasImageExtension', () => {
+  const cases: [string, boolean][] = [
+    ['logo.png', true],
+    ['assets/icon@2x.PNG', true],
+    ['photo.jpeg', true],
+    ['photo.JPG', true],
+    ['anim.gif', true],
+    ['hero.webp', true],
+    ['diagram.svg', false],
+    ['notes.txt', false],
+    ['png', false],
+    ['archive.png.zip', false],
+    ['', false],
+  ];
+  for (const [path, expected] of cases) {
+    it(`${expected ? 'accepts' : 'rejects'} "${path}"`, () => {
+      assert.equal(hasImageExtension(path), expected);
+    });
+  }
 });

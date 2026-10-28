@@ -209,3 +209,35 @@ describe('CommitDetailsService working copy', () => {
   });
 });
 
+describe('CommitDetailsService.readImage with real git', () => {
+  // A real 1x1 PNG, so the bytes git stores are binary, with a NUL and bytes over 0x7f.
+  const png = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==',
+    'base64',
+  );
+
+  it('reads a committed picture byte for byte at a revision, and not a file that only has its name', async () => {
+    const repo = initTempRepository();
+    try {
+      writeFileSync(join(repo.repoRoot, 'logo.png'), png);
+      writeFileSync(join(repo.repoRoot, 'fake.png'), 'not a picture\n');
+      runGit(repo.repoRoot, ['add', '.']);
+      runGit(repo.repoRoot, ['commit', '-m', '"add pictures"']);
+      writeFileSync(join(repo.repoRoot, 'logo.png'), Buffer.concat([png, Buffer.from([0])]));
+      runGit(repo.repoRoot, ['commit', '-am', '"change the picture"']);
+
+      const service = new CommitDetailsService(mockCliRegistry(repo.repoRoot, repo.cli));
+      const first = await service.readImage(repo.repoRoot, 'HEAD~1', 'logo.png');
+      assert.equal(first?.kind, 'image');
+      assert.equal(first?.kind === 'image' ? first.mimeType : '', 'image/png');
+      assert.deepEqual(first?.kind === 'image' ? Buffer.from(first.bytes) : undefined, png);
+      const second = await service.readImage(repo.repoRoot, 'HEAD', 'logo.png');
+      assert.equal(second?.kind === 'image' ? second.bytes.length : 0, png.length + 1);
+
+      assert.equal(await service.readImage(repo.repoRoot, 'HEAD', 'fake.png'), undefined);
+      assert.equal(await service.readImage(repo.repoRoot, 'HEAD', 'missing.png'), undefined);
+    } finally {
+      repo.cleanup();
+    }
+  });
+});
