@@ -289,6 +289,9 @@ export function mountOperationForm(
         const field = definition?.fields.find((entry) => entry.id === message.field);
         if (message.version === version && field?.type === 'text') {
           values[message.field] = message.value;
+          if (definition && message.notice !== undefined) {
+            definition = { ...definition, notice: message.notice ?? undefined };
+          }
           update();
         }
       } else if (message.type === 'formStatus') {

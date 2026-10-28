@@ -17,6 +17,8 @@ export interface OperationFormHandler {
   validate(values: OperationFormValues): OperationFormErrors;
   submit(values: OperationFormValues): Promise<boolean>;
   pick?(field: string, values: OperationFormValues): Promise<string | undefined>;
+  /** The notice to show once `field` was picked; `null` clears it. */
+  noticeAfterPick?(field: string, value: string, values: OperationFormValues): Promise<OperationFormDefinition['notice'] | null>;
 }
 
 export type ShowOperationForm = (
@@ -155,7 +157,8 @@ export class OperationFormController implements vscode.Disposable {
       try {
         const value = await handler.pick(field.id, result.values);
         if (value !== undefined) {
-          this.update(session, { type: 'formPicked', version: message.version, field: field.id, value });
+          const notice = await handler.noticeAfterPick?.(field.id, value, result.values);
+          this.update(session, { type: 'formPicked', version: message.version, field: field.id, value, notice });
         }
       } catch (error) {
         this.reportError(session, error);

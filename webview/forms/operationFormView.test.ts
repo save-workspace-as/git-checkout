@@ -318,6 +318,26 @@ describe('shared Settings-style operation form view', () => {
     assert.equal(h.find('location-0').value, '/repo/new');
   });
 
+  it('shows the notice that comes with a picked value and clears it when none does', () => {
+    const h = mount({ ...definition, fields: [
+      { id: 'location', type: 'text', label: 'Location', pickLabel: 'Choose file' },
+    ], values: { location: '' } });
+    const picker = [...h.root.querySelectorAll('vscode-button')].find((button) => button.textContent?.trim() === 'Choose file')!;
+    picker.dispatchEvent(new Event('click'));
+    const request = h.sent.at(-1);
+    if (request?.type !== 'formPick') { throw new Error('Missing picker request'); }
+    h.view.applyHostMessage({
+      type: 'formPicked', field: 'location', version: request.version, value: '/a.patch',
+      notice: { kind: 'success', message: 'Patch can be applied without conflicts' },
+    });
+    assert.equal(h.root.querySelector('.operation-form-notice')?.textContent, 'Patch can be applied without conflicts');
+    picker.dispatchEvent(new Event('click'));
+    const next = h.sent.at(-1);
+    if (next?.type !== 'formPick') { throw new Error('Missing picker request'); }
+    h.view.applyHostMessage({ type: 'formPicked', field: 'location', version: next.version, value: '/b.patch', notice: null });
+    assert.equal(h.root.querySelectorAll('.operation-form-notice').length, 0);
+  });
+
   function mountModal() {
     const shell = document.createElement('div');
     const graph = document.createElement('section');

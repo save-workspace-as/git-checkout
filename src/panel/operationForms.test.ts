@@ -26,10 +26,22 @@ import {
   resetForm,
   gitFlowInitFromValues,
   validateGitFlowInitForm,
+  applyPatchForm,
 } from './operationForms';
 import { validateOperationForm } from '../shared/forms/operationForm';
 
 describe('operation-specific form definitions', () => {
+  it('asks for a patch file and whether to create a commit, with Create commit on', () => {
+    const form = applyPatchForm();
+    assert.equal(form.title, 'Apply Patch');
+    assert.equal(form.submitLabel, 'Apply');
+    assert.deepEqual(form.values, { location: '', createCommit: true });
+    const location = form.fields.find((field) => field.id === 'location');
+    assert.equal(location?.type === 'text' && location.required, true);
+    assert.ok(location?.type === 'text' && location.pickLabel);
+    assert.equal(form.fields.find((field) => field.id === 'createCommit')?.type, 'checkbox');
+  });
+
   it('offers merge options and warns inline when preflight finds conflicts', () => {
     const form = mergeForm('agent/feature', 'main', true);
     assert.equal(form.title, 'Merge');
