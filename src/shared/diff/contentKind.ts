@@ -90,3 +90,11 @@ function looksLikeText(bytes: Uint8Array): boolean {
   }
   return control / len < 0.05;
 }
+
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp']);
+
+/** Whether the name suggests a picture of a kind `detectContentKind` recognizes by its bytes. */
+export function hasImageExtension(filePath: string): boolean {
+  const dot = filePath.lastIndexOf('.');
+  return dot >= 0 && IMAGE_EXTENSIONS.has(filePath.slice(dot + 1).toLowerCase());
+}

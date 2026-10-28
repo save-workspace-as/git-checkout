@@ -3,6 +3,7 @@ import { html, nothing, render, type TemplateResult } from 'lit';
 import { styleMap } from 'lit/directives/style-map.js';
 import { ref } from 'lit/directives/ref.js';
 import type { BinaryBlobSlice } from '../../src/shared/diff/binaryPayload';
+import { formatByteSize } from '../../src/shared/diff/byteSize';
 import { formatLfsPointerLabel } from '../../src/shared/diff/lfsPointer';
 import type {
   ImageDiffMode,
@@ -14,17 +15,18 @@ import type { WebviewMessage } from '../protocol';
 
 const blobCache = new Map<string, Uint8Array>();
 
+/** Adds a slice of a file to the cached bytes of `blobRef`, which grow into place as slices arrive. */
 export function applyBinaryChunk(blobRef: string, chunk: BinaryBlobSlice): void {
-  const existing = blobCache.get(blobRef) ?? new Uint8Array(chunk.byteLength);
-  if (existing.length !== chunk.byteLength) {
+  let target = blobCache.get(blobRef);
+  if (!target || target.length !== chunk.byteLength) {
     const resized = new Uint8Array(chunk.byteLength);
-    resized.set(existing.subarray(0, Math.min(existing.length, chunk.byteLength)));
-    blobCache.set(blobRef, resized);
+    if (target) {
+      resized.set(target.subarray(0, Math.min(target.length, chunk.byteLength)));
+    }
+    target = resized;
+    blobCache.set(blobRef, target);
   }
-  const target = blobCache.get(blobRef)!;
-  const data = base64ToBytes(chunk.dataBase64);
-  target.set(data, chunk.offset);
-  blobCache.set(blobRef, target);
+  target.set(base64ToBytes(chunk.dataBase64), chunk.offset);
 }
 
 export function renderNonTextDiff(
@@ -108,15 +110,47 @@ function imageTemplate(
   const panel = mode === 'pixel' ? pixelDiffTemplate(oldUrl, newUrl)
     : mode === 'swipe' ? swipeTemplate(oldUrl, newUrl)
       : mode === 'onion' ? onionTemplate(oldUrl, newUrl)
-        : sideBySideTemplate(oldUrl, newUrl);
+        : sideBySideTemplate(oldUrl, newUrl, diff.blobs);
   return html`<div class="wd-nontext wd-image-diff">${panel}${lazy}</div>`;
 }
 
-const sideBySideTemplate = (oldUrl: string | null, newUrl: string | null): TemplateResult => html`
-  <div class="wd-image-side-by-side">${imageCell(l10n.t('Before'), oldUrl)}${imageCell(l10n.t('After'), newUrl)}</div>`;
+const sideBySideTemplate = (
+  oldUrl: string | null,
+  newUrl: string | null,
+  blobs: WorkingCopyBinaryBlobDto[] | undefined,
+): TemplateResult => html`
+  <div class="wd-image-side-by-side">
+    ${imageCell(l10n.t('Old'), 'old', oldUrl, blobs?.find((blob) => blob.side === 'old')?.byteLength ?? 0)}
+    ${imageCell(l10n.t('New'), 'new', newUrl, blobs?.find((blob) => blob.side === 'new')?.byteLength ?? 0)}
+  </div>`;
 
-const imageCell = (label: string, url: string | null): TemplateResult => html`
-  <figure class="wd-image-cell"><figcaption>${label}</figcaption>${url ? html`<img src=${url} alt=${label}>` : nothing}</figure>`;
+const imageCell = (label: string, tone: 'old' | 'new', url: string | null, byteLength: number): TemplateResult => html`
+  <figure class="wd-image-cell">
+    <figcaption class="wd-image-label wd-image-label--${tone}">${label}</figcaption>
+    ${url ? imageFrameTemplate(url, label, byteLength) : html`<p class="wd-image-meta">${l10n.t('No image')}</p>`}
+  </figure>`;
+
+/** "W: 1024px | H: 1024px (269 KB)"; just the size until the picture has loaded and its dimensions are known. */
+export function imageMetaText(byteLength: number, width?: number, height?: number): string {
+  return width && height
+    ? l10n.t('W: {0}px | H: {1}px ({2})', width, height, formatByteSize(byteLength))
+    : formatByteSize(byteLength);
+}
+
+/** A picture on a checkerboard, so transparency shows, with its pixel size and file size beneath. */
+export function imageFrameTemplate(url: string, alt: string, byteLength: number): TemplateResult {
+  return html`
+    <div class="wd-image-frame">
+      <img src=${url} alt=${alt} @load=${(event: Event) => {
+        const image = event.target as HTMLImageElement;
+        const meta = image.closest('.wd-image-cell, .commit-tree-image')?.querySelector('.wd-image-meta');
+        if (meta) {
+          meta.textContent = imageMetaText(byteLength, image.naturalWidth, image.naturalHeight);
+        }
+      }}>
+    </div>
+    <p class="wd-image-meta">${imageMetaText(byteLength)}</p>`;
+}
 
 /** The old image shows over the new one up to the slider, which clips it from the right. */
 function swipeTemplate(oldUrl: string | null, newUrl: string | null): TemplateResult {
@@ -240,7 +274,7 @@ function lazyLoadButtons(
   })}`;
 }
 
-function base64ToBytes(base64: string): Uint8Array {
+export function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) {

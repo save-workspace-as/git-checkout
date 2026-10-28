@@ -5,10 +5,64 @@ import { DEFAULT_COMMIT_DIFF_VIEW } from '../../shared/diff/commitDiffPresentati
 import { commitCompareDiffArgs, commitDetailsDiffArgs } from '../../shared/history/commitDetails';
 import { CommitDetailsService, commitDiffLines } from './commitDetailsService';
 import { GitCliError } from '../../core/gitCliError';
+import { MAX_IMAGE_PREVIEW_BYTES } from '../../shared/diff/binaryDiffLimits';
 import { mockCliRegistry, mockGitCli } from '../../core/testing/serviceTestUtils';
 
 describe('CommitDetailsService', () => {
   const repoRoot = '/repo';
+
+  describe('readImage', () => {
+    const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x01]);
+
+    function serviceWith(size: string | Error, bytes: Uint8Array = png) {
+      const calls: string[][] = [];
+      const recorded = mockGitCli({
+        execRead: async (args) => {
+          calls.push(args);
+          if (args[0] === 'cat-file') {
+            if (size instanceof Error) {
+              throw size;
+            }
+            return { stdout: `${size}\n` };
+          }
+          return { stdout: '', stdoutBytes: bytes };
+        },
+      });
+      return { service: new CommitDetailsService(mockCliRegistry(repoRoot, recorded.cli)), calls };
+    }
+
+    it('returns the bytes and type of a picture at a revision', async () => {
+      const { service, calls } = serviceWith(String(png.length));
+      const image = await service.readImage(repoRoot, 'abc123', 'img/logo.png');
+      assert.deepEqual(image, { kind: 'image', mimeType: 'image/png', bytes: png });
+      assert.deepEqual(calls, [['cat-file', '-s', 'abc123:img/logo.png'], ['show', 'abc123:img/logo.png']]);
+    });
+
+    it('does not read a picture over the preview limit', async () => {
+      const { service, calls } = serviceWith(String(MAX_IMAGE_PREVIEW_BYTES + 1));
+      assert.deepEqual(await service.readImage(repoRoot, 'HEAD', 'big.png'), {
+        kind: 'too-large',
+        byteLength: MAX_IMAGE_PREVIEW_BYTES + 1,
+      });
+      assert.deepEqual(calls.map((args) => args[0]), ['cat-file']);
+    });
+
+    it('leaves a file named like a picture, but holding text, to the text preview', async () => {
+      const { service } = serviceWith('5', Buffer.from('hello'));
+      assert.equal(await service.readImage(repoRoot, 'HEAD', 'fake.png'), undefined);
+    });
+
+    it('leaves a path that is not at the revision to the text preview', async () => {
+      const { service, calls } = serviceWith(new GitCliError('ExitCode', 'path does not exist', repoRoot, 'fatal: path does not exist', 128));
+      assert.equal(await service.readImage(repoRoot, 'HEAD', 'gone.png'), undefined);
+      assert.equal(calls.length, 1);
+    });
+
+    it('leaves an unreadable size to the text preview', async () => {
+      const { service } = serviceWith('not a number');
+      assert.equal(await service.readImage(repoRoot, 'HEAD', 'odd.png'), undefined);
+    });
+  });
 
   it('lists name-status records for the selected commit', async () => {
     const recorded = mockGitCli({

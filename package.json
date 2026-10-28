@@ -4982,6 +4982,7 @@
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.tree",
+          "initialSize": 1,
           "name": "%view.gitCheckout.tree.name%",
           "type": "tree",
           "when": "gitCheckout.panelOpen"
@@ -4990,7 +4991,7 @@
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.treePreview",
-          "initialSize": 3,
+          "initialSize": 2,
           "name": "%view.gitCheckout.treePreview.name%",
           "type": "webview",
           "when": "gitCheckout.panelOpen"
@@ -5001,6 +5002,7 @@
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.unstaged",
+          "initialSize": 2,
           "name": "%view.gitCheckout.unstaged.name%",
           "type": "tree",
           "when": "gitCheckout.panelOpen"
@@ -5009,6 +5011,7 @@
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.staged",
+          "initialSize": 2,
           "name": "%view.gitCheckout.staged.name%",
           "type": "tree",
           "when": "gitCheckout.panelOpen"

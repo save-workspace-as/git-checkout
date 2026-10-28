@@ -16,10 +16,19 @@ export interface CommitTreePageDto {
   commit?: CommitTreeRevisionDto;
 }
 
+/** A picture, sent whole: the preview draws it instead of text. */
+export interface CommitTreeImageDto {
+  mimeType: string;
+  byteLength: number;
+  dataBase64: string;
+}
+
 export interface CommitTreeFilePreviewDto {
   revision: string;
   path: string;
   text: string;
+  /** Set for a picture; `text` is then empty. */
+  image?: CommitTreeImageDto;
   error?: string;
 }
 

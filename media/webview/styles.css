@@ -2390,9 +2390,37 @@ vscode-button-group.hidden {
   height: auto;
 }
 
-.wd-image-cell figcaption {
+.wd-image-label {
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.wd-image-label--old {
+  color: var(--vscode-gitDecoration-deletedResourceForeground);
+}
+
+.wd-image-label--new {
+  color: var(--vscode-gitDecoration-addedResourceForeground);
+}
+
+/* A checkerboard behind the picture shows which parts of it are transparent. */
+.wd-image-frame {
+  --wd-checker: color-mix(in srgb, var(--vscode-editor-foreground) 14%, transparent);
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
+  background: var(--vscode-editor-background);
+}
+
+.wd-image-frame img {
+  background: conic-gradient(var(--wd-checker) 25%, transparent 0 50%, var(--wd-checker) 0 75%, transparent 0) 0 0 / 16px 16px;
+}
+
+.wd-image-meta {
+  margin: 6px 0 0;
   color: var(--vscode-descriptionForeground);
-  margin-bottom: 4px;
+  text-align: center;
 }
 
 .commit-invisible,
@@ -2807,6 +2835,19 @@ vscode-button-group.hidden {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+}
+
+.commit-tree-image {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 12px 14px;
+}
+
+/* The code viewer and the picture take turns; their own display rules would otherwise beat `hidden`. */
+.commit-tree-preview[hidden],
+.commit-tree-image[hidden] {
+  display: none;
 }
 
 

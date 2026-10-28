@@ -12,6 +12,8 @@ import type { CommitFileChangeDto } from '../../shared/history/commitDetailsProt
 import type { DiffViewOption } from '../../shared/history/pathHistoryProtocol';
 import { CommitFileActions, type CommitFileAction } from './commitFileActions';
 import { stepContextLines, type CommitDiffViewOptions } from '../../shared/diff/commitDiffPresentation';
+import { formatByteSize } from '../../shared/diff/byteSize';
+import { hasImageExtension } from '../../shared/diff/contentKind';
 import type { HostMessage } from '../../shared/protocol';
 import type { CommitTreePageDto } from '../../shared/history/commitTreeProtocol';
 import { EMPTY_COMMIT_FILES, EMPTY_TREE } from './revisionLists';
@@ -449,6 +451,40 @@ export class CommitDetailsController {
       return;
     }
     try {
+      if (hasImageExtension(filePath)) {
+        const image = await this.ctx.commitDetailsService.readImage(root, revision, filePath);
+        if (epoch !== this.treePreviewEpoch) {
+          return;
+        }
+        if (image?.kind === 'image') {
+          this.ctx.postMessage({
+            type: 'commitTreeFilePreview',
+            preview: {
+              revision,
+              path: filePath,
+              text: '',
+              image: {
+                mimeType: image.mimeType,
+                byteLength: image.bytes.length,
+                dataBase64: Buffer.from(image.bytes).toString('base64'),
+              },
+            },
+          });
+          return;
+        }
+        if (image?.kind === 'too-large') {
+          this.ctx.postMessage({
+            type: 'commitTreeFilePreview',
+            preview: {
+              revision,
+              path: filePath,
+              text: '',
+              error: l10n.t('This image is too large to preview ({0}). Open it in an editor tab instead.', formatByteSize(image.byteLength)),
+            },
+          });
+          return;
+        }
+      }
       const uri = vscode.Uri.parse(buildGitCheckoutBlobUri(root, revision, filePath));
       const document = await vscode.workspace.openTextDocument(uri);
       if (epoch !== this.treePreviewEpoch) {
