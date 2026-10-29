@@ -36,6 +36,8 @@ export interface WorkingCopyFlagDto {
 export interface WorkingCopySnapshotDto {
   entries: WorkingCopyEntryDto[];
   flags: WorkingCopyFlagDto[];
+  /** The checked-out branch; absent on a detached HEAD. */
+  branch?: string;
 }
 
 export const EMPTY_WORKING_COPY: WorkingCopySnapshotDto = { entries: [], flags: [] };

@@ -47,6 +47,7 @@ export function mountChangesView(
   let allEntries: WorkingCopyEntryDto[] = [];
   let view: ChangesViewOptions = { ...DEFAULT_CHANGES_VIEW };
   let selected: Selection | undefined;
+  let branch: string | undefined;
 
   const shown = (): WorkingCopyEntryDto[] => filterChangeEntries(allEntries, view);
   const unstagedEntries = (): WorkingCopyEntryDto[] => shown().filter((entry) => entry.group !== 'staged');
@@ -89,6 +90,12 @@ export function mountChangesView(
           : l10n.t('Commit {0} staged change(s)', stagedEntries().length);
     }
 
+    function messagePlaceholder(): string {
+      return branch
+        ? l10n.t("Message (Ctrl/Cmd+Enter to commit on '{0}'; add Shift to also push to the remote)", branch)
+        : l10n.t('Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)');
+    }
+
     /** The diff above, and the commit form below it. */
     function paint(): void {
       const noneStaged = stagedEntries().length === 0;
@@ -97,7 +104,8 @@ export function mountChangesView(
         <div class="changes-diff commit-file-diff"></div>
         <div class="changes-form">
           <div class="changes-subject-row">
-            <vscode-textfield class="changes-subject" placeholder=${l10n.t('Commit subject')}
+            <vscode-textfield class="changes-subject"
+              placeholder=${messagePlaceholder()}
               ?invalid=${subjectLengthLevel(form.subject, subjectLimits) === 'limit'}
               aria-label=${l10n.t('Commit subject')} .value=${live(form.subject)}
               @input=${(event: Event) => { form.subject = (event.target as VscodeTextfield).value; paint(); }}>
@@ -234,6 +242,7 @@ export function mountChangesView(
         switch (message.type) {
           case 'workingCopySnapshot':
             allEntries = message.snapshot.entries;
+            branch = message.snapshot.branch;
             paint();
             reconcileSelection();
             return;
