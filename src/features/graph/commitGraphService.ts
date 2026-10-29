@@ -273,14 +273,25 @@ export class CommitGraphService {
     const revision = this.logRevisionArgs(this.shownRef(repoRoot));
     // The filters are applied by Git to a list of hashes; the scan below still walks the whole graph,
     // so a match keeps the row it has in the graph.
-    const allowed = filters
-      ? new Set(
-        (await cli.execRead(
-          ['log', '--format=%H', ...filters.args, ...revision, ...(filters.path ? ['--', filters.path] : [])],
-          { timeoutMs: SEARCH_READ_TIMEOUT_MS },
-        )).stdout.split(/\r?\n/).filter(Boolean),
-      )
-      : undefined;
+    let allowed: Set<string> | undefined;
+    if (filters) {
+      try {
+        allowed = new Set(
+          (await cli.execRead(
+            ['log', '--format=%H', ...filters.args, ...revision, ...(filters.path ? ['--', filters.path] : [])],
+            { timeoutMs: SEARCH_READ_TIMEOUT_MS },
+          )).stdout.split(/\r?\n/).filter(Boolean),
+        );
+      } catch (error) {
+        if (!parsed.regex) {
+          throw error;
+        }
+        // A pattern that is still being typed, such as an open parenthesis, is not a regular expression yet.
+        log.debug('search pattern was rejected by git', error);
+        onBatch([], true);
+        return;
+      }
+    }
     let offset = 0;
     let total = 0;
     for (;;) {

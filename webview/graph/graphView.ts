@@ -465,7 +465,7 @@ export function mountGraphView(
           @click=${() => postMessage({ type: 'graphExitActiveBranchOnly' })}>${l10n.t('Show All Branches')}</vscode-button>
       </div>
       <vscode-textfield class="graph-search" placeholder=${l10n.t('Search hash, author, or message')}
-        aria-label=${l10n.t('Search commits')} title=${l10n.t('Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text')}
+        aria-label=${l10n.t('Search commits')} title=${l10n.t('Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text regex:pattern')}
         .value=${live(searchText)} @keydown=${onSearchKey} @input=${onSearchInput}>
         <vscode-toolbar-button slot="content-after" icon="close" label=${l10n.t('Clear search')} title=${l10n.t('Clear search')}
           style=${styleMap({ visibility: searchText ? '' : 'hidden' })}

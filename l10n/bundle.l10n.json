@@ -319,7 +319,7 @@
   "Enter a valid tag name without spaces or options.": "Enter a valid tag name without spaces or options.",
   "Enter a value for {0}.": "Enter a value for {0}.",
   "Enter branch name": "Enter branch name",
-  "Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text": "Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text",
+  "Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text regex:pattern": "Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text regex:pattern",
   "Enter tag name": "Enter tag name",
   "Enter the full path of a folder.": "Enter the full path of a folder.",
   "Exit": "Exit",

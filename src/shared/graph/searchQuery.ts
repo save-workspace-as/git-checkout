@@ -6,10 +6,12 @@ export interface GraphSearchQuery {
   until?: string;
   /** Commits that add or remove this text (`git log -S`). */
   content?: string;
+  /** Commits with a changed line that matches this regular expression (`git log -G`). */
+  regex?: string;
   path?: string;
 }
 
-const FILTER_KEYS = ['author', 'since', 'until', 'content', 'path'] as const;
+const FILTER_KEYS = ['author', 'since', 'until', 'content', 'regex', 'path'] as const;
 type FilterKey = (typeof FILTER_KEYS)[number];
 
 /**
@@ -39,7 +41,8 @@ export function graphSearchGitArgs(query: GraphSearchQuery): { args: string[]; p
   if (query.author) { args.push(`--author=${query.author}`); }
   if (query.since) { args.push(`--since=${query.since}`); }
   if (query.until) { args.push(`--until=${query.until}`); }
-  if (query.content) { args.push(`-S${query.content}`); }
+  // Git refuses -S with -G; the pattern is the more general of the two, so it wins.
+  if (query.regex) { args.push(`-G${query.regex}`); } else if (query.content) { args.push(`-S${query.content}`); }
   if (args.length === 0 && !query.path) { return undefined; }
   return { args, ...(query.path ? { path: query.path } : {}) };
 }
