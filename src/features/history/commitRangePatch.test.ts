@@ -6,6 +6,7 @@ import {
   buildRangeFromOrderedShas,
   detectPatchApplyKind,
   gitArgsForPatchApply,
+  rangeForRevision,
   gitArgsForPatchExport,
   mapPatchApplyError,
 } from './commitRangePatch';
@@ -44,6 +45,13 @@ describe('commitRangePatch', () => {
     assert.deepEqual(gitArgsForPatchApply('mbox'), ['am', '--3way']);
     assert.deepEqual(gitArgsForPatchApply('mbox', false), ['apply', '--3way']);
     assert.deepEqual(gitArgsForPatchApply('unified', true), ['apply', '--3way']);
+  });
+
+  it('turns a revision into the commits to save', () => {
+    assert.equal(rangeForRevision('abc1234'), 'abc1234^..abc1234');
+    assert.equal(rangeForRevision(' main '), 'main^..main');
+    assert.equal(rangeForRevision('main..topic'), 'main..topic');
+    assert.throws(() => rangeForRevision('  '), /revision/i);
   });
 
   it('maps apply errors to user-facing text', () => {

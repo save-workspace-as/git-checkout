@@ -15,6 +15,15 @@ export function buildRangeFromOrderedShas(ordered: string[]): string {
   return `${oldest}^..${newest}`;
 }
 
+/** A range such as `main..topic` is used as typed; a single revision stands for that commit alone. */
+export function rangeForRevision(revision: string): string {
+  const trimmed = revision.trim();
+  if (!trimmed) {
+    throw new Error(l10n.t('Enter a revision.'));
+  }
+  return trimmed.includes('..') ? trimmed : `${trimmed}^..${trimmed}`;
+}
+
 export function buildBranchCommitRange(base: string, compare: string): string {
   const b = base.trim();
   const c = compare.trim();

@@ -128,4 +128,107 @@ describe('Apply Patch', () => {
     await waitFor('the patch to be applied', async () =>
       readFileSync(join(repoRoot(), 'notes.txt'), 'utf8') === 'one\ntwo\n' || undefined);
   });
+
+  describe('Create Patch', () => {
+    function openCreateForm(options: { revision?: string; saveTo: string }) {
+      return vscode.commands.executeCommand('gitCheckout.createPatch', options);
+    }
+
+    async function commitTwoEdits(): Promise<void> {
+      writeFileSync(join(repoRoot(), 'notes.txt'), 'one\n');
+      git('add', 'notes.txt');
+      git('commit', '-m', 'add notes');
+      writeFileSync(join(repoRoot(), 'notes.txt'), 'one\ntwo\n');
+      git('commit', '-am', 'second line');
+    }
+
+    it('saves the commit as a patch that applies elsewhere', async () => {
+      await readyTree(ctx.api);
+      await commitTwoEdits();
+      const saveTo = join(scratch, 'out.patch');
+
+      const command = openCreateForm({ saveTo });
+      const state = await waitFor('Create Patch form', async () => ctx.api.operationFormState());
+      assert.equal(state.form.title, 'Create Patch');
+      assert.equal(state.form.values.revision, 'HEAD');
+      await submit(state.sessionId, { revision: 'HEAD', format: 'format-patch' });
+      await command;
+
+      const patch = readFileSync(saveTo, 'utf8');
+      assert.match(patch, /^Subject: \[PATCH\] second line$/m);
+      git('reset', '--hard', 'HEAD~1');
+      git('am', saveTo);
+      assert.equal(git('log', '-1', '--format=%s'), 'second line');
+    });
+
+    it('saves a plain diff of a range', async () => {
+      await readyTree(ctx.api);
+      await commitTwoEdits();
+      const saveTo = join(scratch, 'out.diff');
+
+      const command = openCreateForm({ revision: 'HEAD~1..HEAD', saveTo });
+      const state = await waitFor('Create Patch form', async () => ctx.api.operationFormState());
+      assert.equal(state.form.values.revision, 'HEAD~1..HEAD');
+      await submit(state.sessionId, { revision: 'HEAD~1..HEAD', format: 'diff' });
+      await command;
+
+      const diff = readFileSync(saveTo, 'utf8');
+      assert.match(diff, /^diff --git a\/notes\.txt b\/notes\.txt$/m);
+      assert.doesNotMatch(diff, /^Subject:/m);
+    });
+
+    it('keeps the form open and writes nothing for a revision that does not exist', async () => {
+      await readyTree(ctx.api);
+      const saveTo = join(scratch, 'none.patch');
+
+      const command = openCreateForm({ saveTo });
+      const state = await waitFor('Create Patch form', async () => ctx.api.operationFormState());
+      await submit(state.sessionId, { revision: 'no-such-ref', format: 'format-patch' });
+      await waitFor('the form to report the failure', async () => ctx.api.operationFormState());
+
+      assert.throws(() => readFileSync(saveTo), /ENOENT/);
+      await ctx.api.sendPanelMessage({
+        type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' },
+      });
+      await command;
+    });
+
+    it('opens for the graph\'s Save as Patch with the commit and format filled in', async () => {
+      await readyTree(ctx.api);
+      await commitTwoEdits();
+      const sha = git('rev-parse', 'HEAD');
+
+      const handled = ctx.api.sendPanelMessage({ type: 'historyPatchExport', shas: [sha], op: 'save', format: 'diff' });
+      const state = await waitFor('Create Patch form', async () => ctx.api.operationFormState());
+
+      assert.equal(state.form.title, 'Create Patch');
+      assert.equal(state.form.values.revision, sha);
+      assert.equal(state.form.values.format, 'diff');
+      await ctx.api.sendPanelMessage({
+        type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' },
+      });
+      await handled;
+    });
+
+    it('spans several selected commits as one range', async () => {
+      await readyTree(ctx.api);
+      await commitTwoEdits();
+      const newest = git('rev-parse', 'HEAD');
+      const oldest = git('rev-parse', 'HEAD~1');
+
+      const handled = ctx.api.sendPanelMessage({ type: 'historyPatchExport', shas: [newest, oldest], op: 'save', format: 'format-patch' });
+      const state = await waitFor('Create Patch form', async () => ctx.api.operationFormState());
+
+      assert.equal(state.form.values.revision, `${oldest}^..${newest}`);
+      await ctx.api.sendPanelMessage({
+        type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' },
+      });
+      await handled;
+    });
+
+    it('is in the Repository dropdown', async () => {
+      await readyTree(ctx.api);
+      assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.0.createPatch'));
+    });
+  });
 });

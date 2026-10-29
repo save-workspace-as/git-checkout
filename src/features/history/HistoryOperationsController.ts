@@ -14,7 +14,8 @@ import { promptHistorySha, runCherryPick, runRangeOp, runRevert } from '../graph
 import { promptBranchDropAction, promptIntegrateRef, runMergeIntoHead, runRebaseOnto } from '../branches/integrateHost';
 import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
-import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, saveCommitPatch } from './patchHost';
+import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
+import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
 import { MERGE_TYPE_FAST_FORWARD, mergeForm, rebaseForm, resetForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
@@ -322,6 +323,15 @@ export class HistoryOperationsController {
     await applyPatchInForm(this.ctx.operationForm.show, this.ctx.commitPatchService, root, () => this.refreshAfterPatch());
   }
 
+  async runCreatePatch(options?: { revision?: string; format?: CommitPatchFormat; saveTo?: string }): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    await createPatchInForm(this.ctx.operationForm.show, this.ctx.commitPatchService, root, options);
+  }
+
   private async refreshAfterPatch(): Promise<void> {
     await this.ctx.changes.sendWorkingCopySnapshot();
     void this.ctx.reloadGraphOnHeadChange();
@@ -362,13 +372,16 @@ export class HistoryOperationsController {
     if (!root || shas.length === 0) {
       return;
     }
-    const label = shas.length === 1 ? shas[0].slice(0, 7) : `${shas.length}-commits`;
-    const produce = () => this.ctx.commitPatchService.exportCommits(root, shas, format);
     if (op === 'copy') {
-      await copyCommitPatch(produce);
+      await copyCommitPatch(() => this.ctx.commitPatchService.exportCommits(root, shas, format));
       return;
     }
-    await saveCommitPatch(label, format, produce);
+    // Saving goes through the Create Patch form, which takes the commits as the range they span.
+    const ordered = await this.ctx.historyService.orderOldestFirst(root, shas);
+    await this.runCreatePatch({
+      revision: ordered.length === 1 ? ordered[0] : buildRangeFromOrderedShas(ordered),
+      format,
+    });
   }
 
   async handleRefsPatchExport(
@@ -381,12 +394,10 @@ export class HistoryOperationsController {
     if (!root) {
       return;
     }
-    const label = `${base}...${compare}`;
-    const produce = () => this.ctx.commitPatchService.exportBranchCompare(root, base, compare, format);
     if (op === 'copy') {
-      await copyCommitPatch(produce);
+      await copyCommitPatch(() => this.ctx.commitPatchService.exportBranchCompare(root, base, compare, format));
       return;
     }
-    await saveCommitPatch(label, format, produce);
+    await this.runCreatePatch({ revision: buildBranchCommitRange(base, compare), format });
   }
 }

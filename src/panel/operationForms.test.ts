@@ -17,7 +17,6 @@ import {
   applyStashForm,
   deleteStashForm,
   renameStashForm,
-  saveStashPatchForm,
   tagDetailsForm,
   upstreamRefForm,
   submoduleAddForm,
@@ -27,10 +26,22 @@ import {
   gitFlowInitFromValues,
   validateGitFlowInitForm,
   applyPatchForm,
+  createPatchForm,
 } from './operationForms';
 import { validateOperationForm } from '../shared/forms/operationForm';
 
 describe('operation-specific form definitions', () => {
+  it('asks which revision to save as a patch and in what format', () => {
+    const form = createPatchForm('abc1234');
+    assert.equal(form.title, 'Create Patch');
+    assert.equal(form.submitLabel, 'Save');
+    assert.deepEqual(form.values, { revision: 'abc1234', format: 'format-patch' });
+    const revision = form.fields.find((field) => field.id === 'revision');
+    assert.equal(revision?.type === 'text' && revision.required, true);
+    const format = form.fields.find((field) => field.id === 'format');
+    assert.deepEqual(format?.type === 'radio' && format.options.map((option) => option.value), ['format-patch', 'diff']);
+  });
+
   it('asks for a patch file and whether to create a commit, with Create commit on', () => {
     const form = applyPatchForm();
     assert.equal(form.title, 'Apply Patch');
@@ -165,7 +176,6 @@ describe('operation-specific form definitions', () => {
     const stash = { index: 0, selector: 'stash@{0}', sha: 'abc1234', message: 'wip' };
     assert.equal(applyStashForm(stash).fields.find((field) => field.id === 'stash')?.description, 'The stash entry to apply.');
     assert.equal(deleteStashForm(stash).fields[0]?.description, 'The stash entry to drop.');
-    assert.equal(saveStashPatchForm(stash).fields[0]?.description, 'The stash revision to save as a patch.');
     assert.equal(resetForm('main', 'abc').fields.find((field) => field.id === 'branch')?.description, 'The branch whose head moves.');
     assert.equal(tagDetailsForm('v1', 'note').fields.find((field) => field.id === 'tag')?.description, 'The tag these details describe.');
     const saved = stashCreateForm(true, 'main');
@@ -251,7 +261,7 @@ describe('operation form wording', () => {
       production: 'main', develop: 'develop', featurePrefix: 'feature/', releasePrefix: 'release/',
       hotfixPrefix: 'hotfix/', versionTagPrefix: '',
     }, ['main']),
-    applyStashForm(stash), renameStashForm(stash), deleteStashForm(stash), saveStashPatchForm(stash),
+    applyStashForm(stash), renameStashForm(stash), deleteStashForm(stash),
     mergeForm('a', 'b', false), rebaseForm('a', 'b', false), tagDetailsForm('v1', 'm'),
     tagCreateForm('HEAD', true), branchRenameForm('a', { remote: 'origin', branch: 'a' }),
     branchDeleteForm('a', null), remoteBranchDeleteForm('origin/a'),

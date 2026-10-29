@@ -7,8 +7,8 @@ import type { CommitPatchFormat } from '../../shared/patches/patchProtocol';
 import { copyTextToClipboard } from '../../panel/clipboardHost';
 import type { OperationFormErrors } from '../../shared/forms/operationForm';
 import type { ShowOperationForm } from '../../panel/operationFormController';
-import { applyPatchForm } from '../../panel/operationForms';
-import { defaultPatchFileName } from './commitRangePatch';
+import { applyPatchForm, createPatchForm } from '../../panel/operationForms';
+import { defaultPatchFileName, rangeForRevision } from './commitRangePatch';
 import { createLogger } from '../../log';
 
 const log = createLogger('patch');
@@ -58,6 +58,38 @@ export async function applyPatchFromClipboard(
   } catch (error) {
     showPatchError(error);
   }
+}
+
+/**
+ * Opens the Create Patch form and saves the patch where the person chooses.
+ * `saveTo` stands in for the save dialog, so a command can drive this without a prompt.
+ */
+export function createPatchInForm(
+  showOperationForm: ShowOperationForm,
+  service: CommitPatchService,
+  repoRoot: string,
+  options: { revision?: string; format?: CommitPatchFormat; saveTo?: string } = {},
+): Promise<boolean> {
+  return showOperationForm(createPatchForm(options.revision ?? 'HEAD', options.format), {
+    validate: () => ({}),
+    async submit(values) {
+      const revision = String(values.revision).trim();
+      const format: CommitPatchFormat = values.format === 'diff' ? 'diff' : 'format-patch';
+      const text = await service.exportRange(repoRoot, rangeForRevision(revision), format);
+      const target = options.saveTo
+        ? vscode.Uri.file(options.saveTo)
+        : await vscode.window.showSaveDialog({
+            defaultUri: vscode.Uri.file(defaultPatchFileName(revision, format)),
+            filters: { Patch: ['patch', 'diff'] },
+          });
+      if (!target) {
+        return false;
+      }
+      await vscode.workspace.fs.writeFile(target, Buffer.from(text, 'utf8'));
+      void vscode.window.showInformationMessage(l10n.t('Saved patch to {0}', target.fsPath));
+      return true;
+    },
+  });
 }
 
 /** Opens the Apply Patch form; resolves once it closes. */

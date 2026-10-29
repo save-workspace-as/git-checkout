@@ -213,6 +213,12 @@
         "title": "%command.gitCheckout.bisect.reset.title%"
       },
       {
+        "category": "%command.gitCheckout.createPatch.category%",
+        "command": "gitCheckout.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.createPatch.title%"
+      },
+      {
         "category": "%command.gitCheckout.applyPatch.category%",
         "command": "gitCheckout.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
@@ -1164,6 +1170,11 @@
         "title": "%command.gitCheckout.repo.gitFlow.title%"
       },
       {
+        "command": "gitCheckout.repo.0.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
+      },
+      {
         "command": "gitCheckout.repo.0.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.applyPatch.title%"
@@ -1227,6 +1238,11 @@
         "command": "gitCheckout.repo.1.gitFlow",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.gitFlow.title%"
+      },
+      {
+        "command": "gitCheckout.repo.1.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
       },
       {
         "command": "gitCheckout.repo.1.applyPatch",
@@ -1294,6 +1310,11 @@
         "title": "%command.gitCheckout.repo.gitFlow.title%"
       },
       {
+        "command": "gitCheckout.repo.2.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
+      },
+      {
         "command": "gitCheckout.repo.2.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.applyPatch.title%"
@@ -1357,6 +1378,11 @@
         "command": "gitCheckout.repo.3.gitFlow",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.gitFlow.title%"
+      },
+      {
+        "command": "gitCheckout.repo.3.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
       },
       {
         "command": "gitCheckout.repo.3.applyPatch",
@@ -1424,6 +1450,11 @@
         "title": "%command.gitCheckout.repo.gitFlow.title%"
       },
       {
+        "command": "gitCheckout.repo.4.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
+      },
+      {
         "command": "gitCheckout.repo.4.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.applyPatch.title%"
@@ -1487,6 +1518,11 @@
         "command": "gitCheckout.repo.5.gitFlow",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.gitFlow.title%"
+      },
+      {
+        "command": "gitCheckout.repo.5.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
       },
       {
         "command": "gitCheckout.repo.5.applyPatch",
@@ -1554,6 +1590,11 @@
         "title": "%command.gitCheckout.repo.gitFlow.title%"
       },
       {
+        "command": "gitCheckout.repo.6.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
+      },
+      {
         "command": "gitCheckout.repo.6.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.applyPatch.title%"
@@ -1617,6 +1658,11 @@
         "command": "gitCheckout.repo.7.gitFlow",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.gitFlow.title%"
+      },
+      {
+        "command": "gitCheckout.repo.7.createPatch",
+        "enablement": "!gitCheckout.repoOperationActive",
+        "title": "%command.gitCheckout.repo.createPatch.title%"
       },
       {
         "command": "gitCheckout.repo.7.applyPatch",
@@ -2286,6 +2332,10 @@
         {
           "command": "gitCheckout.bisect.reset",
           "when": "gitCheckout.bisectActive"
+        },
+        {
+          "command": "gitCheckout.createPatch",
+          "when": "false"
         },
         {
           "command": "gitCheckout.applyPatch",
@@ -3028,6 +3078,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.repo.0.createPatch",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.0.applyPatch",
           "when": "false"
         },
@@ -3081,6 +3135,10 @@
         },
         {
           "command": "gitCheckout.repo.1.gitFlow",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.repo.1.createPatch",
           "when": "false"
         },
         {
@@ -3140,6 +3198,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.repo.2.createPatch",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.2.applyPatch",
           "when": "false"
         },
@@ -3193,6 +3255,10 @@
         },
         {
           "command": "gitCheckout.repo.3.gitFlow",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.repo.3.createPatch",
           "when": "false"
         },
         {
@@ -3252,6 +3318,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.repo.4.createPatch",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.4.applyPatch",
           "when": "false"
         },
@@ -3305,6 +3375,10 @@
         },
         {
           "command": "gitCheckout.repo.5.gitFlow",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.repo.5.createPatch",
           "when": "false"
         },
         {
@@ -3364,6 +3438,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.repo.6.createPatch",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.6.applyPatch",
           "when": "false"
         },
@@ -3417,6 +3495,10 @@
         },
         {
           "command": "gitCheckout.repo.7.gitFlow",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.repo.7.createPatch",
           "when": "false"
         },
         {
@@ -4437,31 +4519,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.0.applyPatch",
+          "command": "gitCheckout.repo.0.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.0.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.0.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.0.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.0.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.0.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.0.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.1": [
@@ -4498,31 +4584,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.1.applyPatch",
+          "command": "gitCheckout.repo.1.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.1.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.1.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.1.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.1.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.1.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.1.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.2": [
@@ -4559,31 +4649,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.2.applyPatch",
+          "command": "gitCheckout.repo.2.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.2.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.2.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.2.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.2.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.2.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.2.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.3": [
@@ -4620,31 +4714,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.3.applyPatch",
+          "command": "gitCheckout.repo.3.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.3.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.3.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.3.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.3.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.3.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.3.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.4": [
@@ -4681,31 +4779,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.4.applyPatch",
+          "command": "gitCheckout.repo.4.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.4.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.4.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.4.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.4.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.4.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.4.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.5": [
@@ -4742,31 +4844,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.5.applyPatch",
+          "command": "gitCheckout.repo.5.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.5.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.5.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.5.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.5.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.5.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.5.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.6": [
@@ -4803,31 +4909,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.6.applyPatch",
+          "command": "gitCheckout.repo.6.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.6.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.6.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.6.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.6.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.6.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.6.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ],
       "gitCheckout.repoMenu.7": [
@@ -4864,31 +4974,35 @@
           "group": "6_tools@7"
         },
         {
-          "command": "gitCheckout.repo.7.applyPatch",
+          "command": "gitCheckout.repo.7.createPatch",
           "group": "7_patch@8"
         },
         {
+          "command": "gitCheckout.repo.7.applyPatch",
+          "group": "7_patch@9"
+        },
+        {
           "command": "gitCheckout.repo.7.settings",
-          "group": "8_settings@9"
+          "group": "8_settings@10"
         },
         {
           "command": "gitCheckout.repo.7.reveal",
-          "group": "9_open@10",
+          "group": "9_open@11",
           "when": "isMac"
         },
         {
           "command": "gitCheckout.repo.7.revealWindows",
-          "group": "9_open@11",
+          "group": "9_open@12",
           "when": "isWindows"
         },
         {
           "command": "gitCheckout.repo.7.revealLinux",
-          "group": "9_open@12",
+          "group": "9_open@13",
           "when": "isLinux"
         },
         {
           "command": "gitCheckout.repo.7.terminal",
-          "group": "9_open@13"
+          "group": "9_open@14"
         }
       ]
     },
