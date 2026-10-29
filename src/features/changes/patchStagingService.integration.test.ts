@@ -1,10 +1,10 @@
 import { strict as assert } from 'node:assert';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { DEFAULT_COMMIT_DIFF_VIEW } from '../../shared/diff/commitDiffPresentation';
-import { buildHunkPatch, hunkCount } from '../../shared/changes/hunkPatch';
+import { buildHunkPatch, buildSelectionPatch, hunkCount } from '../../shared/changes/hunkPatch';
 import { CommitDetailsService } from '../history/commitDetailsService';
 import { PatchStagingService } from './patchStagingService';
 import { initTempRepository, runGit } from '../../core/testing/gitRepoHarness';
@@ -102,6 +102,57 @@ describe('PatchStagingService integration', () => {
       await svc.applyHunkPatch(repo.repoRoot, 'discard', buildHunkPatch('sample.txt', await diff('unstaged'), 0)!);
       const remaining = (await diff('unstaged')).filter((line) => line.kind === 'add').map((line) => line.text);
       assert.deepEqual(remaining, ['second edit']);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it('stages, unstages and discards only the selected lines of the diff on screen', async () => {
+    const repo = initTempRepository();
+    try {
+      const file = join(repo.repoRoot, 'sample.txt');
+      const base = Array.from({ length: 12 }, (_, i) => `l${i + 1}`);
+      writeFileSync(file, `${base.join('\n')}\n`);
+      runGit(repo.repoRoot, ['add', 'sample.txt']);
+      runGit(repo.repoRoot, ['commit', '-m', 'base']);
+      // Two replacements, an addition after l10, and l12 removed.
+      const edited = base.flatMap((line) =>
+        line === 'l3' ? ['L3'] : line === 'l7' ? ['L7'] : line === 'l10' ? [line, 'new10'] : line === 'l12' ? [] : [line]);
+      writeFileSync(file, `${edited.join('\n')}\n`);
+
+      const registry = mockCliRegistry(repo.repoRoot, repo.cli);
+      const svc = new PatchStagingService(mockGitExtensionService([mockRepository(repo.repoRoot)]), registry);
+      const details = new CommitDetailsService(registry);
+      const view = { ...DEFAULT_COMMIT_DIFF_VIEW, contextLines: 1 };
+      const diff = async (side: 'staged' | 'unstaged') =>
+        (await details.diffWorkingFile(repo.repoRoot, 'sample.txt', side, false, view)).lines;
+      const pick = (lines: Awaited<ReturnType<typeof diff>>, ...wanted: string[]) =>
+        new Set(wanted.map((want) => lines.findIndex((line) => `${line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}${line.text}` === want)));
+      const index = async () => (await repo.cli.execRead(['show', ':sample.txt'])).stdout.trim().split('\n').join(' ');
+      const worktree = () => readFileSync(file, 'utf8').trim().split('\n').join(' ');
+
+      // An added line alone: the line it replaces stays, so the index has both.
+      let unstaged = await diff('unstaged');
+      await svc.applyHunkPatch(repo.repoRoot, 'stage', buildSelectionPatch('sample.txt', unstaged, pick(unstaged, '+L3'), 'stage')!);
+      assert.equal(await index(), 'l1 l2 l3 L3 l4 l5 l6 l7 l8 l9 l10 l11 l12');
+
+      // A replacement and the line added after it, from two different hunks in one patch.
+      unstaged = await diff('unstaged');
+      await svc.applyHunkPatch(
+        repo.repoRoot, 'stage', buildSelectionPatch('sample.txt', unstaged, pick(unstaged, '-l7', '+L7', '+new10'), 'stage')!,
+      );
+      assert.equal(await index(), 'l1 l2 l3 L3 l4 l5 l6 L7 l8 l9 l10 new10 l11 l12');
+
+      // Unstaging one line of what is staged leaves the rest staged.
+      const staged = await diff('staged');
+      await svc.applyHunkPatch(repo.repoRoot, 'unstage', buildSelectionPatch('sample.txt', staged, pick(staged, '+new10'), 'unstage')!);
+      assert.equal(await index(), 'l1 l2 l3 L3 l4 l5 l6 L7 l8 l9 l10 l11 l12');
+      assert.match(worktree(), /l10 new10 l11$/, 'the working tree keeps the line');
+
+      // Discarding a removal alone brings the line back and keeps the rest of the change.
+      unstaged = await diff('unstaged');
+      await svc.applyHunkPatch(repo.repoRoot, 'discard', buildSelectionPatch('sample.txt', unstaged, pick(unstaged, '-l12'), 'discard')!);
+      assert.equal(worktree(), 'l1 l2 L3 l4 l5 l6 L7 l8 l9 l10 new10 l11 l12');
     } finally {
       repo.cleanup();
     }

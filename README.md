@@ -10,7 +10,7 @@ Git Checkout runs on the **workspace** side, so Git always runs on the same mach
 
 - **Commit graph:** search, filter by the active branch, jump to HEAD, hide stashes, remote branches or tags, and show the reflog. The search takes filters: `author:ada`, `path:src/app.ts`, `since:2024-01-01`, `until:2024-06-30` and `content:text` (commits that add or remove that text) and `regex:pattern` (commits with a changed line that matches the pattern), alone or with words to look for.
 - **Background fetch:** every open repository is fetched on a timer, so the graph shows what others pushed. It waits while the window is in the background or a merge or rebase is in progress, and it never asks for a password.
-- **Changes:** stage, unstage and discard files, commit, amend, and commit and push, with inline diffs.
+- **Changes:** stage, unstage and discard files, whole hunks, or just the lines you select in the diff (drag over them, or click line numbers; in a side-by-side diff a drag stays on one side), commit, amend, and commit and push, with inline diffs.
 - **Branches, tags and remotes:** create, check out, rename, delete, merge, rebase, fast-forward, compare, and set upstreams.
 - **Clone:** clone a repository into a folder you choose, with a progress notification you can cancel.
 - **Fetch, pull and push:** a form for the options, or Quick Fetch, Quick Pull and Quick Push for the tracked remote.

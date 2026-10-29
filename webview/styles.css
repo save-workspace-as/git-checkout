@@ -422,6 +422,7 @@ body {
 }
 
 .code-viewer {
+  position: relative;
   /* One column as wide as the longest line, so every row's background spans the scrollable width. */
   display: grid;
   grid-template-columns: minmax(max-content, 1fr);
@@ -1879,6 +1880,23 @@ vscode-button-group.hidden {
   outline-offset: -1px;
 }
 
+.code-viewer-selection-actions {
+  position: absolute;
+  z-index: 2;
+  transform: translateX(-100%);
+}
+
+/* A drag in a side-by-side diff stays on the side it started on. */
+.code-viewer[data-select-side='left'] .commit-diff-line[data-side='right'],
+.code-viewer[data-select-side='right'] .commit-diff-line[data-side='left'] {
+  user-select: none;
+}
+
+.commit-diff-line[data-line] .commit-diff-lineno,
+.commit-diff-line[data-line] .commit-diff-gutter {
+  cursor: pointer;
+}
+
 .commit-diff-hunk-actions {
   position: absolute;
   top: 2px;
@@ -1891,6 +1909,11 @@ vscode-button-group.hidden {
 .commit-diff-hunk-box:hover .commit-diff-hunk-actions,
 .commit-diff-hunk-box:focus-within .commit-diff-hunk-actions {
   display: inline-block;
+}
+
+/* With lines selected, their buttons are the only Stage and Unstage in view. */
+.code-viewer.has-selection-actions .commit-diff-hunk-actions {
+  display: none;
 }
 
 /* The generate button sits inside the subject field, like the clear button in a search box. */

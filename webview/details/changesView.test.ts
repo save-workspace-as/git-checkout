@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { before, beforeEach, describe, it } from 'node:test';
+import { afterEach, before, beforeEach, describe, it } from 'node:test';
 import { installDom, resetDom } from '../testing/dom';
 
 type El = HTMLElement & Record<string, any>;
@@ -182,6 +182,67 @@ describe('Changes tab diff and commit form', () => {
     view.applyHostMessage({ type: 'changesSelection', selection: { path: 'b.ts', side: 'staged' } });
     view.applyHostMessage({ type: 'changesDiff', path: 'b.ts', side: 'staged', binary: false, lines: diffLines });
     assert.deepEqual(buttons().map((button) => button.textContent), ['Unstage']);
+  });
+
+  describe('selecting lines', () => {
+    const realGetSelection = document.getSelection;
+    afterEach(() => { document.getSelection = realGetSelection; });
+    const diffLines = [
+      { kind: 'hunk', text: '@@ -1,2 +1,2 @@' },
+      { kind: 'context', text: 'a', line: 1 },
+      { kind: 'del', text: 'x', line: 2 },
+      { kind: 'add', text: 'y', line: 2 },
+    ];
+
+    /** Selects these rows, as the browser would, and tells the viewer. */
+    function select(root: HTMLElement, rows: Element[]): void {
+      const range = {
+        commonAncestorContainer: rows[0], startContainer: root, startOffset: 0, endContainer: root, endOffset: 0,
+        intersectsNode: (node: Node) => rows.includes(node as Element),
+        getClientRects: () => [], getBoundingClientRect: () => ({ top: 0, bottom: 10, left: 0, right: 10 }),
+      };
+      document.getSelection = () => ({ isCollapsed: false, rangeCount: 1, getRangeAt: () => range, removeAllRanges() {} }) as unknown as Selection;
+      document.dispatchEvent(new Event('selectionchange'));
+    }
+    const buttons = (root: HTMLElement) => [...root.querySelectorAll('.code-viewer-selection-actions vscode-button')] as El[];
+
+    it('stages or discards just the selected lines of an unstaged change, and unstages them from a staged one', () => {
+      const { root, posted, view } = mount();
+      view.applyHostMessage(snapshot([
+        { path: 'a.ts', group: 'unstaged', status: 'modified' },
+        { path: 'b.ts', group: 'staged', status: 'modified' },
+      ]));
+      view.applyHostMessage({ type: 'changesSelection', selection: { path: 'a.ts', side: 'unstaged' } });
+      view.applyHostMessage({ type: 'changesDiff', path: 'a.ts', side: 'unstaged', binary: false, lines: diffLines });
+      select(root, [...root.querySelectorAll('.commit-diff-add')]);
+      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Stage', 'Discard Changes…']);
+      buttons(root)[0].click();
+      assert.equal(
+        (posted.at(-1) as { patch: string }).patch,
+        'diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1,2 +1,3 @@\n a\n x\n+y\n',
+        'the removal that was not selected stays as context',
+      );
+      assert.equal((posted.at(-1) as { op: string }).op, 'stage');
+
+      view.applyHostMessage({ type: 'changesSelection', selection: { path: 'b.ts', side: 'staged' } });
+      view.applyHostMessage({ type: 'changesDiff', path: 'b.ts', side: 'staged', binary: false, lines: diffLines });
+      select(root, [...root.querySelectorAll('.commit-diff-del')]);
+      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Unstage']);
+      buttons(root)[0].click();
+      assert.equal((posted.at(-1) as { op: string }).op, 'unstage');
+      assert.match((posted.at(-1) as { patch: string }).patch, /@@ -1,3 \+1,2 @@\n a\n-x\n y\n$/);
+    });
+
+    it('does not offer line buttons for an untracked file', () => {
+      const { root, view } = mount();
+      view.applyHostMessage(snapshot([{ path: 'new.txt', group: 'untracked', status: 'untracked' }]));
+      view.applyHostMessage({ type: 'changesSelection', selection: { path: 'new.txt', side: 'unstaged' } });
+      view.applyHostMessage({
+        type: 'changesDiff', path: 'new.txt', side: 'unstaged', binary: false,
+        lines: [{ kind: 'hunk', text: '@@ -0,0 +1,1 @@' }, { kind: 'add', text: 'x', line: 1 }],
+      });
+      assert.equal(root.querySelectorAll('[data-line]').length, 0);
+    });
   });
 
   it('stages or discards a whole untracked file from its single hunk', () => {

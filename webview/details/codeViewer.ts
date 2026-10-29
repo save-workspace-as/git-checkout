@@ -17,6 +17,9 @@ export interface HunkAction {
   run(): void;
 }
 
+/** What a viewer does with the lines a person selected, such as Stage: the buttons shown beside the selection. */
+export type SelectionActions = (positions: number[]) => HunkAction[];
+
 /** Lines drawn before the rest waits behind a button, so a huge diff does not freeze the panel. */
 export const MAX_RENDERED_LINES = 5000;
 
@@ -41,6 +44,11 @@ export function mountCodeViewer(
   let hunkActions: ((hunkIndex: number) => HunkAction[]) | undefined;
   /** What to show beside each line of a diff, such as who last changed it; nothing when unset. */
   let lineLead: ((index: number) => TemplateResult | undefined) | undefined;
+  /** The buttons for selected change lines, by their position in the diff; none when unset. */
+  let selectionActions: SelectionActions | undefined;
+  let listeningForSelection = false;
+  /** The change line a click on a line number started from, for extending with Shift. */
+  let anchorRow: HTMLElement | undefined;
   let ready = false;
   let message: { text: string; error: boolean } | undefined;
 
@@ -48,11 +56,17 @@ export function mountCodeViewer(
   // leave a template drawing into nodes that are gone, so a host that was removed is replaced.
   let host = document.createElement('div');
   host.className = 'code-viewer-content';
+  // The buttons beside a selection live next to the diff, so drawing the diff again does not touch them.
+  const selectionPopup = document.createElement('div');
+  selectionPopup.className = 'code-viewer-selection-actions';
+  selectionPopup.hidden = true;
+  // A press on a button must not clear the selection it acts on.
+  selectionPopup.addEventListener('mousedown', (event) => event.preventDefault());
   function hostElement(): HTMLElement {
     if (host.parentElement !== container) {
       host = document.createElement('div');
       host.className = 'code-viewer-content';
-      container.replaceChildren(host);
+      container.replaceChildren(host, selectionPopup);
     }
     return host;
   }
@@ -67,10 +81,12 @@ export function mountCodeViewer(
     return highlighted[index] === undefined ? line.text : unsafeHTML(highlighted[index]);
   }
 
-  function lineRow(index: number): TemplateResult {
+  /** `side` is set for a line in a side-by-side pair, so a selection can stay on one side. */
+  function lineRow(index: number, side?: 'left' | 'right'): TemplateResult {
     const line = lines[index];
     return html`
-      <div class="commit-diff-line commit-diff-${line.kind}" data-diff-nav=${lineMarks(line) ? '1' : nothing}>
+      <div class="commit-diff-line commit-diff-${line.kind}" data-diff-nav=${lineMarks(line) ? '1' : nothing}
+        data-line=${selectionActions && lineMarks(line) ? String(index) : nothing} data-side=${side ?? nothing}>
         ${lineLead ? html`<span class="commit-diff-lead">${lineLead(index) ?? nothing}</span>` : nothing}<span class="commit-diff-lineno" aria-hidden="true">${line.line === undefined ? '' : String(line.line)}</span>${mode === 'diff' && options.changeMarks !== false
           ? html`<span class="commit-diff-gutter" aria-hidden="true">${line.kind === 'add' ? '+' : line.kind === 'del' ? '−' : ' '}</span>`
           : nothing}<code>${codeOf(index)}</code>
@@ -87,7 +103,7 @@ export function mountCodeViewer(
       out.push(html`
         <div class="commit-diff-hunk-box">
           <vscode-button-group class="commit-diff-hunk-actions">${actions.map((action) => html`
-            <vscode-button type="button" secondary @click=${action.run}>${action.label}</vscode-button>`)}</vscode-button-group>
+            <vscode-button type="button" @click=${action.run}>${action.label}</vscode-button>`)}</vscode-button-group>
           ${header}${rows}
         </div>`);
       box = undefined;
@@ -104,13 +120,95 @@ export function mountCodeViewer(
       }
       const item = row.type === 'inline' ? lineRow(row.index) : html`
         <div class="commit-diff-pair" data-diff-nav=${[row.left, row.right].some((index) => index !== undefined && lineMarks(lines[index])) ? '1' : nothing}>${
-          [row.left, row.right].map((index) => index === undefined
-            ? html`<div class="commit-diff-line commit-diff-empty"></div>` : lineRow(index))}</div>`;
+          [row.left, row.right].map((index, position) => index === undefined
+            ? html`<div class="commit-diff-line commit-diff-empty"></div>` : lineRow(index, position === 0 ? 'left' : 'right'))}</div>`;
       if (box) { box.rows.push(item); } else { out.push(item); }
     }
     flush();
     return out;
   }
+
+  /** Whether the selection only touches the edge of the row, as when a triple click ends where the next row starts. */
+  function touchesEdgeOnly(row: HTMLElement, range: Range): boolean {
+    const atEdge = (node: Node, offset: number, sibling: 'previousSibling' | 'nextSibling'): boolean => {
+      if (!row.contains(node)) { return false; }
+      const edge = sibling === 'previousSibling' ? 0 : (node.nodeType === Node.TEXT_NODE ? (node.textContent ?? '').length : node.childNodes.length);
+      if (offset !== edge) { return false; }
+      for (let current: Node | null = node; current && current !== row; current = current.parentNode) {
+        if (current[sibling]) { return false; }
+      }
+      return true;
+    };
+    return atEdge(range.endContainer, range.endOffset, 'previousSibling') || atEdge(range.startContainer, range.startOffset, 'nextSibling');
+  }
+
+  /** The positions of the change lines the person has selected, and the first of their rows. */
+  function selectedChanges(): { positions: number[]; first: HTMLElement } | undefined {
+    const selection = document.getSelection();
+    if (!selection || selection.isCollapsed || selection.rangeCount === 0) { return undefined; }
+    const range = selection.getRangeAt(0);
+    if (!container.contains(range.commonAncestorContainer)) { return undefined; }
+    const side = container.dataset.selectSide;
+    const positions: number[] = [];
+    let first: HTMLElement | undefined;
+    for (const row of container.querySelectorAll<HTMLElement>('[data-line]')) {
+      if ((side && row.dataset.side && row.dataset.side !== side) || !range.intersectsNode(row) || touchesEdgeOnly(row, range)) { continue; }
+      positions.push(Number(row.dataset.line));
+      first ??= row;
+    }
+    return first ? { positions, first } : undefined;
+  }
+
+  function hideSelectionActions(): void {
+    render(nothing, selectionPopup);
+    selectionPopup.hidden = true;
+    container.classList.remove('has-selection-actions');
+  }
+
+  /**
+   * Shows the buttons at the top right of the selection, where a hunk's buttons are, and takes the hunk buttons
+   * away so one Stage or Unstage shows at a time. Hides them when no change line is selected.
+   */
+  function updateSelectionActions(): void {
+    const selected = selectionActions && ready && mode === 'diff' ? selectedChanges() : undefined;
+    const actions = selected ? selectionActions?.(selected.positions) ?? [] : [];
+    if (!selected || actions.length === 0) {
+      hideSelectionActions();
+      return;
+    }
+    if (selectionPopup.parentElement !== container) { container.append(selectionPopup); }
+    const box = container.getBoundingClientRect();
+    render(html`
+      <vscode-button-group role="group" aria-label=${l10n.t('Selected lines')}>${actions.map((action) => html`
+        <vscode-button type="button" @click=${() => { action.run(); document.getSelection()?.removeAllRanges(); hideSelectionActions(); }}>${action.label}</vscode-button>`)}
+      </vscode-button-group>`, selectionPopup);
+    selectionPopup.hidden = false;
+    container.classList.add('has-selection-actions');
+    const rowTop = selected.first.getBoundingClientRect().top - box.top + container.scrollTop;
+    selectionPopup.style.top = `${Math.max(rowTop, container.scrollTop) + 2}px`;
+    selectionPopup.style.left = `${container.scrollLeft + container.clientWidth - 12}px`;
+  }
+
+  /** A click on a line number selects the line; with Shift it extends the selection from the line clicked before. */
+  function selectRowFromGutter(event: MouseEvent): void {
+    const target = event.target instanceof Element ? event.target : undefined;
+    const row = target?.closest<HTMLElement>('.commit-diff-lineno, .commit-diff-gutter')?.closest<HTMLElement>('.commit-diff-line[data-line]');
+    const selection = document.getSelection();
+    if (!row || !selection || !selectionActions) { return; }
+    if (row.dataset.side) { container.dataset.selectSide = row.dataset.side; } else { delete container.dataset.selectSide; }
+    const from = event.shiftKey && anchorRow && container.contains(anchorRow) ? anchorRow : row;
+    anchorRow = from;
+    const [first, last] = from.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_PRECEDING ? [row, from] : [from, row];
+    selection.setBaseAndExtent(first, 0, last, last.childNodes.length);
+    updateSelectionActions();
+  }
+
+  // In a side-by-side diff a drag stays on the side it started on, so one side's lines can be picked alone.
+  container.addEventListener('mousedown', (event) => {
+    const line = event.target instanceof Element ? event.target.closest<HTMLElement>('.commit-diff-pair > .commit-diff-line') : null;
+    if (line?.dataset.side) { container.dataset.selectSide = line.dataset.side; } else { delete container.dataset.selectSide; }
+  });
+  container.addEventListener('click', selectRowFromGutter);
 
   function template(): TemplateResult {
     if (message || !ready) {
@@ -134,6 +232,8 @@ export function mountCodeViewer(
     if (!ready && !message) { return; }
     if (ready) { navIndex = -1; }
     render(template(), hostElement());
+    // The selection survives drawing again, so its buttons are shown again for it.
+    updateSelectionActions();
   }
 
   function showMessage(text: string, error = false): void {
@@ -221,6 +321,17 @@ export function mountCodeViewer(
     setHunkActions(next: ((hunkIndex: number) => HunkAction[]) | undefined): void {
       hunkActions = next;
     },
+    /** Buttons for the change lines a person selects in a diff (by drag, or by clicking line numbers); none when unset. */
+    setSelectionActions(next: SelectionActions | undefined): void {
+      selectionActions = next;
+      if (next && !listeningForSelection) {
+        listeningForSelection = true;
+        document.addEventListener('selectionchange', updateSelectionActions);
+      }
+      if (!next) { hideSelectionActions(); }
+    },
+    /** Shows or hides the selection's buttons for the current selection. */
+    refreshSelectionActions: updateSelectionActions,
     setOptions(next: CommitDiffViewOptions): void {
       const rehighlight = (options.syntaxHighlighting !== false) !== (next.syntaxHighlighting !== false);
       options = { ...next };

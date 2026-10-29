@@ -199,6 +199,22 @@ describe('Changes tab', () => {
     await waitFor('hunk unstaged', async () => (git('diff', '--cached', '--name-only') === '' ? true : undefined));
   });
 
+  it('stages and unstages only the selected lines of a change', async () => {
+    writeFileSync(join(repoRoot(), 'lines.txt'), 'a\nb\nc\n');
+    git('add', 'lines.txt');
+    git('commit', '-m', 'lines base');
+    writeFileSync(join(repoRoot(), 'lines.txt'), 'a\nB\nc\n');
+
+    // What the diff view sends for a selection of the added line alone: the removed line stays as context.
+    const patch = 'diff --git a/lines.txt b/lines.txt\n--- a/lines.txt\n+++ b/lines.txt\n@@ -1,3 +1,4 @@\n a\n b\n+B\n c\n';
+    await ctx.api.sendPanelMessage({ type: 'changesHunk', path: 'lines.txt', op: 'stage', patch });
+    await waitFor('the added line staged', async () => (git('show', ':lines.txt') === 'a\nb\nB\nc' ? true : undefined));
+    assert.ok(git('diff', '--', 'lines.txt').includes('-b'), 'the removal is still to stage');
+
+    await ctx.api.sendPanelMessage({ type: 'changesHunk', path: 'lines.txt', op: 'unstage', patch });
+    await waitFor('the added line unstaged', async () => (git('show', ':lines.txt') === 'a\nb\nc' ? true : undefined));
+  });
+
   it('amends the last commit with a new message', async () => {
     writeFileSync(join(repoRoot(), 'amend.txt'), 'a\n');
     git('add', 'amend.txt');
