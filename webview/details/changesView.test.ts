@@ -56,6 +56,28 @@ describe('Changes tab diff and commit form', () => {
     assert.deepEqual(plain(posted.at(-1)), { type: 'changesSelect', path: '', side: 'unstaged' });
   });
 
+  it('tells the shortcuts in the message field without naming a host', () => {
+    const { q } = mount();
+    const hint = q('.changes-subject').getAttribute('placeholder');
+    assert.equal(hint, 'Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)');
+    assert.doesNotMatch(hint ?? '', /github/i);
+    assert.equal(q('.changes-subject').getAttribute('aria-label'), 'Commit subject');
+  });
+
+  it('names the checked-out branch in the message field, and drops it on a detached HEAD', () => {
+    const { q, view } = mount();
+    view.applyHostMessage({ type: 'workingCopySnapshot', snapshot: { entries, flags: [], branch: 'main' } });
+    assert.equal(
+      q('.changes-subject').getAttribute('placeholder'),
+      "Message (Ctrl/Cmd+Enter to commit on 'main'; add Shift to also push to the remote)",
+    );
+    view.applyHostMessage(snapshot(entries));
+    assert.equal(
+      q('.changes-subject').getAttribute('placeholder'),
+      'Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)',
+    );
+  });
+
   it('commits the subject and description once something is staged, then clears', () => {
     const { posted, view, q } = mount();
     assert.equal(q('.changes-commit').hasAttribute('disabled'), true);

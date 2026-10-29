@@ -110,6 +110,7 @@ export class WorkingTreeService {
         gitlinks.has(entry.path) ? { ...entry, submodule: true } : entry,
       ),
       flags,
+      ...(repo.state.HEAD?.name ? { branch: repo.state.HEAD.name } : {}),
     };
   }
 

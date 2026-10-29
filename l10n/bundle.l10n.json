@@ -472,6 +472,8 @@
   "Merging": "Merging",
   "Merging '{0}'": "Merging '{0}'",
   "Message": "Message",
+  "Message (Ctrl/Cmd+Enter to commit on '{0}'; add Shift to also push to the remote)": "Message (Ctrl/Cmd+Enter to commit on '{0}'; add Shift to also push to the remote)",
+  "Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)": "Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)",
   "Message is required": "Message is required",
   "Message of this annotated tag": "Message of this annotated tag",
   "Mixed: keep all changes, unstage differences": "Mixed: keep all changes, unstage differences",
