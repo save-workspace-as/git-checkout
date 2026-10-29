@@ -110,12 +110,12 @@ describe('resultLineMap', () => {
 
   it('maps each pane row to the result line at the same place', () => {
     // Rows: one | a-conflict (2 rows) | two | c-conflict (1 row) | three.
-    assert.deepEqual(resultLineMap(document, choices([true, false], [false, true])), [0, 1, 2, 3, 4, 5]);
-    assert.deepEqual(resultLineMap(document, choices([false, true], [true, false])), [0, 1, 1, 2, 3, 3]);
+    assert.deepEqual(resultLineMap(document, choices([true, false], [false, true]), paneRows(document)), [0, 1, 2, 3, 4, 5]);
+    assert.deepEqual(resultLineMap(document, choices([false, true], [true, false]), paneRows(document)), [0, 1, 1, 2, 3, 3]);
   });
 
   it('spans the markers of a conflict that is still open', () => {
-    assert.deepEqual(resultLineMap(document, choices([false, false], [false, false])), [0, 1, 2, 7, 8, 12]);
+    assert.deepEqual(resultLineMap(document, choices([false, false], [false, false]), paneRows(document)), [0, 1, 2, 7, 8, 12]);
   });
 });
 
@@ -205,6 +205,47 @@ describe('alignConflict', () => {
   });
 });
 
+describe('paneRows with the whole files of both sides', () => {
+  // The base is a b c d e f. Ours changed b and d, theirs changed d and f: only d is a conflict.
+  const merged = parseMergeDocument('a\nB1\nc\n<<<<<<< HEAD\nD1\n=======\nD2\n>>>>>>> t\ne\nF2\n');
+  const sides = { ours: ['a', 'B1', 'c', 'D1', 'e', 'f'], theirs: ['a', 'b', 'c', 'D2', 'e', 'F2'] };
+  const view = (rows: ReturnType<typeof paneRows>) => rows.map((row) => [row.left?.text ?? '', row.right?.text ?? '', row.conflict ?? -1]);
+
+  it('shows each side as its whole file, with the lines only one side has on rows of their own', () => {
+    const rows = paneRows(merged, sides);
+    assert.deepEqual(view(rows), [
+      ['a', 'a', -1],
+      ['', 'B1', -1],
+      ['b', '', -1],
+      ['c', 'c', -1],
+      ['D2', 'D1', 0],
+      ['e', 'e', -1],
+      ['F2', '', -1],
+      ['', 'f', -1],
+    ]);
+    assert.deepEqual(rows.map((row) => [row.left?.line, row.right?.line]), [
+      [1, 1], [undefined, 2], [2, undefined], [3, 3], [4, 4], [5, 5], [6, undefined], [undefined, 6],
+    ], 'each line has its number in its own file');
+    assert.deepEqual(rows.map((row) => [row.left?.changed === true, row.right?.changed === true]), [
+      [false, false], [false, true], [true, false], [false, false], [true, true], [false, false], [true, false], [false, true],
+    ]);
+  });
+
+  it('keeps the rows of the conflict wired to its choices', () => {
+    const rows = paneRows(merged, sides);
+    const conflictRow = rows.find((row) => row.conflict === 0)!;
+    assert.deepEqual([conflictRow.first, conflictRow.incomingIndex, conflictRow.currentIndex], [true, 0, 0]);
+    // The rows map to the lines of the result: the conflict's, and the lines of the files that are not in the merged file.
+    const map = resultLineMap(merged, [withSideTaken(unresolved(conflictsOf(merged)[0]), 'incoming', true)], rows);
+    assert.deepEqual(map, [0, 1, 2, 2, 3, 4, 5, 5]);
+  });
+
+  it('falls back to the merged file when the files cannot be matched to it', () => {
+    const rows = paneRows(merged, { ours: ['nothing', 'like', 'it'], theirs: ['nothing', 'like', 'it'] });
+    assert.deepEqual(view(rows).map((row) => row[0]).slice(0, 4), ['a', 'B1', 'c', 'D2']);
+  });
+});
+
 describe('choosing single lines', () => {
   const [conflict] = conflictsOf(parseMergeDocument('<<<<<<< HEAD\ncurrent a\n=======\nincoming a\nincoming b\n>>>>>>> t\n'));
 
@@ -231,7 +272,7 @@ describe('choosing single lines', () => {
     const document = parseMergeDocument('x\n<<<<<<< HEAD\ncurrent a\n=======\nincoming a\nincoming b\n>>>>>>> t\ny\n');
     const choice = withLineToggled(withLineToggled(unresolved(conflictsOf(document)[0]), 'current', 0), 'incoming', 1);
     assert.equal(editableText(document, [choice]), 'x\nincoming b\ncurrent a\ny\n');
-    assert.deepEqual(resultLineMap(document, [choice]), [0, 1, 2, 3]);
+    assert.deepEqual(resultLineMap(document, [choice], paneRows(document)), [0, 1, 2, 3]);
   });
 
   it('can take nothing from a side that has no lines, and still counts as chosen', () => {

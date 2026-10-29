@@ -19,6 +19,7 @@ import {
   withSide,
   type MergeChoice,
   type MergeDocument,
+  type MergeSides,
   type PaneRow,
 } from '../../src/shared/conflicts/mergeDocument';
 import type { MergeHostMessage, MergeSideDto, MergeWebviewMessage } from '../../src/shared/conflicts/mergeProtocol';
@@ -31,6 +32,17 @@ import type { VscodeCheckbox } from '@vscode-elements/elements/dist/vscode-check
 
 type Highlighter = (path: string, lines: { kind: string; text: string }[]) => Promise<string[]>;
 type Side = 'incoming' | 'current';
+
+/** The lines of a file as the panes show them. */
+const linesOf = (text: string): string[] => {
+  const lines = text.split(/\r?\n/);
+  if (text.endsWith('\n')) { lines.pop(); }
+  return lines;
+};
+
+function sidesOf(host: { ours?: string; theirs?: string }): MergeSides | undefined {
+  return host.ours === undefined || host.theirs === undefined ? undefined : { ours: linesOf(host.ours), theirs: linesOf(host.theirs) };
+}
 
 const LAYOUT_KEY = 'gitCheckout.merge.layout';
 
@@ -62,6 +74,8 @@ interface State {
   busy: boolean;
   /** Where the result goes: below the two sides, or between them. */
   layout: 'below' | 'between';
+  /** How much of the height the two sides take when the result is below them, in percent. */
+  split: number;
 }
 
 /**
@@ -76,6 +90,13 @@ export function mountMergeView(
   frame: { extras?: HTMLElement; title?: HTMLElement } = {},
 ): { applyHostMessage(message: MergeHostMessage): void } {
   container.classList.add('merge');
+  // The bar between the sides and the result has no keyboard of its own, so Ctrl+Alt with Up or Down moves it.
+  container.addEventListener('keydown', (event) => {
+    if (!state || state.layout !== 'below' || !event.ctrlKey || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) { return; }
+    event.preventDefault();
+    state.split = Math.min(85, Math.max(15, state.split + (event.key === 'ArrowDown' ? 5 : -5)));
+    paint();
+  });
   let state: State | undefined;
   let message: { text: string; error: boolean } | undefined = { text: l10n.t('Loading the file…'), error: false };
   let generation = 0;
@@ -230,7 +251,7 @@ export function mountMergeView(
     if (!state || row === 0 || line === 0 || (driver !== undefined && driver !== source)) { return; }
     const panes = ['incoming', 'current'].map((side) => container.querySelector<HTMLElement>(`.merge-pane-${side}`)!);
     const input = container.querySelector<HTMLTextAreaElement>('.merge-editor-input')!;
-    const map = state.manual === undefined ? resultLineMap(state.document, state.choices) : state.rows.map((_, index) => index);
+    const map = state.manual === undefined ? resultLineMap(state.document, state.choices, state.rows) : state.rows.map((_, index) => index);
     driver = source;
     if (source === 'result') {
       const at = Math.max(0, map.findIndex((mapped) => mapped >= Math.floor(element.scrollTop / line)));
@@ -250,8 +271,11 @@ export function mountMergeView(
     if (state!.layout === 'between') {
       return html`<div class="merge-columns">${pane('incoming')}${resultRegion()}${pane('current')}</div>`;
     }
-    return html`<vscode-split-layout class="merge-split" split="horizontal" initial-handle-position="60%" reset-on-dbl-click>
-      <div slot="start" class="merge-panes" role="region" aria-label=${l10n.t('Incoming on the left, current on the right')}>${pane('incoming')}${pane('current')}</div>
+    return html`<vscode-split-layout class="merge-split" split="horizontal" initial-handle-position="60%" reset-on-dbl-click
+      .handlePosition=${`${state!.split}%`}
+      @vsc-split-layout-change=${(event: CustomEvent<{ positionInPercentage: number }>) => { state!.split = event.detail.positionInPercentage; }}>
+      <div slot="start" class="merge-panes" role="region" aria-keyshortcuts="Control+Alt+ArrowUp Control+Alt+ArrowDown"
+        aria-label=${l10n.t('Incoming on the left, current on the right')}>${pane('incoming')}${pane('current')}</div>
       <div slot="end" class="merge-below">${resultRegion()}</div>
     </vscode-split-layout>`;
   }
@@ -400,7 +424,7 @@ export function mountMergeView(
         incoming: host.incoming,
         current: host.current,
         document,
-        rows: paneRows(document),
+        rows: paneRows(document, sidesOf(host)),
         choices: conflicts.map(unresolved),
         manual: undefined,
         active: 0,
@@ -408,6 +432,7 @@ export function mountMergeView(
         code: { incoming: [], current: [], result: [] },
         busy: false,
         layout: storedLayout(),
+        split: 60,
       };
       message = conflicts.length === 0
         ? { text: l10n.t('This file has no conflict markers. Resolve it in the editor.'), error: false }

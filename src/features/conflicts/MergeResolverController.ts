@@ -79,7 +79,7 @@ export class MergeResolverController {
     }
     try {
       const file = await this.service.load(root, path);
-      this.post({ type: 'mergeInit', path, text: file.text, incoming: file.incoming, current: file.current });
+      this.post({ type: 'mergeInit', path, text: file.text, incoming: file.incoming, current: file.current, ours: file.ours, theirs: file.theirs });
       const colors = (await readActiveEditorTokenColors().catch((error) => {
         log.warn('could not read editor token colors', error);
         return undefined;

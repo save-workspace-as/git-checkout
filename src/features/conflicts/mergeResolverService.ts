@@ -12,6 +12,9 @@ const INCOMING_HEADS = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE
 
 export interface MergeResolverFile {
   text: string;
+  /** The whole files of the two sides, from the index; nothing when the index does not have one of them. */
+  ours?: string;
+  theirs?: string;
   incoming: MergeSideDto;
   current: MergeSideDto;
 }
@@ -23,12 +26,14 @@ export class MergeResolverService {
   async load(repoRoot: string, path: string): Promise<MergeResolverFile> {
     const rel = assertRepoRelativePath(path);
     const cli = this.cliRegistry.getOrCreate(repoRoot);
-    const [text, current, incoming] = await Promise.all([
+    const [text, current, incoming, ours, theirs] = await Promise.all([
       readFile(toAbsoluteRepoPath(repoRoot, rel), 'utf8'),
       this.describe(cli, 'HEAD'),
       this.describeIncoming(cli),
+      this.tryShow(cli, `:2:${rel}`),
+      this.tryShow(cli, `:3:${rel}`),
     ]);
-    return { text, current, incoming };
+    return { text, current, incoming, ...(ours === undefined || theirs === undefined ? {} : { ours, theirs }) };
   }
 
   /** Writes the resolved file and stages it, which is how Git is told the conflict is resolved. */
@@ -74,6 +79,16 @@ export class MergeResolverService {
       return named.replace(/^remotes\//, '');
     }
     return sha.slice(0, 7);
+  }
+
+  /** A file of the index, which a conflict that one side added or deleted has only one of. */
+  private async tryShow(cli: GitCli, spec: string): Promise<string | undefined> {
+    try {
+      return (await cli.execRead(['show', spec])).stdout;
+    } catch (error) {
+      log.debug(`${spec} is not in the index`, error);
+      return undefined;
+    }
   }
 
   private async tryRead(cli: GitCli, args: string[]): Promise<string | undefined> {

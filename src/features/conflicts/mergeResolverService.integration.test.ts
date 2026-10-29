@@ -22,6 +22,8 @@ describe('MergeResolverService integration', () => {
       assert.equal(file.incoming.label, 'other');
       assert.equal(file.incoming.subject, 'other');
       assert.ok(file.incoming.date > 0 && file.incoming.author.length > 0);
+      assert.equal(file.ours, 'base\non main\n', 'the whole file of the current side');
+      assert.equal(file.theirs, 'base\non other\n', 'the whole file of the incoming side');
       const document = parseMergeDocument(file.text);
       assert.deepEqual(conflictsOf(document).map((conflict) => [conflict.incoming, conflict.current]), [[['on other'], ['on main']]]);
 

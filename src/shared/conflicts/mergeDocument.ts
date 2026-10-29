@@ -3,6 +3,8 @@
  * conflicts between `<<<<<<<` and `>>>>>>>`. The merge view shows the incoming side on the left and the
  * current side on the right, as VS Code's merge editor does.
  */
+import { matchLines } from './lineMatch';
+
 export interface MergeCommon {
   kind: 'common';
   lines: string[];
@@ -170,9 +172,22 @@ export type PaneCell = {
   changed?: boolean;
 } | undefined;
 
+/** The two sides as whole files, as Git has them in the index: the current side is "ours", the incoming one "theirs". */
+export interface MergeSides {
+  ours: string[];
+  theirs: string[];
+}
+
+/** The place in the merged file a row stands for: a line of a common segment, or a row of a conflict. */
+export interface RowAnchor {
+  segment: number;
+  offset: number;
+}
+
 export interface PaneRow {
   left: PaneCell;
   right: PaneCell;
+  anchor: RowAnchor;
   /** The conflict this row belongs to, if any. */
   conflict?: number;
   /** The first row of its conflict, where the buttons go. */
@@ -182,18 +197,26 @@ export interface PaneRow {
   currentIndex?: number;
 }
 
-/** The two side panes row by row: shared text on both sides, and each conflict padded to its taller side. */
-export function paneRows(document: MergeDocument): PaneRow[] {
+/**
+ * The two side panes row by row. With the whole files of both sides, each pane shows its file and a line that
+ * only one side has sits on a row of its own, as in a diff. Without them, or when the files cannot be matched to
+ * the merged file, the panes show the merged file twice, and the sides differ only inside the conflicts.
+ */
+export function paneRows(document: MergeDocument, sides?: MergeSides): PaneRow[] {
+  return (sides && wholeFileRows(document, sides)) ?? mergedFileRows(document);
+}
+
+function mergedFileRows(document: MergeDocument): PaneRow[] {
   const rows: PaneRow[] = [];
   let leftLine = 0;
   let rightLine = 0;
   let index = -1;
-  for (const segment of document.segments) {
+  document.segments.forEach((segment, at) => {
     if (segment.kind === 'common') {
-      for (const text of segment.lines) {
-        rows.push({ left: { text, line: ++leftLine }, right: { text, line: ++rightLine } });
-      }
-      continue;
+      segment.lines.forEach((text, offset) => {
+        rows.push({ left: { text, line: ++leftLine }, right: { text, line: ++rightLine }, anchor: { segment: at, offset } });
+      });
+      return;
     }
     index += 1;
     alignConflict(segment).forEach(({ incoming, current }, i) => {
@@ -201,14 +224,110 @@ export function paneRows(document: MergeDocument): PaneRow[] {
       rows.push({
         left: incoming === undefined ? undefined : { text: segment.incoming[incoming], line: ++leftLine, ...(matched ? {} : { changed: true }) },
         right: current === undefined ? undefined : { text: segment.current[current], line: ++rightLine, ...(matched ? {} : { changed: true }) },
+        anchor: { segment: at, offset: i },
         conflict: index,
         ...(incoming === undefined ? {} : { incomingIndex: incoming }),
         ...(current === undefined ? {} : { currentIndex: current }),
         ...(i === 0 ? { first: true } : {}),
       });
     });
-  }
+  });
   return rows;
+}
+
+/** The rows of the two whole files, in the order of the merged file; nothing when they cannot be matched to it. */
+function wholeFileRows(document: MergeDocument, sides: MergeSides): PaneRow[] | undefined {
+  // What each side's file would be if the merged file were all there is to it: the conflicts hold that side's lines.
+  const oursMerged: string[] = [];
+  const theirsMerged: string[] = [];
+  const oursAt: number[] = [];
+  const theirsAt: number[] = [];
+  for (const segment of document.segments) {
+    oursAt.push(oursMerged.length);
+    theirsAt.push(theirsMerged.length);
+    oursMerged.push(...(segment.kind === 'common' ? segment.lines : segment.current));
+    theirsMerged.push(...(segment.kind === 'common' ? segment.lines : segment.incoming));
+  }
+  const oursMatch = matchLines(oursMerged, sides.ours);
+  const theirsMatch = matchLines(theirsMerged, sides.theirs);
+  if (!oursMatch || !theirsMatch) {
+    return undefined;
+  }
+
+  const rows: (Omit<PaneRow, 'anchor'> & { anchor?: RowAnchor })[] = [];
+  let nextOurs = 0;
+  let nextTheirs = 0;
+  const cell = (lines: string[], index: number, changed: boolean): PaneCell =>
+    ({ text: lines[index], line: index + 1, ...(changed ? { changed: true } : {}) });
+  /** The lines of each file that are not in the merged file, up to where the next shared line is. */
+  const flush = (oursEnd: number, theirsEnd: number): void => {
+    const height = Math.max(oursEnd - nextOurs, theirsEnd - nextTheirs);
+    for (let i = 0; i < height; i++) {
+      rows.push({
+        left: nextTheirs + i < theirsEnd ? cell(sides.theirs, nextTheirs + i, true) : undefined,
+        right: nextOurs + i < oursEnd ? cell(sides.ours, nextOurs + i, true) : undefined,
+      });
+    }
+    nextOurs = Math.max(nextOurs, oursEnd);
+    nextTheirs = Math.max(nextTheirs, theirsEnd);
+  };
+
+  let conflict = -1;
+  for (let at = 0; at < document.segments.length; at++) {
+    const segment = document.segments[at];
+    if (segment.kind === 'common') {
+      for (let offset = 0; offset < segment.lines.length; offset++) {
+        const ours = oursMatch[oursAt[at] + offset];
+        const theirs = theirsMatch[theirsAt[at] + offset];
+        if (ours === undefined && theirs === undefined) {
+          return undefined;
+        }
+        flush(ours ?? nextOurs, theirs ?? nextTheirs);
+        rows.push({
+          left: theirs === undefined ? undefined : cell(sides.theirs, theirs, ours === undefined),
+          right: ours === undefined ? undefined : cell(sides.ours, ours, theirs === undefined),
+          anchor: { segment: at, offset },
+        });
+        nextOurs = ours === undefined ? nextOurs : ours + 1;
+        nextTheirs = theirs === undefined ? nextTheirs : theirs + 1;
+      }
+      continue;
+    }
+    conflict += 1;
+    const current = segment.current.map((_, i) => oursMatch[oursAt[at] + i]);
+    const incoming = segment.incoming.map((_, i) => theirsMatch[theirsAt[at] + i]);
+    if (current.includes(undefined) || incoming.includes(undefined)) {
+      return undefined;
+    }
+    flush(current.length > 0 ? current[0]! : nextOurs, incoming.length > 0 ? incoming[0]! : nextTheirs);
+    alignConflict(segment).forEach(({ incoming: left, current: right }, i) => {
+      const matched = left !== undefined && right !== undefined && segment.incoming[left] === segment.current[right];
+      rows.push({
+        left: left === undefined ? undefined : cell(sides.theirs, incoming[left]!, !matched),
+        right: right === undefined ? undefined : cell(sides.ours, current[right]!, !matched),
+        anchor: { segment: at, offset: i },
+        conflict,
+        ...(left === undefined ? {} : { incomingIndex: left }),
+        ...(right === undefined ? {} : { currentIndex: right }),
+        ...(i === 0 ? { first: true } : {}),
+      });
+    });
+    if (current.length > 0) { nextOurs = current[current.length - 1]! + 1; }
+    if (incoming.length > 0) { nextTheirs = incoming[incoming.length - 1]! + 1; }
+  }
+  flush(sides.ours.length, sides.theirs.length);
+
+  // The rows of lines that are not in the merged file stand where the next row of the merged file is.
+  let anchor: RowAnchor | undefined;
+  for (let i = rows.length - 1; i >= 0; i--) {
+    anchor = rows[i].anchor ?? anchor;
+    rows[i].anchor = anchor;
+  }
+  let previous: RowAnchor = { segment: 0, offset: 0 };
+  return rows.map((row) => {
+    previous = row.anchor ?? previous;
+    return { ...row, anchor: previous };
+  });
 }
 
 /**
@@ -267,25 +386,28 @@ export function alignConflict(conflict: MergeConflict): { incoming?: number; cur
  * For each row of `paneRows`, the line of `editableText` that shows the same place, so the panes and the result
  * can scroll together. A conflict's rows map to the lines its choice gives, the last line repeated when it has fewer.
  */
-export function resultLineMap(document: MergeDocument, choices: readonly MergeChoice[]): number[] {
-  const map: number[] = [];
+export function resultLineMap(document: MergeDocument, choices: readonly MergeChoice[], rows: readonly PaneRow[]): number[] {
+  const starts: number[] = [];
+  const lengths: number[] = [];
   let line = 0;
   let index = -1;
   for (const segment of document.segments) {
+    starts.push(line);
     if (segment.kind === 'common') {
-      for (let i = 0; i < segment.lines.length; i++) { map.push(line++); }
-      continue;
+      lengths.push(segment.lines.length);
+    } else {
+      index += 1;
+      const choice = choices[index] ?? unresolved(segment);
+      lengths.push(isResolved(choice)
+        ? linesTaken(choice.incoming, segment.incoming).length + linesTaken(choice.current, segment.current).length
+        : segment.current.length + segment.incoming.length + 3);
     }
-    index += 1;
-    const choice = choices[index] ?? unresolved(segment);
-    const length = isResolved(choice)
-      ? linesTaken(choice.incoming, segment.incoming).length + linesTaken(choice.current, segment.current).length
-      : segment.current.length + segment.incoming.length + 3;
-    const rows = alignConflict(segment).length;
-    for (let i = 0; i < rows; i++) { map.push(line + Math.min(i, Math.max(length - 1, 0))); }
-    line += length;
+    line += lengths[lengths.length - 1];
   }
-  return map;
+  return rows.map(({ anchor }) => {
+    const at = anchor.segment;
+    return starts[at] + Math.min(anchor.offset, Math.max(lengths[at] - 1, 0));
+  });
 }
 
 /** Where a line of `editableText` came from: outside the conflicts, a side's line, or a conflict still open. */

@@ -24,6 +24,9 @@ export type MergeHostMessage =
       current: MergeSideDto;
       /** The file as Git left it, with conflict markers. */
       text: string;
+      /** The whole files of the current side and the incoming side, when Git has both. */
+      ours?: string;
+      theirs?: string;
     }
   | { type: 'mergeError'; message: string }
   /** The editor theme's token colors, so the code is colored as in the editor. */

@@ -32,7 +32,8 @@ const TEXT = [
   '',
 ].join('\n');
 
-const init = (text = TEXT): MergeHostMessage => ({
+const init = (text = TEXT, sides: { ours?: string; theirs?: string } = {}): MergeHostMessage => ({
+  ...sides,
   type: 'mergeInit',
   path: 'src/app.ts',
   text,
@@ -40,13 +41,13 @@ const init = (text = TEXT): MergeHostMessage => ({
   current: { label: 'main', subject: 'Change main', author: 'Grace', date: 1761750000 },
 });
 
-function mount(text?: string) {
+function mount(text?: string, sides?: { ours?: string; theirs?: string }) {
   const root = document.createElement('div');
   document.body.append(root);
   const posted: MergeWebviewMessage[] = [];
   // No highlighting: the code is shown as it is.
   const view = mountMergeView(root, (message) => posted.push(message), async (_path, lines) => lines.map((line) => line.text));
-  view.applyHostMessage(init(text));
+  view.applyHostMessage(init(text, sides));
   const all = (selector: string) => [...root.querySelectorAll(selector)] as El[];
   const one = (selector: string) => root.querySelector(selector) as El;
   const pick = (conflict: number, side: 'incoming' | 'current') => {
@@ -215,6 +216,19 @@ describe('merge view', () => {
     assert.equal(all('.merge-columns').length, 0);
   });
 
+  it('moves the bar between the sides and the result from the keyboard', () => {
+    const { one } = mount();
+    const bar = () => one('.merge-split').handlePosition;
+    assert.equal(bar(), '60%');
+    one('.merge-editor-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', ctrlKey: true, altKey: true, bubbles: true }));
+    assert.equal(bar(), '65%');
+    one('.merge-editor-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', ctrlKey: true, altKey: true, bubbles: true }));
+    one('.merge-editor-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', ctrlKey: true, altKey: true, bubbles: true }));
+    assert.equal(bar(), '55%');
+    one('.merge-editor-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true, bubbles: true }));
+    assert.equal(bar(), '55%', 'Alt alone is left to the text area');
+  });
+
   it('colors the lines only one side has like a diff: deleted on the left, added on the right', () => {
     const { all } = mount('<<<<<<< HEAD\nsame\nnew\n=======\nold\nsame\n>>>>>>> t\n');
     assert.deepEqual(all('.merge-pane-incoming .commit-diff-del code').map((code) => code.textContent), ['old']);
@@ -239,6 +253,16 @@ describe('merge view', () => {
     assert.equal(all('.merge-editor-line.merge-from-open').length, 11, 'both conflicts, with their markers');
     pick(0, 'incoming');
     assert.equal(all('.merge-editor-line.merge-from-open').length, 5);
+  });
+
+  it('shows each side as its whole file when Git has both, so changes it merged cleanly are colored too', () => {
+    const { all } = mount(
+      'a\nB1\n<<<<<<< HEAD\nD1\n=======\nD2\n>>>>>>> t\nz\n',
+      { ours: 'a\nB1\nD1\nz\n', theirs: 'a\nb\nD2\nz\n' },
+    );
+    assert.deepEqual(all('.merge-pane-incoming .commit-diff-del code').map((code) => code.textContent), ['b', 'D2']);
+    assert.deepEqual(all('.merge-pane-current .commit-diff-add code').map((code) => code.textContent), ['B1', 'D1']);
+    assert.deepEqual(all('.merge-pane-incoming .commit-diff-lineno').map((number) => number.textContent), ['1', ' ', '2', '3', '4']);
   });
 
   it('cancels, and hands the file to the editor', () => {
