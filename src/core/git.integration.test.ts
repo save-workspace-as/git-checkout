@@ -272,6 +272,10 @@ describe('git integration', () => {
       assert.deepEqual(await find('path:b.txt'), [shaOf('second')]);
       assert.deepEqual(await find('since:2024-02-01 until:2024-04-01'), [shaOf('second')]);
       assert.deepEqual(await find('content:needle'), [shaOf('second')]);
+      assert.deepEqual(await find('regex:ne+dle'), [shaOf('second')]);
+      assert.deepEqual(await find('regex:^tw'), [shaOf('third')], 'a pattern matches the lines a commit changed');
+      assert.deepEqual(await find('regex:(unfinished'), [], 'a pattern that is not valid yet finds nothing');
+      assert.deepEqual(await find('content:needle regex:ne+dle'), [shaOf('second')]);
       assert.deepEqual(await find('author:Ada third'), [shaOf('third')]);
       assert.deepEqual(await find('author:Grace third'), []);
       const rows: { sha: string; index: number }[] = [];

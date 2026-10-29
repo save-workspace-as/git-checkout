@@ -37,5 +37,10 @@ describe('graphSearchGitArgs', () => {
       path: 'a.ts',
     });
     assert.deepEqual(graphSearchGitArgs({ text: '', path: 'a.ts' }), { args: [], path: 'a.ts' });
+    assert.deepEqual(graphSearchGitArgs({ text: '', regex: 'ne+dle' }), { args: ['-Gne+dle'] });
+  });
+
+  it('uses the pattern alone when a search has both a pattern and exact text', () => {
+    assert.deepEqual(graphSearchGitArgs({ text: '', content: 'needle', regex: 'ne+dle' }), { args: ['-Gne+dle'] });
   });
 });
