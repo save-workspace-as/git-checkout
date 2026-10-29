@@ -72,6 +72,7 @@ export interface GitCheckoutApi {
       values: Record<string, string | boolean>;
       fields: {
         id: string;
+        label: string;
         type: string;
         description?: string;
         readOnly?: boolean;

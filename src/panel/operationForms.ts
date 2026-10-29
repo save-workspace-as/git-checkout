@@ -540,3 +540,32 @@ export function createPatchForm(revision: string, format: 'format-patch' | 'diff
     ],
   };
 }
+
+export function undoOperationForm(
+  branch: string,
+  operation: { label: string; message: string },
+  previousSummary: string,
+): OperationFormDefinition {
+  return {
+    title: l10n.t('Undo Last Operation'),
+    submitLabel: l10n.t('Undo'),
+    values: { operation: operation.message, target: previousSummary, mode: 'keep' },
+    fields: [
+      {
+        id: 'operation', type: 'text', label: operation.label, readOnly: true,
+        description: l10n.t("The last change to the '{0}' branch.", branch),
+      },
+      {
+        id: 'target', type: 'text', label: l10n.t('Move back to'), readOnly: true,
+        description: l10n.t("The '{0}' branch returns to this commit. Undo again to redo.", branch),
+      },
+      {
+        id: 'mode', type: 'radio', label: l10n.t('Local changes'),
+        options: [
+          { value: 'keep', label: l10n.t('Keep: stop if they would be overwritten') },
+          { value: 'hard', label: l10n.t('Discard: restore the files of that commit') },
+        ],
+      },
+    ],
+  };
+}

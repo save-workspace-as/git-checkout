@@ -2,12 +2,16 @@ import * as l10n from '@vscode/l10n';
 import type * as vscode from 'vscode';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import type { GitExecOptions } from '../../core/gitCli';
+import { createLogger } from '../../log';
+import { lastUndoableOperation, parseReflog, type UndoableOperation } from './undoOperation';
 import {
   defaultGitCheckoutSettings,
   type GitCheckoutSettingsReader,
 } from '../../core/gitCheckoutSettings';
 
-export type ResetMode = 'soft' | 'mixed' | 'hard';
+const log = createLogger('history');
+
+export type ResetMode = 'soft' | 'mixed' | 'hard' | 'keep';
 
 export interface HistoryRunOptions {
   cancellationToken?: vscode.CancellationToken;
@@ -25,8 +29,30 @@ export class HistoryService {
     treeish: string,
     options?: HistoryRunOptions,
   ): Promise<void> {
-    const flag = mode === 'soft' ? '--soft' : mode === 'hard' ? '--hard' : '--mixed';
+    const flag = { soft: '--soft', mixed: '--mixed', hard: '--hard', keep: '--keep' }[mode];
     await this.runWrite(repoRoot, ['reset', flag, treeish], options);
+  }
+
+  /** What last moved the checked-out branch, and what it pointed at before; `undefined` when there is none. */
+  async lastOperation(
+    repoRoot: string,
+  ): Promise<(UndoableOperation & { branch: string; previousSummary: string }) | undefined> {
+    const cli = this.cliRegistry.getOrCreate(repoRoot);
+    let branch: string;
+    try {
+      branch = (await cli.execRead(['symbolic-ref', '--short', '-q', 'HEAD'])).stdout.trim();
+    } catch (error) {
+      // A detached HEAD has no branch to move back; `symbolic-ref -q` exits 1 for it.
+      log.debug('no branch to undo on', error);
+      return undefined;
+    }
+    const reflog = await cli.execRead(['reflog', 'show', '-n', '2', '--format=%H%x00%gs', `refs/heads/${branch}`, '--']);
+    const operation = lastUndoableOperation(parseReflog(reflog.stdout));
+    if (!operation) {
+      return undefined;
+    }
+    const previous = await cli.execRead(['log', '-1', '--format=%h %s', operation.previousSha, '--']);
+    return { ...operation, branch, previousSummary: previous.stdout.trim() };
   }
 
   async cherryPick(
