@@ -40,6 +40,7 @@
   "{0} conflicted files": "{0} conflicted files",
   "{0} files": "{0} files",
   "{0} is {1} for this repository.": "{0} is {1} for this repository.",
+  "{0} is not in conflict.": "{0} is not in conflict.",
   "{0} is not in this view": "{0} is not in this view",
   "{0} is not set for this repository.": "{0} is not set for this repository.",
   "{0} is required.": "{0} is required.",

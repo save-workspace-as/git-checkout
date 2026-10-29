@@ -894,6 +894,16 @@
         "category": "%command.gitCheckout.changes.blame.category%"
       },
       {
+        "command": "gitCheckout.changes.resolve.current",
+        "title": "%command.gitCheckout.changes.resolve.current.title%",
+        "category": "%command.gitCheckout.changes.resolve.current.category%"
+      },
+      {
+        "command": "gitCheckout.changes.resolve.incoming",
+        "title": "%command.gitCheckout.changes.resolve.incoming.title%",
+        "category": "%command.gitCheckout.changes.resolve.incoming.category%"
+      },
+      {
         "command": "gitCheckout.changes.history",
         "title": "%command.gitCheckout.changes.history.title%",
         "category": "%command.gitCheckout.changes.history.category%"
@@ -2880,6 +2890,14 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.changes.resolve.current",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.changes.resolve.incoming",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.changes.history",
           "when": "false"
         },
@@ -3845,6 +3863,16 @@
           "command": "gitCheckout.changes.blame",
           "group": "3_history@2",
           "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection"
+        },
+        {
+          "command": "gitCheckout.changes.resolve.current",
+          "group": "3_resolve@1",
+          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
+        },
+        {
+          "command": "gitCheckout.changes.resolve.incoming",
+          "group": "3_resolve@2",
+          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
         },
         {
           "command": "gitCheckout.changes.copyPath",

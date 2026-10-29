@@ -414,6 +414,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
           ),
         ),
     ),
+    ...(['incoming', 'current'] as const).map((side) =>
+      vscode.commands.registerCommand(`gitCheckout.changes.resolve.${side}`, (arg?: unknown, selected?: unknown) =>
+        panelManager.resolveConflictsWith(side, arg, selected),
+      ),
+    ),
     ...(['tree', 'list'] as const).map((mode) =>
       vscode.commands.registerCommand(`gitCheckout.changes.viewAs.${mode}`, () =>
         panelManager.updateChangesView({ mode }),

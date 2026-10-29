@@ -208,6 +208,13 @@ export class ChangesController {
     }
   }
 
+  /** Resolves the conflicted files of the clicked row, or of every selected row, by keeping one side whole. */
+  async resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
+    for (const target of commandChangeTargets(arg, selected, undefined)) {
+      await this.ctx.merge.takeSide(target.path, side);
+    }
+  }
+
   /** Opens a conflicted file in VS Code's merge editor, one of the two ways to fix it. */
   async openConflictInMergeEditor(path: string): Promise<void> {
     const root = this.ctx.activeRepoRoot();

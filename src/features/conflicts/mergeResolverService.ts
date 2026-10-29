@@ -1,3 +1,4 @@
+import * as l10n from '@vscode/l10n';
 import { readFile, writeFile } from 'node:fs/promises';
 import type { GitCli } from '../../core/gitCli';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
@@ -71,6 +72,10 @@ export class MergeResolverService {
     const rel = assertRepoRelativePath(path);
     const cli = this.cliRegistry.getOrCreate(repoRoot);
     const stages = await this.stagesOf(cli, rel);
+    if (stages.size === 0) {
+      // Removing a file that is not in conflict would delete it.
+      throw new Error(l10n.t('{0} is not in conflict.', rel));
+    }
     await this.cliRegistry.runWrite(repoRoot, async () => {
       if (stages.has(side === 'current' ? 2 : 3)) {
         await cli.execWrite(['checkout', side === 'current' ? '--ours' : '--theirs', '--', rel]);

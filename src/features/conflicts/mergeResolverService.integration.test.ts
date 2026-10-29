@@ -109,6 +109,7 @@ describe('MergeResolverService integration', () => {
       await service.takeSide(repo.repoRoot, 'image.bin', 'incoming');
       assert.deepEqual([...readFileSync(path.join(repo.repoRoot, 'image.bin'))], [0, 9, 9, 9]);
       assert.equal((await repo.cli.execRead(['ls-files', '-u'])).stdout.trim(), '', 'nothing is left unmerged');
+      await assert.rejects(service.takeSide(repo.repoRoot, 'image.bin', 'current'), /is not in conflict/, 'a file that is not in conflict is left alone');
     } finally {
       runGitAllowFailure(repo.repoRoot, ['merge', '--abort']);
       repo.cleanup();

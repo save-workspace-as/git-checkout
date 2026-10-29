@@ -178,6 +178,26 @@ describe('Operation banner', () => {
       assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
     });
 
+    it('resolves a conflicted file from its row menu by keeping the current or the incoming side', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      const row = { webviewSection: 'changesFile', path: 'c.txt', side: 'unstaged', untracked: false };
+
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.incoming', row);
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\ntopic\nthree\n', 'the incoming side is kept whole');
+    });
+
+    it('does not touch a file that is not in conflict when asked to resolve it', async () => {
+      commitFile('plain.txt', 'keep me\n', 'plain');
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.current', {
+        webviewSection: 'changesFile', path: 'plain.txt', side: 'unstaged', untracked: false,
+      }).then(undefined, () => undefined);
+      assert.equal(readFileSync(join(repoRoot(), 'plain.txt'), 'utf8'), 'keep me\n');
+      assert.equal(git('ls-files', '--', 'plain.txt'), 'plain.txt');
+    });
+
     it('keeps one side whole for a file that one side deleted, which resolves it', async () => {
       commitFile('c.txt', 'one\nbase\nthree\n', 'base');
       git('checkout', '-b', 'topic');

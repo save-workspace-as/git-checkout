@@ -1372,6 +1372,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     return this.changes.runChangesFileCommand(command, arg, selected);
   }
 
+  resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
+    return this.changes.resolveConflictsWith(side, arg, selected);
+  }
+
   runLocalChangeActions(
     actions: readonly { op: 'stage' | 'unstage' | 'discard'; path: string }[],
   ): Promise<void> {
