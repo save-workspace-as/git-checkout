@@ -2,6 +2,8 @@
 
 A graphical Git client for VS Code. See your history as a graph, stage and commit changes, and handle branches, tags, stashes, worktrees, submodules, rebases and merge conflicts without leaving the editor. It uses VS Code's own look and keys.
 
+![The commit graph with branches, tags and a stash, and the Commit tab beside it](docs/screenshots/01-commit-graph.png)
+
 Git Checkout runs on the **workspace** side, so Git always runs on the same machine as your folder: local, WSL, SSH, Dev Containers or Codespaces.
 
 ## Features
