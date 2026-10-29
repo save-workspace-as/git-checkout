@@ -2,6 +2,8 @@ node_modules/
 dist/
 media/webview/*.js
 media/webview/*.js.map
+media/webview/*.css
+media/webview/*.ttf
 *.tsbuildinfo
 .DS_Store
 .vscode-test/

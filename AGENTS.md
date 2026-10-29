@@ -69,7 +69,7 @@ Everything about `webview/`: which VS Code Element to use for each job, how a vi
 ## Build and verify
 
 - Run `npm run lint` (typechecks the extension and webview), `npm run compile`, `npm run test:unit`, and `npm run test:integration` locally after code changes and before pushing. CI's `build` job runs lint and `npm run package`. The test jobs are described under Tests.
-- `dist/` and `media/webview/*.js` are build outputs; do not edit or commit them.
+- `dist/` and everything `npm run compile` writes to `media/webview/` (scripts, `styles.css`, the codicon font and stylesheet) are build outputs; do not edit or commit them.
 - To try the extension, use Run Without Debugging (`Cmd/Ctrl+F5`); F5 with the debugger attached can hang the extension host.
 
 ## Logging
