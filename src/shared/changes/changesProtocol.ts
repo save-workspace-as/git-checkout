@@ -1,3 +1,4 @@
+import type { MergeSideDto } from '../conflicts/mergeProtocol';
 import type { CommitDiffLineDto } from '../history/commitDetailsProtocol';
 import type { WorkingCopyDiffSide, WorkingCopyEntryDto, WorkingCopyFileDiffDto } from './workingCopyProtocol';
 
@@ -68,6 +69,8 @@ export type ChangesHostMessage =
       error?: string;
       nonText?: WorkingCopyFileDiffDto;
     }
+  /** The selected change is a conflicted file: who conflicts, and whether the Merge modal can take it. */
+  | { type: 'changesConflict'; path: string; side: WorkingCopyDiffSide; incoming: MergeSideDto; current: MergeSideDto; canMerge: boolean }
   /** The commit went through: clear the form. */
   | { type: 'changesCommitted' }
   /** A message drafted by the language model for the staged changes. */
@@ -89,7 +92,10 @@ export type ChangesWebviewMessage =
   | { type: 'changesCommit'; subject: string; description: string; amend: boolean; push?: boolean; pushForm?: boolean }
   | { type: 'changesAmend' }
   | { type: 'changesGenerateMessage' }
-  | { type: 'changesOpenFile'; path: string };
+  | { type: 'changesOpenFile'; path: string }
+  /** Resolve a conflicted file in the Merge modal, or in VS Code's merge editor. */
+  | { type: 'changesMergeInCheckout'; path: string }
+  | { type: 'changesMergeInEditor'; path: string };
 
 /** A commit message from the form: the subject, a blank line, then the description. */
 export function joinCommitMessage(subject: string, description: string): string {

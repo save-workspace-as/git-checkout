@@ -11,6 +11,7 @@ import type { StashWebviewMessage } from './stash/stashProtocol';
 import type { WorkingCopyHostMessage, WorkingCopyWebviewMessage } from './changes/workingCopyProtocol';
 import type { PatchWebviewMessage } from './patches/patchProtocol';
 import type { RebaseHostMessage, RebaseWebviewMessage } from './rebase/rebaseProtocol';
+import type { MergeHostMessage, MergeWebviewMessage } from './conflicts/mergeProtocol';
 import type { OperationFormModalHostMessage, OperationFormModalWebviewMessage } from './forms/operationForm';
 
 export type { RepoOperationDto, SyncStatusDto, WorktreeStatusDto };
@@ -59,7 +60,8 @@ export type HostMessage =
   | RebaseHostMessage
   | OperationFormModalHostMessage
   | PathHistoryHostMessage
-  | ChangesHostMessage;
+  | ChangesHostMessage
+  | MergeHostMessage;
 
 export type WebviewMessage =
   | { type: 'ready' }
@@ -80,4 +82,5 @@ export type WebviewMessage =
   /** A diff toolbar button was pressed in the Commit, Changes or Tree tab. */
   | { type: 'diffViewOption'; option: DiffViewOption }
   | ChangesWebviewMessage
+  | MergeWebviewMessage
   | StashWebviewMessage;

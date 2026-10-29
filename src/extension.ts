@@ -53,6 +53,7 @@ export interface GitCheckoutApi {
   selectRepository(repoRoot: string): Promise<void>;
   /** What the Merge Conflicts window last showed (e2e only). */
   operationFormState(): ReturnType<GitCheckoutPanelManager['operationFormState']>;
+  mergeOpenPath(): string | undefined;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -474,6 +475,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     sendPanelMessage: (message) => panelManager.sendPanelMessage(message),
     selectRepository: (repoRoot) => panelManager.selectRepository(repoRoot),
     operationFormState: () => panelManager.operationFormState(),
+    mergeOpenPath: () => panelManager.mergeOpenPath(),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

@@ -18,7 +18,7 @@ Git Checkout runs on the **workspace** side, so Git always runs on the same mach
 - **History tools:** file, folder and hunk history, a blame view that shows who last changed each line of a commit's change, cherry-pick, revert, reset, patches, archives (zip or tarball of any commit, branch or tag), and bisect.
 - **Housekeeping:** prune stale remote-tracking branches, delete merged branches, clean untracked files, sparse checkout, garbage collection, and repository statistics, all from Quick Launch.
 - **Pull requests:** open GitHub's new pull request page for a branch.
-- **Interactive rebase and merge conflicts:** reorder, squash, fix up, reword and drop commits; resolve conflicts in one place.
+- **Interactive rebase and merge conflicts:** reorder, squash, fix up, reword and drop commits. A conflicted file in the Changes tab can be resolved in a Merge modal that shows the incoming and current sides next to the result, with one click to take a side, the other or both for each conflict (or for all of them), or in VS Code's merge editor.
 - **Git Flow and commit signing.**
 - **Quick Launch:** one list of every repository action, plus your own commands.
 - **Keyboard shortcuts** for every common action, which you can turn off or rebind.

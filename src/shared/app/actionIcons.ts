@@ -20,6 +20,7 @@ export const ACTION_ICONS = {
   previousChange: 'arrow-up',
   nextChange: 'arrow-down',
   swapSides: 'arrow-swap',
+  mergeLayout: 'layout',
   fileTree: 'list-tree',
   fileList: 'list-flat',
   untrackedFiles: 'new-file',

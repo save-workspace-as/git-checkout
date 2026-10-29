@@ -23,6 +23,29 @@ export type SelectionActions = (positions: number[]) => HunkAction[];
 /** Lines drawn before the rest waits behind a button, so a huge diff does not freeze the panel. */
 export const MAX_RENDERED_LINES = 5000;
 
+/** Sets the editor theme's token colors on an element, for the highlighted code inside it. */
+export function applyTokenColors(element: HTMLElement, colors: EditorTokenColors): void {
+  const vars: Record<string, string> = {
+    foreground: colors.foreground,
+    keyword: colors.keyword,
+    string: colors.string,
+    number: colors.number,
+    comment: colors.comment,
+    type: colors.type,
+    function: colors.function,
+    variable: colors.variable,
+    'comment-style': colors.commentStyle,
+  };
+  for (const [name, value] of Object.entries(vars)) {
+    const property = `--commit-token-${name}`;
+    if (name !== 'foreground' && value.toLowerCase() === colors.foreground.toLowerCase()) {
+      element.style.removeProperty(property);
+    } else {
+      element.style.setProperty(property, value);
+    }
+  }
+}
+
 export function mountCodeViewer(
   container: HTMLElement,
   highlight = highlightDiffLines,
@@ -343,25 +366,7 @@ export function mountCodeViewer(
       paint();
     },
     setTokenColors(colors: EditorTokenColors): void {
-      const vars: Record<string, string> = {
-        foreground: colors.foreground,
-        keyword: colors.keyword,
-        string: colors.string,
-        number: colors.number,
-        comment: colors.comment,
-        type: colors.type,
-        function: colors.function,
-        variable: colors.variable,
-        'comment-style': colors.commentStyle,
-      };
-      for (const [name, value] of Object.entries(vars)) {
-        const property = `--commit-token-${name}`;
-        if (name !== 'foreground' && value.toLowerCase() === colors.foreground.toLowerCase()) {
-          container.style.removeProperty(property);
-        } else {
-          container.style.setProperty(property, value);
-        }
-      }
+      applyTokenColors(container, colors);
     },
     navigate(direction: 'previous' | 'next'): void {
       const marks = Array.from(container.querySelectorAll<HTMLElement>('[data-diff-nav]'));
