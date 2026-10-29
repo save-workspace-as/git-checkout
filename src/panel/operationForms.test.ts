@@ -27,10 +27,23 @@ import {
   validateGitFlowInitForm,
   applyPatchForm,
   createPatchForm,
+  undoOperationForm,
 } from './operationForms';
 import { validateOperationForm } from '../shared/forms/operationForm';
 
 describe('operation-specific form definitions', () => {
+  it('shows what the undo reverts and where the branch goes back to, keeping local changes by default', () => {
+    const form = undoOperationForm('main', { label: 'Reset', message: 'reset: moving to HEAD~2' }, 'abc1234 add search');
+    assert.equal(form.title, 'Undo Last Operation');
+    assert.equal(form.submitLabel, 'Undo');
+    assert.deepEqual(form.values, { operation: 'reset: moving to HEAD~2', target: 'abc1234 add search', mode: 'keep' });
+    const operation = form.fields.find((field) => field.id === 'operation');
+    assert.equal(operation?.label, 'Reset');
+    assert.equal(operation?.type === 'text' && operation.readOnly, true);
+    const mode = form.fields.find((field) => field.id === 'mode');
+    assert.deepEqual(mode?.type === 'radio' && mode.options.map((option) => option.value), ['keep', 'hard']);
+  });
+
   it('asks which revision to save as a patch and in what format', () => {
     const form = createPatchForm('abc1234');
     assert.equal(form.title, 'Create Patch');

@@ -20,6 +20,7 @@ export const REPOSITORY_ACTIONS: readonly RepositoryAction[] = [
   { id: 'pull', command: 'gitCheckout.pull', group: '2_sync', enablement: SYNC_IDLE },
   { id: 'push', command: 'gitCheckout.push', group: '2_sync', enablement: SYNC_IDLE },
   { id: 'saveStash', command: 'gitCheckout.sidebar.createStash', group: '3_stash', enablement: IDLE },
+  { id: 'undo', command: 'gitCheckout.undo', group: '4_undo', enablement: IDLE },
   { id: 'newBranch', command: 'gitCheckout.sidebar.createBranch', group: '5_create', enablement: IDLE },
   { id: 'newTag', command: 'gitCheckout.sidebar.createTag', group: '5_create', enablement: IDLE },
   { id: 'newWorktree', command: 'gitCheckout.sidebar.createWorktree', group: '5_create', enablement: IDLE },

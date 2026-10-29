@@ -16,7 +16,7 @@ import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
-import { MERGE_TYPE_FAST_FORWARD, mergeForm, rebaseForm, resetForm } from '../../panel/operationForms';
+import { MERGE_TYPE_FAST_FORWARD, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('history');
@@ -227,6 +227,30 @@ export class HistoryOperationsController {
         const mode = values.mode as ResetMode;
         await this.ctx.sync.runSyncOp(l10n.t('Reset'), (repoRoot, token) =>
           this.ctx.historyService.reset(repoRoot, mode, sha, { cancellationToken: token }),
+        );
+        return true;
+      },
+    });
+  }
+
+  /** Moves the branch back to where it was before its last reset, rebase, amend, merge or commit. */
+  async runUndo(): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    const last = await this.ctx.historyService.lastOperation(root);
+    if (!last) {
+      void vscode.window.showInformationMessage(l10n.t('There is nothing to undo on the current branch.'));
+      return;
+    }
+    await this.ctx.operationForm.show(undoOperationForm(last.branch, last, last.previousSummary), {
+      validate: () => ({}),
+      submit: async (values) => {
+        const mode: ResetMode = values.mode === 'hard' ? 'hard' : 'keep';
+        await this.ctx.sync.runSyncOp(l10n.t('Undo'), (repoRoot, token) =>
+          this.ctx.historyService.reset(repoRoot, mode, last.previousSha, { cancellationToken: token }),
         );
         return true;
       },

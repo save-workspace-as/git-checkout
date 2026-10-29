@@ -1574,6 +1574,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     return this.operations.runApplyPatchFromClipboard();
   }
 
+  runUndo(): Promise<void> {
+    return this.operations.runUndo();
+  }
+
   runCreatePatch(options?: { revision?: string; saveTo?: string }): Promise<void> {
     return this.operations.runCreatePatch(options);
   }
