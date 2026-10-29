@@ -16,7 +16,7 @@ import type {
   WorkingCopyDiffSide,
   WorkingCopyEntryDto,
 } from '../protocol';
-import { buildHunkPatch } from '../../src/shared/changes/hunkPatch';
+import { buildHunkPatch, buildSelectionPatch } from '../../src/shared/changes/hunkPatch';
 import { ACTION_ICONS } from '../../src/shared/app/actionIcons';
 import { mountCodeViewer, type HunkAction } from './codeViewer';
 import { renderNonTextDiff } from './nonTextDiffView';
@@ -203,6 +203,7 @@ export function mountChangesView(
         renderNonTextDiff(diff, message.nonText, DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS, () => undefined);
       } else {
         viewer.setHunkActions(hunkActionsFor(message));
+        viewer.setSelectionActions(selectionActionsFor(message));
         void viewer.showDiff(message.path, message.lines, message.binary, keepScroll);
       }
     }
@@ -234,6 +235,30 @@ export function mountChangesView(
           : [
               { label: l10n.t('Stage'), run: () => apply(index, 'stage') },
               { label: l10n.t('Discard Changes…'), run: () => apply(index, 'discard') },
+            ];
+    }
+
+    /** Stage and discard buttons over the lines a person selects in an unstaged change; Unstage in a staged one. */
+    function selectionActionsFor(
+      message: Extract<ChangesHostMessage, { type: 'changesDiff' }>,
+    ): ((positions: number[]) => HunkAction[]) | undefined {
+      const entry = allEntries.find((candidate) => candidate.path === message.path && sideOf(candidate) === message.side);
+      // A new file has nothing to patch against, so it goes as a whole, through the buttons over its one hunk.
+      if (!entry || entry.status === 'ignored' || entry.group === 'untracked') {
+        return undefined;
+      }
+      const apply = (positions: number[], op: 'stage' | 'unstage' | 'discard'): void => {
+        const patch = buildSelectionPatch(message.path, message.lines, new Set(positions), op);
+        if (patch) {
+          postMessage({ type: 'changesHunk', path: message.path, op, patch });
+        }
+      };
+      return (positions) =>
+        message.side === 'staged'
+          ? [{ label: l10n.t('Unstage'), run: () => apply(positions, 'unstage') }]
+          : [
+              { label: l10n.t('Stage'), run: () => apply(positions, 'stage') },
+              { label: l10n.t('Discard Changes…'), run: () => apply(positions, 'discard') },
             ];
     }
 

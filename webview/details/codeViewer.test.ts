@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { before, beforeEach, describe, it } from 'node:test';
+import { afterEach, before, beforeEach, describe, it } from 'node:test';
 import type { CommitDiffLineDto } from '../../src/shared/history/commitDetailsProtocol';
 import { DEFAULT_COMMIT_DIFF_VIEW } from '../../src/shared/diff/commitDiffPresentation';
 import { editorTokenColorsFromRules } from '../../src/shared/diff/editorTokenColors';
@@ -190,6 +190,133 @@ describe('shared read-only code viewer', () => {
     viewer.setHunkActions(undefined);
     await viewer.showDiff('app.ts', [{ kind: 'hunk', text: '@@ -1 +1 @@' }, { kind: 'add', text: 'x', line: 1 }], false);
     assert.equal(all('.commit-diff-hunk-box').length, 0);
+  });
+
+  describe('selecting lines of a diff', () => {
+    const diff: CommitDiffLineDto[] = [
+      { kind: 'hunk', text: '@@ -1,4 +1,4 @@' },
+      { kind: 'context', text: 'a', line: 1 },
+      { kind: 'del', text: 'b', line: 2 },
+      { kind: 'add', text: 'B', line: 2 },
+      { kind: 'del', text: 'c', line: 3 },
+      { kind: 'add', text: 'C', line: 3 },
+      { kind: 'context', text: 'd', line: 4 },
+    ];
+    const realGetSelection = document.getSelection;
+    afterEach(() => { document.getSelection = realGetSelection; });
+
+    /** A selection over these rows, as the browser reports it. */
+    function select(container: El, rows: (El | undefined)[], extra: Record<string, unknown> = {}) {
+      const range = {
+        commonAncestorContainer: container,
+        startContainer: container, startOffset: 0, endContainer: container, endOffset: 0,
+        intersectsNode: (node: Node) => rows.includes(node as El),
+        getClientRects: () => [],
+        getBoundingClientRect: () => ({ top: 40, bottom: 58, left: 10, right: 120 }),
+      };
+      const selection = {
+        isCollapsed: rows.length === 0, rangeCount: 1, getRangeAt: () => range,
+        removeAllRanges: () => { selection.isCollapsed = true; rows.length = 0; },
+        setBaseAndExtent: (first: El, _a: number, last: El) => {
+          const all = [...container.querySelectorAll('.commit-diff-line')] as El[];
+          rows.splice(0, rows.length, ...all.slice(all.indexOf(first), all.indexOf(last) + 1));
+          selection.isCollapsed = false;
+        },
+        ...extra,
+      };
+      document.getSelection = () => selection as unknown as Selection;
+      document.dispatchEvent(new Event('selectionchange'));
+      return selection;
+    }
+
+    const viewerOf = (popup: El): El => popup.parentElement as El;
+
+    async function mountDiff(options?: { split?: boolean }) {
+      const m = mount();
+      const picked: number[][] = [];
+      m.viewer.setSelectionActions((positions) => [{ label: 'Stage', run: () => picked.push(positions) }]);
+      if (options?.split) { m.viewer.setOptions({ ...DEFAULT_COMMIT_DIFF_VIEW, sideBySide: true }); }
+      await m.viewer.showDiff('app.ts', diff, false);
+      return { ...m, picked, popup: () => m.one('.code-viewer-selection-actions')! };
+    }
+
+    it('numbers only the change lines, and only when there is something to do with a selection', async () => {
+      const { all } = await mountDiff();
+      assert.deepEqual(all('[data-line]').map((row) => row.dataset.line), ['2', '3', '4', '5']);
+      const plain = mount();
+      await plain.viewer.showDiff('app.ts', diff, false);
+      assert.equal(plain.all('[data-line]').length, 0);
+    });
+
+    it('shows buttons at the end of a selection and hands over the selected change lines', async () => {
+      const { all, popup, picked } = await mountDiff();
+      const rows = all('[data-line]');
+      assert.equal(popup().hidden, true);
+      select(popup().parentElement as El, [rows[0], rows[1]]);
+      assert.equal(popup().hidden, false);
+      assert.equal(popup().style.top, '2px', 'at the top of the first selected line, where a hunk\'s buttons sit');
+      assert.match(viewerOf(popup()).className, /has-selection-actions/, 'the hunk buttons give way');
+      assert.deepEqual([...popup().querySelectorAll('vscode-button')].map((button) => button.textContent!.trim()), ['Stage']);
+      (popup().querySelector('vscode-button') as El).click();
+      assert.deepEqual(picked, [[2, 3]]);
+      assert.equal(popup().hidden, true, 'the buttons go once the selection is used');
+      assert.doesNotMatch(viewerOf(popup()).className, /has-selection-actions/);
+    });
+
+    it('shows nothing for a collapsed selection or one over context lines only', async () => {
+      const { container, all, popup } = await mountDiff();
+      select(container, []);
+      assert.equal(popup().hidden, true);
+      select(container, [all('.commit-diff-context')[0]]);
+      assert.equal(popup().hidden, true);
+    });
+
+    it('leaves out a row the selection only touches at its edge', async () => {
+      const { container, all, popup, picked } = await mountDiff();
+      const rows = all('[data-line]');
+      const next = rows[1];
+      // A triple click on the first change ends at the very start of the next row.
+      select(container, [rows[0], next], { getRangeAt: () => ({
+        commonAncestorContainer: container, startContainer: rows[0], startOffset: 0,
+        endContainer: next, endOffset: 0,
+        intersectsNode: (node: Node) => node === rows[0] || node === next,
+        getClientRects: () => [], getBoundingClientRect: () => ({ top: 0, bottom: 10, left: 0, right: 10 }),
+      }) });
+      (popup().querySelector('vscode-button') as El).click();
+      assert.deepEqual(picked, [[2]]);
+    });
+
+    it('selects a line from its number, and a range with Shift', async () => {
+      const { all, popup, picked } = await mountDiff();
+      const rows = all('[data-line]');
+      select(popup().parentElement as El, []);
+      (rows[0].querySelector('.commit-diff-lineno') as El).click();
+      assert.equal(popup().hidden, false);
+      (rows[2].querySelector('.commit-diff-lineno') as El).dispatchEvent(new MouseEvent('click', { bubbles: true, shiftKey: true }));
+      (popup().querySelector('vscode-button') as El).click();
+      assert.deepEqual(picked, [[2, 3, 4]]);
+    });
+
+    it('keeps a selection on the side of a side-by-side diff it started on', async () => {
+      const { container, all, popup, picked } = await mountDiff({ split: true });
+      const rows = all('[data-line]');
+      const left = rows.filter((row) => row.dataset.side === 'left');
+      const right = rows.filter((row) => row.dataset.side === 'right');
+      assert.ok(left.length > 0 && right.length > 0);
+      left[0].dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+      assert.equal(container.dataset.selectSide, 'left');
+      select(container, rows);
+      (popup().querySelector('vscode-button') as El).click();
+      assert.deepEqual(picked, [left.map((row) => Number(row.dataset.line))]);
+    });
+
+    it('hides the buttons when the actions are taken away or the view shows a message', async () => {
+      const { viewer, all, popup } = await mountDiff();
+      select(popup().parentElement as El, [all('[data-line]')[0]]);
+      assert.equal(popup().hidden, false);
+      viewer.showMessage('No changes.');
+      assert.equal(popup().hidden, true);
+    });
   });
 
   it('wraps long lines only when asked', async () => {
