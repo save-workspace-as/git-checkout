@@ -49,7 +49,7 @@ describe('VS Code Elements in the webviews', () => {
     // A button's host has a tabindex, and the layout elements and the progress bar take no input.
     const unfocusable = new Set([
       'vscode-button', 'vscode-button-group', 'vscode-checkbox-group', 'vscode-form-container', 'vscode-form-group', 'vscode-form-helper',
-      'vscode-icon', 'vscode-label', 'vscode-option', 'vscode-progress-bar', 'vscode-radio-group', 'vscode-tab-panel', 'vscode-tabs', 'vscode-toolbar-container',
+      'vscode-icon', 'vscode-label', 'vscode-option', 'vscode-progress-bar', 'vscode-radio-group', 'vscode-split-layout', 'vscode-tab-panel', 'vscode-tabs', 'vscode-toolbar-container',
     ]);
     for (const tag of [...created].filter((name) => !unfocusable.has(name))) {
       assert.ok(shell.includes(`'${tag}`), `${tag} is missing from the focusable selector in webview/modalShell.ts`);

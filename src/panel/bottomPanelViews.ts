@@ -109,6 +109,7 @@ export function createBottomViewSlots(): BottomViewSlots {
   };
 }
 
+/** The page of a webview that runs one of the bundled scripts in `media/webview`. */
 function viewHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,

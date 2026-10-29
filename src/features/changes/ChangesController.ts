@@ -35,6 +35,7 @@ export type ChangesContext = Pick<
   | 'context'
   | 'gitSettings'
   | 'graphReady'
+  | 'merge'
   | 'patchStagingService'
   | 'postMessage'
   | 'postState'
@@ -207,11 +208,14 @@ export class ChangesController {
     }
   }
 
-  /** Reads the selected change's diff for the Changes tab. */
-  /**
-   * Picking a conflicted file also opens it in the merge editor, where it is fixed; the preview beside the
-   * lists keeps showing its diff.
-   */
+  /** Resolves the conflicted files of the clicked row, or of every selected row, by keeping one side whole. */
+  async resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
+    for (const target of commandChangeTargets(arg, selected, undefined)) {
+      await this.ctx.merge.takeSide(target.path, side);
+    }
+  }
+
+  /** Opens a conflicted file in VS Code's merge editor, one of the two ways to fix it. */
   async openConflictInMergeEditor(path: string): Promise<void> {
     const root = this.ctx.activeRepoRoot();
     if (!root) {
@@ -230,6 +234,7 @@ export class ChangesController {
     }
   }
 
+  /** Reads the selected change's diff for the Changes tab; a conflicted file gets who conflicts instead. */
   async sendChangesDiff(path: string, side: WorkingCopyDiffSide): Promise<void> {
     const root = this.ctx.activeRepoRoot();
     if (!root || !this.ctx.graphReady()) {
@@ -244,6 +249,17 @@ export class ChangesController {
         return;
       }
       const entries = await this.ctx.workingTreeService.listChanges(root);
+      if (entries.some((entry) => entry.path === path && entry.status === 'conflict')) {
+        // A conflicted file has no diff to read: the Changes tab offers to resolve it.
+        const file = await this.ctx.merge.describe(root, path);
+        const none = { label: '', subject: '', author: '', date: 0 };
+        this.ctx.changesSlot.post({
+          type: 'changesConflict', path, side,
+          incoming: file?.incoming ?? none, current: file?.current ?? none, canMerge: file?.canMerge ?? false,
+          incomingExists: file?.incomingExists ?? true, currentExists: file?.currentExists ?? true,
+        });
+        return;
+      }
       // An ignored file is not in git's change list, but shows like an untracked one: all added.
       const untracked =
         !entries.some((entry) => entry.path === path) ||

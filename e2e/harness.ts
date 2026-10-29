@@ -63,6 +63,8 @@ export interface GitCheckoutApi {
   /** The commits and ref labels the graph shows for all commits. */
   graphCommits(): Promise<{ subject: string; refs: string[] }[]>;
   autoFetchNow(): Promise<void>;
+  /** The file the Merge modal is open for, if any. */
+  mergeOpenPath(): string | undefined;
   operationFormState(): {
     sessionId: number;
     form: {

@@ -1,8 +1,6 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
-import { toAbsoluteRepoPath } from '../changes/workingCopyModel';
 import { ConflictResolutionService } from '../conflicts/conflictResolutionService';
-import { openFileInMergeEditor } from '../conflicts/mergeEditorOpener';
 import { createLogger } from '../../log';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 import type { HistoryWebviewMessage } from '../../shared/history/historyProtocol';
@@ -17,6 +15,7 @@ export type OperationContext = Pick<
   | 'cliRegistry'
   | 'gitService'
   | 'handleOpError'
+  | 'merge'
   | 'postState'
   | 'reloadGraphOnHeadChange'
   | 'repoOperationService'
@@ -47,7 +46,7 @@ export class OperationController {
     }
   }
 
-  /** Opens the next conflicted file in the merge editor; the user fixes it there and stages it. */
+  /** Opens the next conflicted file in the Merge modal; the user fixes it there and it is staged. */
   async resolve(): Promise<void> {
     const root = this.ctx.activeRepoRoot();
     if (!root) {
@@ -57,12 +56,8 @@ export class OperationController {
       const state = await this.conflicts.loadState(root);
       const file = state.files.find((f) => f.mergeEditorSupported);
       if (file) {
-        const opened = await openFileInMergeEditor(vscode.Uri.file(toAbsoluteRepoPath(root, file.path)), (command, ...args) =>
-          vscode.commands.executeCommand(command, ...args),
-        );
-        if (opened) {
-          return;
-        }
+        this.ctx.merge.open(file.path);
+        return;
       } else if (state.files[0]) {
         // Deleted on one side, a binary file or a submodule: the merge editor cannot show it.
         void vscode.window.showInformationMessage(state.files[0].guidance);

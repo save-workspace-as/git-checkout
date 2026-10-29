@@ -184,6 +184,77 @@ describe('Changes tab diff and commit form', () => {
     assert.deepEqual(buttons().map((button) => button.textContent), ['Unstage']);
   });
 
+  describe('a conflicted file', () => {
+    const side = (label: string, subject: string) => ({ label, subject, author: 'Ada', date: 1761060000 });
+    const conflict = (canMerge = true, path = 'c.txt', exists = { current: true, incoming: true }) => ({
+      type: 'changesConflict', path, side: 'unstaged', canMerge,
+      currentExists: exists.current, incomingExists: exists.incoming,
+      incoming: side('topic', 'Add the topic'), current: side('main', 'Change main'),
+    });
+    function select(view: View, path = 'c.txt') {
+      view.applyHostMessage(snapshot([{ path, group: 'unstaged', status: 'conflict' }]));
+      view.applyHostMessage({ type: 'changesSelection', selection: { path, side: 'unstaged' } });
+    }
+
+    it('names both sides in place of a diff, and offers to resolve it here or in the editor', () => {
+      const { root, posted, view } = mount();
+      select(view);
+      view.applyHostMessage(conflict());
+      assert.equal(root.querySelector('.changes-conflict-title')?.textContent, 'Merge conflict');
+      assert.deepEqual(
+        [...root.querySelectorAll('.merge-side-branch')].map((branch) => branch.textContent),
+        ['topic', 'main'],
+      );
+      assert.deepEqual(
+        [...root.querySelectorAll('.merge-side-commit')].map((commit) => commit.textContent),
+        ['Add the topic', 'Change main'],
+      );
+      const [here, editor] = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
+      assert.equal(here.textContent, 'Resolve in Git Checkout');
+      here.click();
+      editor.click();
+      assert.deepEqual(plain(posted.slice(-2)), [
+        { type: 'changesMergeInCheckout', path: 'c.txt' },
+        { type: 'changesMergeInEditor', path: 'c.txt' },
+      ]);
+    });
+
+    it('offers to keep one side whole, or the editor, when there are no conflict markers to merge', () => {
+      const { root, posted, view } = mount();
+      select(view);
+      view.applyHostMessage(conflict(false));
+      const buttons = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
+      assert.deepEqual(buttons.map((button) => button.textContent!.trim()), ['Keep current', 'Keep incoming', 'Resolve in editor']);
+      buttons[1].click();
+      assert.deepEqual(posted.at(-1), { type: 'changesMergeTakeSide', path: 'c.txt', side: 'incoming' });
+      buttons[0].click();
+      assert.deepEqual(posted.at(-1), { type: 'changesMergeTakeSide', path: 'c.txt', side: 'current' });
+    });
+
+    it('says a side deleted the file where it did, and keeping that side deletes it', () => {
+      const { root, view } = mount();
+      select(view);
+      view.applyHostMessage(conflict(false, 'c.txt', { current: false, incoming: true }));
+      const labels = [...root.querySelectorAll('.changes-conflict-actions vscode-button')].map((button) => button.textContent!.trim());
+      assert.deepEqual(labels, ['Delete, as current did', 'Keep incoming', 'Resolve in editor']);
+    });
+
+    it('ignores a conflict for a file that is no longer the selected one, and shows the next diff in its place', () => {
+      const { root, view } = mount();
+      select(view);
+      view.applyHostMessage(conflict(true, 'other.txt'));
+      assert.equal(root.querySelector('.changes-conflict') === null, true);
+      view.applyHostMessage(conflict());
+      assert.equal(root.querySelector('.changes-conflict') === null, false);
+      view.applyHostMessage({
+        type: 'changesDiff', path: 'c.txt', side: 'unstaged', binary: false,
+        lines: [{ kind: 'hunk', text: '@@ -1 +1 @@' }, { kind: 'add', text: 'x', line: 1 }],
+      });
+      assert.equal(root.querySelector('.changes-conflict') === null, true);
+      assert.equal(root.querySelectorAll('.commit-diff-line').length > 0, true);
+    });
+  });
+
   describe('selecting lines', () => {
     const realGetSelection = document.getSelection;
     afterEach(() => { document.getSelection = realGetSelection; });

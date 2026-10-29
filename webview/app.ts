@@ -1,13 +1,15 @@
 import * as l10n from '@vscode/l10n';
-import { html, render } from 'lit';
+import { html, nothing, render } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { mountGraphView } from './graph/graphView';
 import { mountOperationBanner } from './operationBanner';
 import { mountRebaseView } from './rebase/rebaseView';
 import { mountOperationFormModal } from './forms/operationFormModal';
 import { mountHistoryModal } from './history/historyModal';
+import { mountMergeView } from './merge/mergeView';
 import type { HostMessage, UiState, WebviewMessage } from './protocol';
 import type { PathHistoryHostMessage } from '../src/shared/history/pathHistoryProtocol';
+import type { MergeHostMessage } from '../src/shared/conflicts/mergeProtocol';
 import type { RebaseHostMessage } from '../src/shared/rebase/rebaseProtocol';
 import { createModalShell } from './modalShell';
 
@@ -90,6 +92,37 @@ export function renderApp(
   const operationForm = mountOperationFormModal(shell, postMessage);
   const history = mountHistoryModal(shell, postMessage);
   const blame = mountHistoryModal(shell, postMessage, { blame: true });
+
+  /** The Merge modal: one conflicted file, with the two sides to choose from and the result below. */
+  let mergePath = '';
+  const mergeModal = createModalShell(shell, {
+    className: 'history-modal merge-modal',
+    title: l10n.t('Merge'),
+    onDismiss: () => {
+      postMessage({ type: 'mergeCancel', path: mergePath });
+      mergeModal.hide();
+    },
+  });
+  let mergeView: ReturnType<typeof mountMergeView> | undefined;
+
+  function applyMergeHostMessage(message: MergeHostMessage): void {
+    if (message.type === 'mergeOpen') {
+      mergePath = message.path;
+      // A new view for each file, so nothing of the last one is left.
+      render(nothing, mergeModal.body);
+      mergeModal.body.className = 'modal-body';
+      mergeView = mountMergeView(mergeModal.body, (merge) => {
+        postMessage(merge);
+        if (merge.type === 'mergeCancel' || merge.type === 'mergeOpenInEditor') { mergeModal.hide(); }
+      }, undefined, { extras: mergeModal.extras, title: mergeModal.title });
+      mergeModal.show();
+      postMessage({ type: 'mergeReady', path: message.path });
+    } else if (message.type === 'mergeClose') {
+      mergeModal.hide();
+    } else {
+      mergeView?.applyHostMessage(message);
+    }
+  }
   /** The modal that opened last takes the messages that follow, until it closes. */
   let historyTarget: 'history' | 'blame' = 'history';
 
@@ -112,6 +145,13 @@ export function renderApp(
         }
         if (historyTarget === 'blame') { blame.applyHostMessage(historyMessage); } else { history.applyHostMessage(historyMessage); }
         return;
+      }
+      if (message.type === 'mergeOpen' || message.type === 'mergeClose' || message.type === 'mergeError' || message.type === 'mergeInit') {
+        applyMergeHostMessage(message);
+        return;
+      }
+      if (message.type === 'editorTokenColors' && mergeModal.isOpen()) {
+        mergeView?.applyHostMessage(message);
       }
       if (message.type === 'commitDiffView') {
         history.setViewOptions(message.options);

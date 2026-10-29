@@ -158,6 +158,7 @@ function getWebviewHtml(
 import { SyncController } from '../features/sync/SyncController';
 
 import { ChangesController, CHANGES_VIEW_STATE_KEY } from '../features/changes/ChangesController';
+import { MergeResolverController } from '../features/conflicts/MergeResolverController';
 
 import { CommitDetailsController, DIFF_VIEW_STATE_KEY } from '../features/history/CommitDetailsController';
 
@@ -233,7 +234,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   readonly sync = new SyncController(this);
 
   /** The Changes tab: the working-copy lists, the diff and the commit form. */
-  readonly changes = new ChangesController(this);
+  readonly changes: ChangesController = new ChangesController(this);
+
+  /** The Merge modal, where a conflicted file is resolved side by side. */
+  readonly merge: MergeResolverController = new MergeResolverController(this);
 
   /** Commit details, the changed-file and File Tree lists, and the diff options. */
   readonly details = new CommitDetailsController(this);
@@ -562,6 +566,11 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     }));
   }
 
+  /** The file the Merge modal is open for, if any. */
+  mergeOpenPath(): string | undefined {
+    return this.merge.openPath();
+  }
+
   operationFormState(): ReturnType<OperationFormController['current']> {
     return this.operationForm.current();
   }
@@ -769,7 +778,6 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
         this.stagedList.select(selection);
         if (selection) {
           await this.changes.sendChangesDiff(selection.path, selection.side);
-          await this.changes.openConflictInMergeEditor(selection.path);
         } else {
           this.changes.changesSelected = undefined;
         }
@@ -777,6 +785,21 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       }
       case 'changesHunk':
         await this.changes.runChangesHunk(message.op, message.patch);
+        break;
+      case 'changesMergeInCheckout':
+        this.merge.open(message.path);
+        break;
+      case 'changesMergeTakeSide':
+        await this.merge.takeSide(message.path, message.side);
+        break;
+      case 'changesMergeInEditor':
+        await this.changes.openConflictInMergeEditor(message.path);
+        break;
+      case 'mergeReady':
+      case 'mergeResolve':
+      case 'mergeCancel':
+      case 'mergeOpenInEditor':
+        await this.merge.handle(message);
         break;
       case 'changesCommit':
         await this.changes.runChangesCommit(message.subject, message.description, message.amend, message.push === true, message.pushForm === true);
@@ -1347,6 +1370,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     selected?: unknown,
   ): Promise<void> {
     return this.changes.runChangesFileCommand(command, arg, selected);
+  }
+
+  resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
+    return this.changes.resolveConflictsWith(side, arg, selected);
   }
 
   runLocalChangeActions(

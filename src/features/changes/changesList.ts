@@ -90,7 +90,8 @@ export class ChangesList extends NativeFileList<ChangeNode> {
           node.kind === 'dir' ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
         );
         item.id = node.key;
-        item.contextValue = `change.${node.kind}.${node.side}`;
+        // A conflicted file also offers to be resolved by keeping one side.
+        item.contextValue = `change.${node.kind}.${node.side}${node.kind === 'file' && node.status === 'conflict' ? '.conflict' : ''}`;
         if (node.kind === 'file') {
           item.resourceUri = changeUri(node.path, workingCopyUriStatus(node.status));
           item.description = node.folder || undefined;

@@ -18,6 +18,7 @@ import type {
 } from '../protocol';
 import { buildHunkPatch, buildSelectionPatch } from '../../src/shared/changes/hunkPatch';
 import { ACTION_ICONS } from '../../src/shared/app/actionIcons';
+import { formatDateTime } from '../../src/shared/history/commitDate';
 import { mountCodeViewer, type HunkAction } from './codeViewer';
 import { renderNonTextDiff } from './nonTextDiffView';
 import { html, nothing, render } from 'lit';
@@ -208,6 +209,53 @@ export function mountChangesView(
       }
     }
 
+    /** A conflicted file has no diff to show: it says who conflicts, and offers the two ways to resolve it. */
+    function showConflict(message: Extract<ChangesHostMessage, { type: 'changesConflict' }>): void {
+      if (message.path !== selected?.path || message.side !== selected.side) {
+        return;
+      }
+      renderedKey = undefined;
+      viewer.showMessage('');
+      const host = document.createElement('div');
+      host.className = 'changes-conflict-host';
+      diff.replaceChildren(host);
+      const card = (role: string, side: Extract<ChangesHostMessage, { type: 'changesConflict' }>['incoming']) => html`
+        <div class="merge-side">
+          <span class="merge-side-text">
+            <span class="merge-side-branch"><vscode-icon name=${ACTION_ICONS.branch} aria-hidden="true"></vscode-icon>${side.label || role}</span>
+            <span class="merge-side-commit" title=${side.subject}>${side.subject}</span>
+          </span>
+          <span class="merge-side-date">${side.date > 0 ? formatDateTime(new Date(side.date * 1000)) : ''}</span>
+        </div>`;
+      /** Keeps one side whole: its version of the file, or the deletion when that side deleted it. */
+      const keep = (side: 'incoming' | 'current', exists: boolean) => html`
+        <vscode-button type="button"
+          title=${exists
+            ? (side === 'current' ? l10n.t('Keep the file as the current side has it') : l10n.t('Keep the file as the incoming side has it'))
+            : (side === 'current' ? l10n.t('The current side deleted this file') : l10n.t('The incoming side deleted this file'))}
+          @click=${() => postMessage({ type: 'changesMergeTakeSide', path: message.path, side })}
+        >${exists
+          ? (side === 'current' ? l10n.t('Keep current') : l10n.t('Keep incoming'))
+          : (side === 'current' ? l10n.t('Delete, as current did') : l10n.t('Delete, as incoming did'))}</vscode-button>`;
+      render(html`
+        <div class="changes-conflict">
+          <div class="changes-conflict-title"><vscode-icon name="warning" aria-hidden="true"></vscode-icon>${l10n.t('Merge conflict')}</div>
+          <p>${message.canMerge
+            ? l10n.t('The file was changed on both sides. Choose the changes to keep, or merge them by hand.')
+            : l10n.t('This file cannot be merged line by line. Keep the version of one side.')}</p>
+          <div class="changes-conflict-sides">${card(l10n.t('Incoming'), message.incoming)}${card(l10n.t('Current'), message.current)}</div>
+          <div class="changes-conflict-actions">
+            ${message.canMerge
+              ? html`<vscode-button type="button"
+                  title=${l10n.t('Choose the changes to keep, side by side')}
+                  @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>`
+              : html`${keep('current', message.currentExists)}${keep('incoming', message.incomingExists)}`}
+            <vscode-button type="button" secondary
+              @click=${() => postMessage({ type: 'changesMergeInEditor', path: message.path })}>${l10n.t('Resolve in editor')}</vscode-button>
+          </div>
+        </div>`, host);
+    }
+
     /** Stage and discard buttons over each hunk of an unstaged change; Unstage over a staged one. */
     function hunkActionsFor(
       message: Extract<ChangesHostMessage, { type: 'changesDiff' }>,
@@ -291,6 +339,9 @@ export function mountChangesView(
             return;
           case 'changesDiff':
             showDiff(message);
+            return;
+          case 'changesConflict':
+            showConflict(message);
             return;
           case 'changesShortcut':
             if (message.action === 'focusCommit') {

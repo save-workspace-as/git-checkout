@@ -2134,3 +2134,385 @@ vscode-button-group.hidden {
 .operation-form-tabs {
   margin-top: 0;
 }
+
+/* The Merge modal: incoming on the left, current on the right, the result below. */
+.merge {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  color: var(--vscode-editor-foreground);
+  background: var(--vscode-editor-background);
+}
+
+.merge-header,
+.merge-footer {
+  padding: 12px 14px;
+}
+
+.merge-header {
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.merge-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  margin-bottom: 9px;
+}
+
+.merge-path {
+  color: var(--vscode-descriptionForeground);
+}
+
+.merge-path strong {
+  color: var(--vscode-foreground);
+  font-weight: 600;
+}
+
+.merge-sides {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 9px;
+}
+
+.merge-side {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 4px 9px;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-panel-border));
+  border-radius: 4px;
+}
+
+.merge-side-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.merge-side-branch,
+.merge-side-commit {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.merge-side-branch {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+
+.merge-side-commit,
+.merge-side-date {
+  color: var(--vscode-descriptionForeground);
+}
+
+.merge-side-date {
+  flex: 0 0 auto;
+}
+
+.merge-side-text {
+  min-width: 4ch;
+}
+
+/* In a narrow window the date gives way to the branch and the commit. */
+@media (max-width: 900px) {
+  .merge-side-date {
+    display: none;
+  }
+}
+
+.merge-nav {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.merge-count {
+  padding: 0 9px;
+  color: var(--vscode-errorForeground);
+}
+
+.merge-count-done {
+  color: var(--vscode-charts-green);
+}
+
+.merge-body {
+  min-height: 0;
+}
+
+.merge-split {
+  height: 100%;
+  border-width: 1px 0 0;
+}
+
+.merge-below,
+.merge-below .merge-result {
+  height: 100%;
+}
+
+/* The result between the two sides, each a column of the same width. */
+.merge-columns {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: 100%;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.merge-columns .merge-result {
+  min-width: 0;
+  border-top: 0;
+  border-left: 1px solid var(--vscode-panel-border);
+  border-right: 1px solid var(--vscode-panel-border);
+}
+
+.merge-panes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  color: var(--commit-token-foreground, var(--vscode-editor-foreground));
+}
+
+/* Each side scrolls sideways on its own; the three panes scroll up and down together. */
+.merge-pane {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.merge-pane + .merge-pane {
+  border-left: 1px solid var(--vscode-panel-border);
+}
+
+.merge-panes code,
+.merge-editor-code code {
+  background: transparent;
+}
+
+/* The result: a text area over a colored copy of its text, so it is typed in and colored like the viewers. */
+.merge-result {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--vscode-panel-border);
+  color: var(--commit-token-foreground, var(--vscode-editor-foreground));
+}
+
+.merge-editor-text {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.merge-editor-code,
+.merge-editor-input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border: 0;
+  white-space: pre;
+  font-family: var(--vscode-editor-font-family);
+  font-size: var(--vscode-editor-font-size);
+  font-weight: var(--vscode-editor-font-weight);
+  /* The height a line has in the sides, set once they are drawn, so the lines of the result match them. */
+  line-height: var(--merge-line-height, normal);
+}
+
+.merge-editor-code,
+.merge-editor-input {
+  padding: 0 0 0 6ch;
+}
+
+.merge-editor-code {
+  /* Over the text area, so the text stays in view above the selection it draws. */
+  z-index: 1;
+  pointer-events: none;
+}
+
+.merge-editor-line {
+  position: relative;
+  /* An empty line is as tall as any other. */
+  min-height: 1lh;
+}
+
+.merge-editor-line .commit-diff-lineno {
+  position: absolute;
+  left: -6ch;
+  padding-left: 12px;
+}
+
+.merge-editor-input {
+  width: 100%;
+  height: 100%;
+  resize: none;
+  overflow: auto;
+  outline: none;
+  color: transparent;
+  caret-color: var(--vscode-editorCursor-foreground);
+  background: transparent;
+}
+
+.merge-editor-input::selection {
+  background: var(--vscode-editor-selectionBackground);
+}
+
+/* A side with no lines in a conflict says so. */
+.merge-empty {
+  font-style: italic;
+  color: var(--vscode-descriptionForeground);
+}
+
+/* The buttons stay in view as the line scrolls sideways. */
+.merge-pick-slot {
+  visibility: hidden;
+  position: sticky;
+  right: 12px;
+  align-self: flex-start;
+  width: 0;
+  height: 0;
+  margin-left: auto;
+}
+
+.merge-cell.merge-hover .merge-pick-slot,
+.merge-pick-slot:focus-within {
+  visibility: visible;
+}
+
+.merge-pick-slot .merge-pick {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.merge-conflict-incoming:not(.commit-diff-del) {
+  background: var(--vscode-merge-incomingContentBackground, color-mix(in srgb, var(--vscode-focusBorder) 18%, transparent));
+}
+
+.merge-conflict-current:not(.commit-diff-add) {
+  background: var(--vscode-merge-currentContentBackground, color-mix(in srgb, var(--vscode-charts-green) 18%, transparent));
+}
+
+.merge-conflict-incoming.merge-taken {
+  background: var(--vscode-merge-incomingHeaderBackground, color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent));
+}
+
+.merge-conflict-current.merge-taken {
+  background: var(--vscode-merge-currentHeaderBackground, color-mix(in srgb, var(--vscode-charts-green) 40%, transparent));
+}
+
+.merge-editor-line.merge-from-incoming {
+  background: var(--vscode-merge-incomingHeaderBackground, color-mix(in srgb, var(--vscode-focusBorder) 40%, transparent));
+}
+
+.merge-editor-line.merge-from-open {
+  background: var(--vscode-inputValidation-errorBackground);
+}
+
+.merge-editor-line.merge-from-current {
+  background: var(--vscode-merge-currentHeaderBackground, color-mix(in srgb, var(--vscode-charts-green) 40%, transparent));
+}
+
+/* A line number in a conflict takes the line; a taken line has its number filled. */
+.merge-line-pick {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  cursor: pointer;
+}
+
+.merge-line-taken,
+.merge-line-taken:hover {
+  color: var(--vscode-button-foreground);
+  background: var(--vscode-button-background);
+}
+
+.merge-cell.merge-active.merge-conflict-incoming,
+.merge-cell.merge-active.merge-conflict-current {
+  box-shadow: inset 2px 0 0 var(--vscode-focusBorder);
+}
+
+.merge-footer {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-top: 1px solid var(--vscode-panel-border);
+}
+
+.merge-undo-hidden {
+  visibility: hidden;
+}
+
+.merge-hint {
+  color: var(--vscode-descriptionForeground);
+}
+
+.merge-footer-space {
+  flex: 1 1 auto;
+}
+
+.merge-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 14px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.merge-error {
+  color: var(--vscode-errorForeground);
+}
+
+/* A conflicted file in the Changes tab, where its diff would be. */
+/* The diff area is as wide as its widest line; the conflict panel takes the width it is given. */
+.changes-conflict-host {
+  contain: inline-size;
+}
+
+.changes-conflict {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px 18px;
+}
+
+.changes-conflict p {
+  margin: 0;
+  text-align: center;
+  color: var(--vscode-descriptionForeground);
+}
+
+.changes-conflict-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  color: var(--vscode-editorWarning-foreground);
+}
+
+.changes-conflict-sides {
+  display: flex;
+  align-self: stretch;
+  gap: 9px;
+}
+
+.changes-conflict-sides .merge-side {
+  flex: 1 1 0;
+}
+
+.changes-conflict-actions {
+  display: flex;
+  gap: 9px;
+}

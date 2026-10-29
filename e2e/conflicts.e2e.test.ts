@@ -138,27 +138,95 @@ describe('Operation banner', () => {
       assert.equal(row.status, 'conflict');
     });
 
-    it('opens the conflicted file in the merge editor from Resolve', async () => {
+    it('opens the conflicted file in the Merge modal from Resolve', async () => {
       const { topic } = divergingEdits();
       await mergeTopicIntoMain(topic);
       await banner(/^Merging/);
 
       await ctx.api.sendPanelMessage({ type: 'operationResolve' });
-      await waitFor('the merge editor to open c.txt', async () =>
-        vscode.window.tabGroups.all.flatMap((group) => group.tabs).some((tab) => /c\.txt/.test(tab.label)) ? true : undefined,
-      );
+      await waitFor('the Merge modal for c.txt', async () => (ctx.api.mergeOpenPath() === 'c.txt' ? true : undefined));
     });
 
-    it('opens the merge editor when a conflicted file is picked in the Changes tab, as well as previewing it', async () => {
+    const openTab = (label: RegExp): boolean =>
+      vscode.window.tabGroups.all.flatMap((group) => group.tabs).some((tab) => label.test(tab.label));
+
+    it('leaves the merge editor closed when a conflicted file is picked in the Changes tab, and opens it on request', async () => {
       const { topic } = divergingEdits();
       await mergeTopicIntoMain(topic);
       await banner(/^Merging/);
       await ctx.api.sendPanelMessage({ type: 'workingCopyReady' });
 
       await ctx.api.sendPanelMessage({ type: 'changesSelect', path: 'c.txt', side: 'unstaged' });
-      await waitFor('the merge editor to open c.txt', async () =>
-        vscode.window.tabGroups.all.flatMap((group) => group.tabs).some((tab) => /c\.txt/.test(tab.label)) ? true : undefined,
-      );
+      assert.equal(openTab(/c\.txt/), false, 'picking the file only shows the choice of how to resolve it');
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeInEditor', path: 'c.txt' });
+      await waitFor('the merge editor to open c.txt', async () => (openTab(/c\.txt/) ? true : undefined));
+    });
+
+    it('resolves a conflicted file in the Merge modal, which stages it', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeInCheckout', path: 'c.txt' });
+      await waitFor('the Merge modal', async () => (ctx.api.mergeOpenPath() === 'c.txt' ? true : undefined));
+
+      await ctx.api.sendPanelMessage({ type: 'mergeResolve', path: 'c.txt', text: 'one\nmain\ntopic\nthree\n' });
+      await waitFor('the Merge modal to close', async () => (ctx.api.mergeOpenPath() === undefined ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\nmain\ntopic\nthree\n');
+      assert.equal(git('ls-files', '-u'), '', 'nothing is left unmerged');
+      assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
+    });
+
+    it('resolves a conflicted file from its row menu by keeping the current or the incoming side', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      const row = { webviewSection: 'changesFile', path: 'c.txt', side: 'unstaged', untracked: false };
+
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.incoming', row);
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\ntopic\nthree\n', 'the incoming side is kept whole');
+    });
+
+    it('does not touch a file that is not in conflict when asked to resolve it', async () => {
+      commitFile('plain.txt', 'keep me\n', 'plain');
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.current', {
+        webviewSection: 'changesFile', path: 'plain.txt', side: 'unstaged', untracked: false,
+      }).then(undefined, () => undefined);
+      assert.equal(readFileSync(join(repoRoot(), 'plain.txt'), 'utf8'), 'keep me\n');
+      assert.equal(git('ls-files', '--', 'plain.txt'), 'plain.txt');
+    });
+
+    it('keeps one side whole for a file that one side deleted, which resolves it', async () => {
+      commitFile('c.txt', 'one\nbase\nthree\n', 'base');
+      git('checkout', '-b', 'topic');
+      const topic = commitFile('c.txt', 'one\ntopic\nthree\n', 'topic edit');
+      git('checkout', 'main');
+      git('rm', '-q', 'c.txt');
+      git('commit', '-m', 'main deletes it');
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      assert.notEqual(git('ls-files', '-u'), '');
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeTakeSide', path: 'c.txt', side: 'incoming' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\ntopic\nthree\n', 'the incoming version is kept');
+      assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
+    });
+
+    it('closes the Merge modal without changing the file when it is canceled', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      const before = readFileSync(join(repoRoot(), 'c.txt'), 'utf8');
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeInCheckout', path: 'c.txt' });
+      await waitFor('the Merge modal', async () => (ctx.api.mergeOpenPath() === 'c.txt' ? true : undefined));
+      await ctx.api.sendPanelMessage({ type: 'mergeCancel', path: 'c.txt' });
+      await waitFor('the Merge modal to close', async () => (ctx.api.mergeOpenPath() === undefined ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), before);
+      assert.notEqual(git('ls-files', '-u'), '');
     });
 
     it('offers Continue once the file is resolved and staged, and finishes with a merge commit', async () => {
