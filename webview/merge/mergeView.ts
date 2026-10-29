@@ -74,6 +74,8 @@ interface State {
   busy: boolean;
   /** Where the result goes: below the two sides, or between them. */
   layout: 'below' | 'between';
+  /** The choices before each pick, newest last. */
+  undo: MergeChoice[][];
   /** How much of the height the two sides take when the result is below them, in percent. */
   split: number;
 }
@@ -92,6 +94,13 @@ export function mountMergeView(
   container.classList.add('merge');
   // The bar between the sides and the result has no keyboard of its own, so Ctrl+Alt with Up or Down moves it.
   container.addEventListener('keydown', (event) => {
+    // In the text area Undo takes back typing; anywhere else it takes back the last pick.
+    if (state && (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === 'z'
+      && !(event.target instanceof HTMLTextAreaElement)) {
+      event.preventDefault();
+      undoPick();
+      return;
+    }
     if (!state || state.layout !== 'below' || !event.ctrlKey || !event.altKey || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) { return; }
     event.preventDefault();
     state.split = Math.min(85, Math.max(15, state.split + (event.key === 'ArrowDown' ? 5 : -5)));
@@ -122,6 +131,7 @@ export function mountMergeView(
         <vscode-checkbox .checked=${checked} ?disabled=${state!.busy}
           aria-label=${l10n.t('Take all changes from {0}', info.label)}
           @change=${(event: Event) => {
+            remember();
             state!.choices = withSide(state!.choices, side, (event.target as VscodeCheckbox).checked);
             changed();
           }}></vscode-checkbox>
@@ -135,13 +145,30 @@ export function mountMergeView(
 
   function toggle(conflict: number, side: Side): void {
     const taken = state!.choices[conflict][side].taken;
+    remember();
     state!.choices = state!.choices.map((choice, index) => (index === conflict ? withSideTaken(choice, side, !taken) : choice));
     state!.active = conflict;
     changed();
   }
 
+  /** Keeps the choices as they are, so the next pick can be undone. */
+  function remember(): void {
+    state!.undo.push(state!.choices);
+    if (state!.undo.length > 100) { state!.undo.shift(); }
+  }
+
+  /** Takes back the last pick. What was typed in the result is not kept: the result follows the choices again. */
+  function undoPick(): void {
+    const previous = state?.undo.pop();
+    if (state && previous) {
+      state.choices = previous;
+      changed();
+    }
+  }
+
   /** Takes one line of a side, or gives it back. */
   function toggleLine(conflict: number, side: Side, offset: number): void {
+    remember();
     state!.choices = state!.choices.map((choice, index) => (index === conflict ? withLineToggled(choice, side, offset) : choice));
     state!.active = conflict;
     changed();
@@ -327,6 +354,12 @@ export function mountMergeView(
           label=${l10n.t('Show the result between the two sides')} title=${l10n.t('Show the result between the two sides')}
           @change=${(event: Event) => setLayout((event.target as HTMLElement & { checked: boolean }).checked ? 'between' : 'below')}></vscode-toolbar-button>
         <vscode-button type="button" secondary @click=${openInEditor}>${l10n.t('Open in editor')}</vscode-button>
+        <vscode-toolbar-button class=${classMap({ 'merge-undo': true, 'merge-undo-hidden': state.undo.length === 0 })} icon=${ACTION_ICONS.undoMergePick}
+          label=${l10n.t('Undo the last pick')} title=${l10n.t('Undo the last pick')} @click=${undoPick}></vscode-toolbar-button>
+        <span class="merge-footer-space"></span>
+        <span class="merge-hint">${state.layout === 'below'
+          ? l10n.t('Editing allowed. Ctrl+Alt+Up or Down moves the bar.')
+          : l10n.t('Editing allowed.')}</span>
         <span class="merge-footer-space"></span>
         <vscode-button type="button" secondary ?disabled=${state.busy} @click=${() => postMessage({ type: 'mergeCancel', path: state!.path })}
           >${l10n.t('Cancel')}</vscode-button>
@@ -433,6 +466,7 @@ export function mountMergeView(
         busy: false,
         layout: storedLayout(),
         split: 60,
+        undo: [],
       };
       message = conflicts.length === 0
         ? { text: l10n.t('This file has no conflict markers. Resolve it in the editor.'), error: false }

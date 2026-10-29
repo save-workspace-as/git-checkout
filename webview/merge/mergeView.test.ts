@@ -265,6 +265,35 @@ describe('merge view', () => {
     assert.deepEqual(all('.merge-pane-incoming .commit-diff-lineno').map((number) => number.textContent), ['1', ' ', '2', '3', '4']);
   });
 
+  it('undoes the last pick from the button and from Ctrl or Cmd+Z, outside the text area', () => {
+    const { all, one, pick, result } = mount();
+    const undo = () => one('.merge-footer .merge-undo');
+    assert.match(undo().className, /merge-undo-hidden/, 'nothing to undo yet');
+    pick(0, 'incoming');
+    pick(1, 'current');
+    assert.doesNotMatch(undo().className, /merge-undo-hidden/);
+    assert.equal(one('.merge-count').textContent, '2/2');
+    undo().click();
+    assert.equal(one('.merge-count').textContent, '1/2');
+    one('.merge-pane-incoming').dispatchEvent(new KeyboardEvent('keydown', { key: 'z', metaKey: true, bubbles: true }));
+    assert.equal(one('.merge-count').textContent, '0/2');
+    assert.match(undo().className, /merge-undo-hidden/);
+    assert.equal(result().filter((line) => line === '<<<<<<<').length, 2);
+    pick(0, 'incoming');
+    one('.merge-editor-input').dispatchEvent(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true, bubbles: true }));
+    assert.equal(one('.merge-count').textContent, '1/2', 'in the text area Undo is left to it');
+    assert.equal(all('.merge-hint').length, 1);
+  });
+
+  it('says what is allowed and how to move the bar', () => {
+    const { one } = mount();
+    assert.match(one('.merge-hint').textContent!, /Editing allowed\. Ctrl\+Alt\+Up or Down moves the bar/);
+    const toggle = one('.merge-footer vscode-toolbar-button');
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change'));
+    assert.equal(one('.merge-hint').textContent, 'Editing allowed.');
+  });
+
   it('cancels, and hands the file to the editor', () => {
     const { all, posted } = mount();
     const [open, cancel] = all('.merge-footer vscode-button');

@@ -12,6 +12,9 @@ const INCOMING_HEADS = ['MERGE_HEAD', 'CHERRY_PICK_HEAD', 'REVERT_HEAD', 'REBASE
 
 export interface MergeResolverFile {
   text: string;
+  /** Whether each side still has the file; a side that deleted it has not. */
+  currentExists: boolean;
+  incomingExists: boolean;
   /** The whole files of the two sides, from the index; nothing when the index does not have one of them. */
   ours?: string;
   theirs?: string;
@@ -26,14 +29,56 @@ export class MergeResolverService {
   async load(repoRoot: string, path: string): Promise<MergeResolverFile> {
     const rel = assertRepoRelativePath(path);
     const cli = this.cliRegistry.getOrCreate(repoRoot);
-    const [text, current, incoming, ours, theirs] = await Promise.all([
-      readFile(toAbsoluteRepoPath(repoRoot, rel), 'utf8'),
+    const [text, current, incoming, ours, theirs, stages] = await Promise.all([
+      this.readWorkingFile(repoRoot, rel),
       this.describe(cli, 'HEAD'),
       this.describeIncoming(cli),
       this.tryShow(cli, `:2:${rel}`),
       this.tryShow(cli, `:3:${rel}`),
+      this.stagesOf(cli, rel),
     ]);
-    return { text, current, incoming, ...(ours === undefined || theirs === undefined ? {} : { ours, theirs }) };
+    return { text, current, incoming, currentExists: stages.has(2), incomingExists: stages.has(3), ...(ours === undefined || theirs === undefined ? {} : { ours, theirs }) };
+  }
+
+  /** The file as it is on disk; a file that one side deleted may not be there, and is empty. */
+  private async readWorkingFile(repoRoot: string, rel: string): Promise<string> {
+    try {
+      return await readFile(toAbsoluteRepoPath(repoRoot, rel), 'utf8');
+    } catch (error) {
+      log.debug(`${rel} is not on disk`, error);
+      return '';
+    }
+  }
+
+  /** The index stages a conflicted path has: 1 is the common ancestor, 2 the current side, 3 the incoming one. */
+  private async stagesOf(cli: GitCli, rel: string): Promise<Set<number>> {
+    const listed = await cli.execRead(['ls-files', '-u', '--', rel]);
+    const stages = new Set<number>();
+    for (const line of listed.stdout.split(/\r?\n/)) {
+      const stage = Number(line.split('\t')[0]?.split(' ')[2]);
+      if (Number.isInteger(stage)) {
+        stages.add(stage);
+      }
+    }
+    return stages;
+  }
+
+  /**
+   * Resolves a conflict that cannot be merged line by line by keeping one side whole: its version of the file, or
+   * its deletion when that side deleted it.
+   */
+  async takeSide(repoRoot: string, path: string, side: 'incoming' | 'current'): Promise<void> {
+    const rel = assertRepoRelativePath(path);
+    const cli = this.cliRegistry.getOrCreate(repoRoot);
+    const stages = await this.stagesOf(cli, rel);
+    await this.cliRegistry.runWrite(repoRoot, async () => {
+      if (stages.has(side === 'current' ? 2 : 3)) {
+        await cli.execWrite(['checkout', side === 'current' ? '--ours' : '--theirs', '--', rel]);
+        await cli.execWrite(['add', '--', rel]);
+      } else {
+        await cli.execWrite(['rm', '--quiet', '--', rel]);
+      }
+    });
   }
 
   /** Writes the resolved file and stages it, which is how Git is told the conflict is resolved. */

@@ -1,4 +1,5 @@
 import * as l10n from '@vscode/l10n';
+import * as vscode from 'vscode';
 import { createLogger } from '../../log';
 import { conflictsOf, parseMergeDocument } from '../../shared/conflicts/mergeDocument';
 import type { MergeHostMessage, MergeWebviewMessage } from '../../shared/conflicts/mergeProtocol';
@@ -91,6 +92,22 @@ export class MergeResolverController {
     }
   }
 
+  /** Keeps one side of a conflict that cannot be merged line by line, which resolves it. */
+  async takeSide(path: string, side: 'incoming' | 'current'): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root) {
+      return;
+    }
+    try {
+      await this.service.takeSide(root, path, side);
+    } catch (error) {
+      log.error(`could not keep the ${side} side of ${path}`, error);
+      void vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      return;
+    }
+    await this.refresh();
+  }
+
   private async resolve(path: string, text: string): Promise<void> {
     const root = this.ctx.activeRepoRoot();
     if (!root) {
@@ -104,6 +121,10 @@ export class MergeResolverController {
       return;
     }
     this.close(path);
+    await this.refresh();
+  }
+
+  private async refresh(): Promise<void> {
     this.ctx._onDidChangeRefs.fire();
     await this.ctx.changes.sendWorkingCopySnapshot();
     await this.ctx.postState('state');

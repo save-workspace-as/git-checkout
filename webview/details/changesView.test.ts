@@ -186,8 +186,9 @@ describe('Changes tab diff and commit form', () => {
 
   describe('a conflicted file', () => {
     const side = (label: string, subject: string) => ({ label, subject, author: 'Ada', date: 1761060000 });
-    const conflict = (canMerge = true, path = 'c.txt') => ({
+    const conflict = (canMerge = true, path = 'c.txt', exists = { current: true, incoming: true }) => ({
       type: 'changesConflict', path, side: 'unstaged', canMerge,
+      currentExists: exists.current, incomingExists: exists.incoming,
       incoming: side('topic', 'Add the topic'), current: side('main', 'Change main'),
     });
     function select(view: View, path = 'c.txt') {
@@ -218,13 +219,24 @@ describe('Changes tab diff and commit form', () => {
       ]);
     });
 
-    it('leaves only the editor when there are no conflict markers to merge', () => {
-      const { root, view } = mount();
+    it('offers to keep one side whole, or the editor, when there are no conflict markers to merge', () => {
+      const { root, posted, view } = mount();
       select(view);
       view.applyHostMessage(conflict(false));
-      const [here, editor] = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
-      assert.equal(here.hasAttribute('disabled'), true);
-      assert.equal(editor.hasAttribute('disabled'), false);
+      const buttons = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
+      assert.deepEqual(buttons.map((button) => button.textContent!.trim()), ['Keep current', 'Keep incoming', 'Resolve in editor']);
+      buttons[1].click();
+      assert.deepEqual(posted.at(-1), { type: 'changesMergeTakeSide', path: 'c.txt', side: 'incoming' });
+      buttons[0].click();
+      assert.deepEqual(posted.at(-1), { type: 'changesMergeTakeSide', path: 'c.txt', side: 'current' });
+    });
+
+    it('says a side deleted the file where it did, and keeping that side deletes it', () => {
+      const { root, view } = mount();
+      select(view);
+      view.applyHostMessage(conflict(false, 'c.txt', { current: false, incoming: true }));
+      const labels = [...root.querySelectorAll('.changes-conflict-actions vscode-button')].map((button) => button.textContent!.trim());
+      assert.deepEqual(labels, ['Delete, as current did', 'Keep incoming', 'Resolve in editor']);
     });
 
     it('ignores a conflict for a file that is no longer the selected one, and shows the next diff in its place', () => {

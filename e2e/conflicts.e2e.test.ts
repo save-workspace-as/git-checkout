@@ -138,15 +138,13 @@ describe('Operation banner', () => {
       assert.equal(row.status, 'conflict');
     });
 
-    it('opens the conflicted file in the merge editor from Resolve', async () => {
+    it('opens the conflicted file in the Merge modal from Resolve', async () => {
       const { topic } = divergingEdits();
       await mergeTopicIntoMain(topic);
       await banner(/^Merging/);
 
       await ctx.api.sendPanelMessage({ type: 'operationResolve' });
-      await waitFor('the merge editor to open c.txt', async () =>
-        vscode.window.tabGroups.all.flatMap((group) => group.tabs).some((tab) => /c\.txt/.test(tab.label)) ? true : undefined,
-      );
+      await waitFor('the Merge modal for c.txt', async () => (ctx.api.mergeOpenPath() === 'c.txt' ? true : undefined));
     });
 
     const openTab = (label: RegExp): boolean =>
@@ -177,6 +175,23 @@ describe('Operation banner', () => {
       await waitFor('the Merge modal to close', async () => (ctx.api.mergeOpenPath() === undefined ? true : undefined));
       assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\nmain\ntopic\nthree\n');
       assert.equal(git('ls-files', '-u'), '', 'nothing is left unmerged');
+      assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
+    });
+
+    it('keeps one side whole for a file that one side deleted, which resolves it', async () => {
+      commitFile('c.txt', 'one\nbase\nthree\n', 'base');
+      git('checkout', '-b', 'topic');
+      const topic = commitFile('c.txt', 'one\ntopic\nthree\n', 'topic edit');
+      git('checkout', 'main');
+      git('rm', '-q', 'c.txt');
+      git('commit', '-m', 'main deletes it');
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      assert.notEqual(git('ls-files', '-u'), '');
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeTakeSide', path: 'c.txt', side: 'incoming' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(readFileSync(join(repoRoot(), 'c.txt'), 'utf8'), 'one\ntopic\nthree\n', 'the incoming version is kept');
       assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
     });
 

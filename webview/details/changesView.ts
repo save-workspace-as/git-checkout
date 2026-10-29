@@ -227,15 +227,29 @@ export function mountChangesView(
           </span>
           <span class="merge-side-date">${side.date > 0 ? formatDateTime(new Date(side.date * 1000)) : ''}</span>
         </div>`;
+      /** Keeps one side whole: its version of the file, or the deletion when that side deleted it. */
+      const keep = (side: 'incoming' | 'current', exists: boolean) => html`
+        <vscode-button type="button"
+          title=${exists
+            ? (side === 'current' ? l10n.t('Keep the file as the current side has it') : l10n.t('Keep the file as the incoming side has it'))
+            : (side === 'current' ? l10n.t('The current side deleted this file') : l10n.t('The incoming side deleted this file'))}
+          @click=${() => postMessage({ type: 'changesMergeTakeSide', path: message.path, side })}
+        >${exists
+          ? (side === 'current' ? l10n.t('Keep current') : l10n.t('Keep incoming'))
+          : (side === 'current' ? l10n.t('Delete, as current did') : l10n.t('Delete, as incoming did'))}</vscode-button>`;
       render(html`
         <div class="changes-conflict">
           <div class="changes-conflict-title"><vscode-icon name="warning" aria-hidden="true"></vscode-icon>${l10n.t('Merge conflict')}</div>
-          <p>${l10n.t('The file was changed on both sides. Choose the changes to keep, or merge them by hand.')}</p>
+          <p>${message.canMerge
+            ? l10n.t('The file was changed on both sides. Choose the changes to keep, or merge them by hand.')
+            : l10n.t('This file cannot be merged line by line. Keep the version of one side.')}</p>
           <div class="changes-conflict-sides">${card(l10n.t('Incoming'), message.incoming)}${card(l10n.t('Current'), message.current)}</div>
           <div class="changes-conflict-actions">
-            <vscode-button type="button" ?disabled=${!message.canMerge}
-              title=${message.canMerge ? l10n.t('Choose the changes to keep, side by side') : l10n.t('This file has no conflict markers to merge. Use the editor.')}
-              @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>
+            ${message.canMerge
+              ? html`<vscode-button type="button"
+                  title=${l10n.t('Choose the changes to keep, side by side')}
+                  @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>`
+              : html`${keep('current', message.currentExists)}${keep('incoming', message.incomingExists)}`}
             <vscode-button type="button" secondary
               @click=${() => postMessage({ type: 'changesMergeInEditor', path: message.path })}>${l10n.t('Resolve in editor')}</vscode-button>
           </div>

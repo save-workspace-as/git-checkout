@@ -246,6 +246,46 @@ describe('paneRows with the whole files of both sides', () => {
   });
 });
 
+describe('whole files in the situations that are hard to match', () => {
+  /** Every line of each file is on exactly one row, in order, on its own side. */
+  function assertEveryLineOnce(rows: ReturnType<typeof paneRows>, sides: { ours: string[]; theirs: string[] }): void {
+    assert.deepEqual(rows.flatMap((row) => (row.right ? [row.right.line] : [])), sides.ours.map((_, i) => i + 1));
+    assert.deepEqual(rows.flatMap((row) => (row.left ? [row.left.line] : [])), sides.theirs.map((_, i) => i + 1));
+    assert.deepEqual(rows.flatMap((row) => (row.right ? [row.right.text] : [])), sides.ours);
+    assert.deepEqual(rows.flatMap((row) => (row.left ? [row.left.text] : [])), sides.theirs);
+  }
+
+  it('keeps the line breaks of the file out of the lines and puts them back in the result', () => {
+    const merged = parseMergeDocument('a\r\nB1\r\n<<<<<<< HEAD\r\nD1\r\n=======\r\nD2\r\n>>>>>>> t\r\nz\r\n');
+    const sides = { ours: ['a', 'B1', 'D1', 'z'], theirs: ['a', 'b', 'D2', 'z'] };
+    assertEveryLineOnce(paneRows(merged, sides), sides);
+    assert.equal(fileText(merged, editableText(merged, [withSideTaken(unresolved(conflictsOf(merged)[0]), 'incoming', true)])), 'a\r\nB1\r\nD2\r\nz\r\n');
+  });
+
+  it('matches a block that repeats, to the line, or falls back without losing or repeating a line', () => {
+    const block = ['x', 'y', 'z'];
+    const merged = parseMergeDocument(`${block.join('\n')}\n<<<<<<< HEAD\nx\ny\nz\nours\n=======\nx\ny\nz\ntheirs\n>>>>>>> t\n${block.join('\n')}\n`);
+    const sides = { ours: [...block, 'x', 'y', 'z', 'ours', ...block], theirs: [...block, 'x', 'y', 'z', 'theirs', ...block] };
+    const rows = paneRows(merged, sides);
+    const whole = rows.some((row) => row.left?.line === sides.theirs.length);
+    if (whole) {
+      assertEveryLineOnce(rows, sides);
+    }
+    assert.equal(rows.some((row) => row.conflict === 0 && row.first), true);
+  });
+
+  it('matches a long file with a few edits quickly', () => {
+    const lines = Array.from({ length: 20_000 }, (_, i) => `line ${i}`);
+    const oursLines = lines.map((line, i) => (i === 100 ? 'ours edit' : line));
+    const theirsLines = lines.map((line, i) => (i === 19_000 ? 'theirs edit' : line));
+    const merged = parseMergeDocument(`${lines.map((line, i) => (i === 100 ? 'ours edit' : i === 19_000 ? 'theirs edit' : line)).join('\n')}\n`);
+    const started = Date.now();
+    const rows = paneRows(merged, { ours: oursLines, theirs: theirsLines });
+    assert.equal(Date.now() - started < 2000, true, 'a long file does not hold the view up');
+    assertEveryLineOnce(rows, { ours: oursLines, theirs: theirsLines });
+  });
+});
+
 describe('choosing single lines', () => {
   const [conflict] = conflictsOf(parseMergeDocument('<<<<<<< HEAD\ncurrent a\n=======\nincoming a\nincoming b\n>>>>>>> t\n'));
 

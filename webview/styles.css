@@ -2450,6 +2450,14 @@ vscode-button-group.hidden {
   border-top: 1px solid var(--vscode-panel-border);
 }
 
+.merge-undo-hidden {
+  visibility: hidden;
+}
+
+.merge-hint {
+  color: var(--vscode-descriptionForeground);
+}
+
 .merge-footer-space {
   flex: 1 1 auto;
 }

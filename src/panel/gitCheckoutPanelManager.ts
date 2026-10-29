@@ -789,6 +789,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'changesMergeInCheckout':
         this.merge.open(message.path);
         break;
+      case 'changesMergeTakeSide':
+        await this.merge.takeSide(message.path, message.side);
+        break;
       case 'changesMergeInEditor':
         await this.changes.openConflictInMergeEditor(message.path);
         break;

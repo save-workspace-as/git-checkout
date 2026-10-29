@@ -249,6 +249,7 @@ export class ChangesController {
         this.ctx.changesSlot.post({
           type: 'changesConflict', path, side,
           incoming: file?.incoming ?? none, current: file?.current ?? none, canMerge: file?.canMerge ?? false,
+          incomingExists: file?.incomingExists ?? true, currentExists: file?.currentExists ?? true,
         });
         return;
       }
