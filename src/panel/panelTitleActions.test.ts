@@ -128,6 +128,7 @@ describe('panel title bar actions', () => {
       'gitCheckout.cherryPick',
       'gitCheckout.revert',
       'gitCheckout.applyPatch',
+      'gitCheckout.createPatch',
       'gitCheckout.applyPatchFromClipboard',
     ]) {
       assert.equal(commandById.get(id)?.enablement, '!gitCheckout.repoOperationActive', id);

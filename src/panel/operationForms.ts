@@ -95,16 +95,6 @@ export function deleteStashForm(stash: StashEntryDto): OperationFormDefinition {
   };
 }
 
-export function saveStashPatchForm(stash: StashEntryDto): OperationFormDefinition {
-  return {
-    title: l10n.t('Create Patch'),
-    submitLabel: l10n.t('Save'),
-    values: { revision: `${stash.sha.slice(0, 7)} ${stash.message}` },
-    fields: [{ id: 'revision', type: 'text', label: l10n.t('Revision'), readOnly: true,
-      description: l10n.t('The stash revision to save as a patch.') }],
-  };
-}
-
 export function mergeForm(
   source: string,
   target: string,
@@ -524,6 +514,28 @@ export function applyPatchForm(): OperationFormDefinition {
       {
         id: 'createCommit', type: 'checkbox', label: l10n.t('Create commit'),
         description: l10n.t('Keep the commit information of a patch made by Git; other patches only change the files.'),
+      },
+    ],
+  };
+}
+
+export function createPatchForm(revision: string, format: 'format-patch' | 'diff' = 'format-patch'): OperationFormDefinition {
+  return {
+    title: l10n.t('Create Patch'),
+    submitLabel: l10n.t('Save'),
+    values: { revision, format },
+    fields: [
+      {
+        id: 'revision', type: 'text', label: l10n.t('Revision'), required: true,
+        placeholder: l10n.t('Commit, branch, tag or range'),
+        description: l10n.t('A commit or ref, or a range such as main..topic for several commits.'),
+      },
+      {
+        id: 'format', type: 'radio', label: l10n.t('Format'),
+        options: [
+          { value: 'format-patch', label: l10n.t('Patch with commit information (author, date and message)') },
+          { value: 'diff', label: l10n.t('Plain diff') },
+        ],
       },
     ],
   };

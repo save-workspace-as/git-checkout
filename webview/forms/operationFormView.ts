@@ -223,6 +223,7 @@ export function mountOperationForm(
 
   function template(): TemplateResult {
     const form = definition;
+    // A failed submit that repeats the notice (the preflight of a patch) would show the same sentence twice.
     const blocks = form ? blocksOf(form.fields) : [];
     return html`
       <form class="operation-form" novalidate aria-busy=${String(busy)}
@@ -233,7 +234,7 @@ export function mountOperationForm(
           event.preventDefault();
           if (!busy) { post({ type: 'formSubmit', values: { ...values } }); }
         }}>
-        ${form?.notice ? html`
+        ${form?.notice && form.notice.message !== failure ? html`
           <vscode-form-group variant="settings-group">
             <vscode-form-helper>
               <p class=${classMap({ 'operation-form-notice': true, 'operation-form-notice-success': form.notice.kind === 'success' })}

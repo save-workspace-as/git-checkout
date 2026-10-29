@@ -102,6 +102,8 @@ describe('Create stash', () => {
     const patchCommand = vscode.commands.executeCommand('gitCheckout.sidebar.saveStashPatch', { ref: 'stash@{0}' });
     const patchForm = await waitFor('save stash patch modal', async () => ctx.api.operationFormState());
     assert.equal(patchForm.form.title, 'Create Patch');
+    assert.equal(patchForm.form.values.revision, git('rev-parse', 'stash@{0}'));
+    assert.equal(patchForm.form.values.format, 'diff');
     await ctx.api.sendPanelMessage({
       type: 'operationFormMessage', sessionId: patchForm.sessionId, message: { type: 'formCancel' },
     });

@@ -24,6 +24,7 @@ export const REPOSITORY_ACTIONS: readonly RepositoryAction[] = [
   { id: 'newTag', command: 'gitCheckout.sidebar.createTag', group: '5_create', enablement: IDLE },
   { id: 'newWorktree', command: 'gitCheckout.sidebar.createWorktree', group: '5_create', enablement: IDLE },
   { id: 'gitFlow', command: 'gitCheckout.gitFlow', group: '6_tools', enablement: IDLE },
+  { id: 'createPatch', command: 'gitCheckout.createPatch', group: '7_patch', enablement: IDLE },
   { id: 'applyPatch', command: 'gitCheckout.applyPatch', group: '7_patch', enablement: IDLE },
   { id: 'settings', command: 'gitCheckout.repoSettings', group: '8_settings' },
   // One entry per system, each named the way that system names it.

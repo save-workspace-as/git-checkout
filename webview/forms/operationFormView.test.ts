@@ -338,6 +338,21 @@ describe('shared Settings-style operation form view', () => {
     assert.equal(h.root.querySelectorAll('.operation-form-notice').length, 0);
   });
 
+  it('shows a failure once when it repeats the notice, and both when they differ', () => {
+    const h = mount({
+      title: 'Apply Patch', submitLabel: 'Apply', values: { location: '/a.patch' },
+      notice: { kind: 'warning', message: 'Patch does not apply' },
+      fields: [{ id: 'location', type: 'text', label: 'Location' }],
+    });
+    assert.equal(h.root.querySelectorAll('.operation-form-notice').length, 1);
+    h.view.applyHostMessage({ type: 'formStatus', busy: false, error: 'Patch does not apply' });
+    assert.equal(h.root.querySelectorAll('.operation-form-notice').length, 0);
+    assert.equal(h.root.querySelector('.operation-form-error[role="alert"]')?.textContent, 'Patch does not apply');
+
+    h.view.applyHostMessage({ type: 'formStatus', busy: false, error: 'The patch file is empty.' });
+    assert.equal(h.root.querySelectorAll('.operation-form-notice').length, 1);
+  });
+
   function mountModal() {
     const shell = document.createElement('div');
     const graph = document.createElement('section');

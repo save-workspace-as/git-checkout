@@ -6,9 +6,9 @@ import { createLogger } from '../../log';
 import type { OperationFormDefinition, OperationFormValues } from '../../shared/forms/operationForm';
 import { type StashEntryDto } from '../../shared/stash/stashProtocol';
 import { type WorkingCopyPatchAction } from '../../shared/changes/workingCopyProtocol';
-import { saveCommitPatch } from '../history/patchHost';
+import { createPatchInForm } from '../history/patchHost';
 import { confirmStashClear, confirmStashDrop, confirmStashPop, openStashPatch, createStashInForm, promptStashMessage } from './stashHost';
-import { applyStashForm, deleteStashForm, renameStashForm, saveStashPatchForm } from '../../panel/operationForms';
+import { applyStashForm, deleteStashForm, renameStashForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('stash');
@@ -81,11 +81,15 @@ export class StashController {
     });
   }
 
-  runSaveStashPatch(selector: string): Promise<void> {
-    return this.runStashFormForStash(selector, saveStashPatchForm, async (repoRoot, stash) => {
-      await saveCommitPatch(stash.selector, 'format-patch', () =>
-        this.ctx.commitPatchService.exportCommits(repoRoot, [stash.sha], 'format-patch'));
-    });
+  /** Opens the Create Patch form on the stash, as a plain diff: a stash is a merge, which has no patch of its own. */
+  async runSaveStashPatch(selector: string): Promise<void> {
+    const found = await this.findStash(selector);
+    if (found) {
+      await createPatchInForm(this.ctx.operationForm.show, this.ctx.commitPatchService, found.root, {
+        revision: found.stash.sha,
+        format: 'diff',
+      });
+    }
   }
 
   async runPopStash(selector: string): Promise<void> {
@@ -169,15 +173,12 @@ export class StashController {
     await this.ctx.changes.sendWorkingCopyFileDiff(action.path, action.side);
   }
 
-  private async runStashFormForStash(
-    selector: string,
-    form: (stash: StashEntryDto) => OperationFormDefinition,
-    submit: (repoRoot: string, stash: StashEntryDto, values: OperationFormValues) => Promise<void>,
-  ): Promise<void> {
+  /** The active repository and the stash entry for `selector`, after telling the person why there is none. */
+  private async findStash(selector: string): Promise<{ root: string; stash: StashEntryDto } | undefined> {
     const root = this.ctx.activeRepoRoot();
     if (!root || !this.ctx.graphReady()) {
       void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
-      return;
+      return undefined;
     }
     let stash: StashEntryDto | undefined;
     try {
@@ -187,12 +188,25 @@ export class StashController {
       void vscode.window.showErrorMessage(
         error instanceof Error ? error.message : String(error),
       );
-      return;
+      return undefined;
     }
     if (!stash) {
       void vscode.window.showWarningMessage(l10n.t('Stash no longer exists.'));
+      return undefined;
+    }
+    return { root, stash };
+  }
+
+  private async runStashFormForStash(
+    selector: string,
+    form: (stash: StashEntryDto) => OperationFormDefinition,
+    submit: (repoRoot: string, stash: StashEntryDto, values: OperationFormValues) => Promise<void>,
+  ): Promise<void> {
+    const found = await this.findStash(selector);
+    if (!found) {
       return;
     }
+    const { root, stash } = found;
     await this.ctx.operationForm.show(form(stash), {
       validate: () => ({}),
       submit: (values) => this.runStashAtRoot(

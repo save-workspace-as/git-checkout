@@ -295,7 +295,8 @@ describe('Graph context menu: commit menu', () => {
     const sha = commitFile('saved.txt', 'saved\n', 'save me');
     const target = join(mkdtempSync(join(tmpdir(), 'git-checkout-e2e-patch-')), 'one.patch');
     restore.push(answer('showSaveDialog', async () => vscode.Uri.file(target)));
-    await vscode.commands.executeCommand('gitCheckout.graph.savePatch', menuContext(sha));
+    const command = vscode.commands.executeCommand('gitCheckout.graph.savePatch', menuContext(sha));
+    await submitForm(ctx.api, command, 'Create Patch');
     await waitFor('patch file', async () =>
       execFileSync('cat', [target], { encoding: 'utf8' }).includes('save me') ? true : undefined,
     );
