@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.6.0...git-checkout-v0.7.0) (2026-10-30)
+
+
+### Features
+
+* **pr:** add pull request management features ([#26](https://github.com/save-workspace-as/git-checkout/issues/26)) ([200922a](https://github.com/save-workspace-as/git-checkout/commit/200922ac006ea2822a22e00005360b8e3562ccf7))
+
 ## [0.6.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.5.0...git-checkout-v0.6.0) (2026-10-30)
 
 
