@@ -118,6 +118,34 @@ describe('CommitDetailsService binary preview', () => {
       repo.cleanup();
     }
   });
+
+  it('sends a picture larger than a slice whole, so it draws', async () => {
+    const repo = initTempRepository();
+    try {
+      const head = async () => (await repo.cli.execRead(['rev-parse', 'HEAD'])).stdout.trim();
+      // A picture header followed by noise: bigger than one slice, smaller than the preview limit.
+      const big = (fill: number): Buffer => Buffer.concat([PNG, Buffer.alloc(400 * 1024, fill)]);
+      writeFileSync(join(repo.repoRoot, 'wide.png'), big(1));
+      runGit(repo.repoRoot, ['add', '.']);
+      runGit(repo.repoRoot, ['commit', '-m', 'add']);
+      const added = await head();
+      writeFileSync(join(repo.repoRoot, 'wide.png'), big(2));
+      runGit(repo.repoRoot, ['add', '.']);
+      runGit(repo.repoRoot, ['commit', '-m', 'change']);
+      const changed = await head();
+
+      const service = new CommitDetailsService(mockCliRegistry(repo.repoRoot, repo.cli));
+      const diff = await service.binaryPreview(repo.repoRoot, added, changed, 'wide.png');
+      assert.equal(diff.nonTextKind, 'image');
+      for (const blob of diff.blobs ?? []) {
+        assert.equal(blob.inline?.complete, true, `${blob.side} is sent whole`);
+        assert.equal(blob.inline?.truncated, false);
+        assert.equal(blob.inline?.chunkByteLength, blob.byteLength);
+      }
+    } finally {
+      repo.cleanup();
+    }
+  });
 });
 
 describe('CommitDetailsService diff view options', () => {

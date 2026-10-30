@@ -266,7 +266,11 @@ export class ChangesController {
         entries.some((entry) => entry.path === path && entry.group === 'untracked');
       const diff = await this.ctx.commitDetailsService.diffWorkingFile(root, path, side, untracked, this.ctx.commitDiffView);
       const nonText =
-        diff.binary && !untracked ? await this.ctx.patchStagingService.loadFileDiff(root, path, side) : undefined;
+        diff.binary
+          ? untracked
+            ? await this.ctx.patchStagingService.loadUntrackedFileDiff(root, path)
+            : await this.ctx.patchStagingService.loadFileDiff(root, path, side)
+          : undefined;
       post({ ...diff, ...(nonText ? { nonText } : {}) });
     } catch (error) {
       log.error('changes diff failed', error);

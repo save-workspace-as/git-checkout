@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import type { GitCli } from '../../core/gitCli';
 import type { ParsedDiffFile } from '../../core/gitDiffParser';
 import { sliceBinaryForPostMessage, type BinaryBlobSlice } from '../../shared/diff/binaryPayload';
+import { MAX_IMAGE_PREVIEW_BYTES } from '../../shared/diff/binaryDiffLimits';
 import { detectContentKind, type DetectedContentKind } from '../../shared/diff/contentKind';
 import { parseLfsPointer, type LfsPointerFields } from '../../shared/diff/lfsPointer';
 import {
@@ -201,9 +202,16 @@ function toBlobSideDto(
     mimeType: kind.mimeType,
     byteLength: bytes.length,
     blobRef,
-    inline: bytes.length > 0 ? sliceBinaryForPostMessage(bytes) : undefined,
+    inline: bytes.length > 0 ? inlineBytes(bytes, kind) : undefined,
     lfs: kind.lfs,
   };
+}
+
+/** A picture that is not huge goes to the view whole, so it draws at once; anything else in slices. */
+export function inlineBytes(bytes: Uint8Array, kind: ReturnType<typeof detectContentKind>): BinaryBlobSlice {
+  return kind.kind === 'image' && bytes.length <= MAX_IMAGE_PREVIEW_BYTES
+    ? sliceBinaryForPostMessage(bytes, 0, bytes.length)
+    : sliceBinaryForPostMessage(bytes);
 }
 
 async function listSubmoduleCommits(
@@ -238,4 +246,21 @@ async function listSubmoduleCommits(
     log.warn('submodule rev-list failed', error);
     return [];
   }
+}
+
+/** What an untracked file looks like when it is not text: a picture or other bytes that only the working tree has. */
+export async function loadUntrackedNonTextSummary(cli: GitCli, repoRoot: string, relPath: string): Promise<NonTextDiffSummary | null> {
+  const bytes = await readBlobBytes(cli, repoRoot, relPath, 'unstaged', 'new');
+  if (bytes.length === 0) {
+    return null;
+  }
+  const newKind = detectContentKind(bytes);
+  if (newKind.kind === 'text') {
+    return null;
+  }
+  const oldBytes = new Uint8Array();
+  return {
+    kind: newKind.kind === 'image' ? 'image' : 'binary',
+    blobs: buildBlobSides(repoRoot, relPath, 'unstaged', oldBytes, bytes, detectContentKind(oldBytes), newKind),
+  };
 }

@@ -32,6 +32,26 @@ describe('non-text working copy diffs', () => {
     }
   });
 
+  it('shows an untracked picture as an image with nothing on the old side, and leaves an untracked text file alone', async () => {
+    const repo = initTempRepository();
+    try {
+      const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(300 * 1024, 7)]);
+      writeFileSync(join(repo.repoRoot, 'new.png'), png);
+      writeFileSync(join(repo.repoRoot, 'notes.txt'), 'plain text\n');
+      const svc = new PatchStagingService(
+        mockGitExtensionService([mockRepository(repo.repoRoot)]),
+        mockCliRegistry(repo.repoRoot, repo.cli),
+      );
+      const diff = await svc.loadUntrackedFileDiff(repo.repoRoot, 'new.png');
+      assert.equal(diff?.nonTextKind, 'image');
+      assert.deepEqual(diff?.blobs?.map((blob) => [blob.side, blob.byteLength]), [['old', 0], ['new', png.length]]);
+      assert.equal(diff?.blobs?.[1].inline?.complete, true, 'a picture bigger than a slice is sent whole');
+      assert.equal(await svc.loadUntrackedFileDiff(repo.repoRoot, 'notes.txt'), undefined);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
   it('detects LFS pointer changes', async () => {
     const repo = initTempRepository();
     try {

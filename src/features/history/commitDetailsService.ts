@@ -7,7 +7,7 @@ import type { CommitDiffLineDto, CommitFileChangeDto, CommitPersonDto } from '..
 import { parseUnifiedDiff } from '../../core/gitDiffParser';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { GitCliError } from '../../core/gitCliError';
-import { sliceBinaryForPostMessage } from '../../shared/diff/binaryPayload';
+import { inlineBytes } from '../changes/nonTextDiffLoader';
 import { MAX_IMAGE_PREVIEW_BYTES, MAX_INLINE_BINARY_BYTES } from '../../shared/diff/binaryDiffLimits';
 import { detectContentKind } from '../../shared/diff/contentKind';
 import { DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS } from '../../shared/diff/diffViewOptions';
@@ -233,12 +233,14 @@ export class CommitDetailsService {
       byteLength: bytes.length,
       blobRef: `commit\0${revision ?? ''}\0${filePath}\0${side}`,
       inline:
-        bytes.length > 0 && bytes.length <= MAX_INLINE_BINARY_BYTES ? sliceBinaryForPostMessage(bytes) : undefined,
+        bytes.length > 0 && (bytes.length <= MAX_INLINE_BINARY_BYTES || (kind.kind === 'image' && bytes.length <= MAX_IMAGE_PREVIEW_BYTES))
+          ? inlineBytes(bytes, kind)
+          : undefined,
       lfs: kind.lfs,
     }));
     const lfs = sides.some(({ kind }) => kind.kind === 'lfs-pointer');
     const image = sides.some(({ kind }) => kind.kind === 'image');
-    const tooLarge = sides.some(({ bytes }) => bytes.length > MAX_INLINE_BINARY_BYTES);
+    const tooLarge = sides.some(({ bytes }) => bytes.length > MAX_IMAGE_PREVIEW_BYTES);
     return {
       path: filePath,
       side: 'staged',

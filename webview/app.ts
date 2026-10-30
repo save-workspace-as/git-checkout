@@ -12,6 +12,7 @@ import type { PathHistoryHostMessage } from '../src/shared/history/pathHistoryPr
 import type { MergeHostMessage } from '../src/shared/conflicts/mergeProtocol';
 import type { RebaseHostMessage } from '../src/shared/rebase/rebaseProtocol';
 import { createModalShell } from './modalShell';
+import { keepDeletingKeysInTextFields } from './editingKeys';
 
 function emptyMessage(reason: NonNullable<UiState['emptyReason']>): string {
   switch (reason) {
@@ -36,6 +37,8 @@ export function renderApp(
 ): {
   applyHostMessage(message: HostMessage): void;
 } {
+  // Backspace and Delete are VS Code keys for removing the selected commit's branch or stash; typing must not use them.
+  keepDeletingKeysInTextFields(document);
   let emptyReason: UiState['emptyReason'];
   const paintShell = (): void => { render(html`
     <div class="shell">
