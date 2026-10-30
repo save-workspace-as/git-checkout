@@ -316,6 +316,7 @@ export function mountMergeView(
       // Without storage the choice lasts until the modal is closed.
     }
     paint();
+    showActive();
   }
 
   const pathLabel = (): TemplateResult => {
@@ -400,7 +401,14 @@ export function mountMergeView(
     if (!state || total() === 0) { return; }
     state.active = ((conflict % total()) + total()) % total();
     paint();
-    container.querySelector(`.merge-pane-incoming .merge-cell[data-conflict="${state.active}"][data-first]`)?.scrollIntoView({ block: 'center' });
+    showActive();
+  }
+
+  /** Shows the first row of the conflict the arrows are on. */
+  function showActive(): void {
+    if (state) {
+      container.querySelector(`.merge-pane-incoming .merge-cell[data-conflict="${state.active}"][data-first]`)?.scrollIntoView({ block: 'center' });
+    }
   }
 
   /** The choices changed: draw again, and highlight the new result. */

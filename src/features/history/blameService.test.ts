@@ -2,8 +2,8 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import { GitCliError } from '../../core/gitCliError';
-import { BlameService } from './blameService';
 import { mockCliRegistry, mockGitCli } from '../../core/testing/serviceTestUtils';
+import { BlameService } from './blameService';
 
 const ADA = 'a'.repeat(40);
 

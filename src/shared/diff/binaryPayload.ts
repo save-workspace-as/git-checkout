@@ -25,7 +25,8 @@ export function sliceBinaryForPostMessage(
     offset: safeOffset,
     chunkByteLength,
     dataBase64: Buffer.from(chunk).toString('base64'),
-    truncated: byteLength > MAX_INLINE_BINARY_BYTES,
+    // Truncated while more of the file is still to come; a picture sent whole is not.
+    truncated: byteLength > MAX_INLINE_BINARY_BYTES && !(safeOffset === 0 && complete),
     complete,
   };
 }

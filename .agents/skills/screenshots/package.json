@@ -1,0 +1,9 @@
+{
+  "name": "git-checkout-screenshots",
+  "private": true,
+  "type": "module",
+  "description": "Dependencies of the screenshots skill; run `npm install` here once.",
+  "dependencies": {
+    "playwright-core": "^1.49.0"
+  }
+}

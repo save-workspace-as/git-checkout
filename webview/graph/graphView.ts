@@ -46,6 +46,7 @@ import {
   scrollTopToReveal,
 } from '../../src/shared/graph/graphKeyboard';
 import { preferredStartRef } from '../../src/shared/graph/startRef';
+import { applySuggestion, suggestSearch, type SearchSuggestions } from '../../src/shared/graph/searchSuggestions';
 import { computeVirtualWindow, GRAPH_ROW_HEIGHT } from './virtualList';
 
 import type { VscodeTextfield } from '@vscode-elements/elements/dist/vscode-textfield/index.js';
@@ -98,7 +99,7 @@ function refBadge(ref: GraphRefDto): TemplateResult {
 }
 
 function avatar(commit: GraphCommitDto): TemplateResult {
-  return html`<span class="graph-avatar" style=${styleMap({ background: `var(--graph-lane-${authorColor(commit.authorEmail)})` })}
+  return html`<span class="graph-avatar" style=${styleMap({ '--avatar-background': `var(--graph-lane-${authorColor(commit.authorEmail)})` })}
     >${authorInitials(commit.author)}${commit.avatarUrl
       ? html`<img alt="" src=${commit.avatarUrl} @error=${(event: Event) => (event.target as HTMLElement).remove()}>`
       : nothing}</span>`;
@@ -144,6 +145,9 @@ export function mountGraphView(
   let pendingReveal: { ref: string; sha: string; pagesLoaded: number } | null = null;
   let layout: { rows: GraphRow[]; geometry: GraphGeometry } | null = null;
   let searchText = '';
+  /** What the search field offers for the word being typed, and which of them is picked. */
+  let suggestions: SearchSuggestions | undefined;
+  let suggestionIndex = 0;
   let showReflog = false;
 
   const scroller = (): HTMLElement => container.querySelector<HTMLElement>('.graph-scroll')!;
@@ -447,6 +451,21 @@ export function mountGraphView(
   }
 
   /** Draws the view: the banner, the search field, the status line and the rows that are in view. */
+  /** The filters or values the search offers, in a list under the field like the editor's suggestions. */
+  function suggestionList(offered: SearchSuggestions): TemplateResult {
+    return html`
+      <div class="graph-suggest" role="listbox" id="graph-suggest" aria-label=${l10n.t('Search filters')}
+        @mousedown=${(event: Event) => event.preventDefault()}>
+        ${offered.items.map((item, index) => html`
+          <div class=${classMap({ 'graph-suggest-item': true, selected: index === suggestionIndex })} role="option" id=${`graph-suggest-${index}`}
+            aria-selected=${index === suggestionIndex ? 'true' : 'false'} @click=${() => acceptSuggestion(index)}>
+            <vscode-icon name=${item.icon} aria-hidden="true"></vscode-icon>
+            <span class="graph-suggest-label">${item.label}</span>
+            ${item.description ? html`<span class="graph-suggest-description">${item.description}</span>` : nothing}
+          </div>`)}
+      </div>`;
+  }
+
   function paint(): void {
     const { rows, geometry } = getLayout();
     const scrolling = container.querySelector<HTMLElement>('.graph-scroll');
@@ -464,13 +483,16 @@ export function mountGraphView(
         <vscode-button type="button" secondary class="graph-mode-banner-exit"
           @click=${() => postMessage({ type: 'graphExitActiveBranchOnly' })}>${l10n.t('Show All Branches')}</vscode-button>
       </div>
+      <div class="graph-search-wrap" @focusout=${() => closeSuggestions()}>
       <vscode-textfield class="graph-search" placeholder=${l10n.t('Search hash, author, or message')}
-        aria-label=${l10n.t('Search commits')} title=${l10n.t('Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Filters: author:name path:file since:2024-01-01 until:2024-06-30 content:text regex:pattern')}
+        aria-label=${l10n.t('Search commits')} aria-expanded=${suggestions ? 'true' : 'false'} aria-controls="graph-suggest" aria-haspopup="listbox" title=${l10n.t('Enter or ↓: next match · Shift+Enter or ↑: previous · Escape: clear · Ctrl+Space: filters, such as author:name path:file since:2024-01-01 until:2024-06-30 content:text regex:pattern')}
         .value=${live(searchText)} @keydown=${onSearchKey} @input=${onSearchInput}>
         <vscode-toolbar-button slot="content-after" icon="close" label=${l10n.t('Clear search')} title=${l10n.t('Clear search')}
           style=${styleMap({ visibility: searchText ? '' : 'hidden' })}
           @click=${() => { clearFind(); searchField()?.focus(); }}></vscode-toolbar-button>
       </vscode-textfield>
+      ${suggestions ? suggestionList(suggestions) : nothing}
+      </div>
       <div class=${classMap({ 'graph-status': true, hidden: status === '' })}><span class="graph-status-text">${status}</span></div>
       <!-- One tab stop for the whole list; arrow keys move within it, like VS Code's own lists. -->
       <div class="graph-scroll" tabindex="0" role="listbox" aria-multiselectable="true" aria-label=${l10n.t('Commits')}
@@ -559,7 +581,91 @@ export function mountGraphView(
     postMessage({ type: 'graphFind', query });
   }
 
+  /** The caret of the search field, from the element's own input. */
+  function searchCaret(): number {
+    return searchField()?.wrappedElement?.selectionStart ?? searchText.length;
+  }
+
+  /** Offers the filters and values that fit the word at the caret, or nothing. */
+  function updateSuggestions(force = false): void {
+    suggestions = suggestSearch(searchText, searchCaret(), {
+      force,
+      authors: commits.map((commit) => commit.author),
+      today: new Date().toLocaleDateString('en-CA'),
+    });
+    suggestionIndex = 0;
+  }
+
+  function closeSuggestions(): void {
+    if (suggestions) {
+      suggestions = undefined;
+      paint();
+    }
+  }
+
+  /** Puts the picked filter or value in the search, and searches for what it now says. */
+  function acceptSuggestion(index: number): void {
+    const item = suggestions?.items[index];
+    if (!suggestions || !item) { return; }
+    const next = applySuggestion(searchText, suggestions, item);
+    searchText = next.text;
+    updateSuggestionsAt(next.caret);
+    paint();
+    scheduleFind();
+    const field = searchField();
+    field?.focus();
+    // Once the field has taken the new text, so a key typed at once is not put before it.
+    void field?.updateComplete.then(() => field.wrappedElement?.setSelectionRange(next.caret, next.caret));
+  }
+
+  /** After a pick the caret is where the pick ended, which the input has not been told yet. */
+  function updateSuggestionsAt(caret: number): void {
+    suggestions = suggestSearch(searchText, caret, {
+      authors: commits.map((commit) => commit.author),
+      today: new Date().toLocaleDateString('en-CA'),
+    });
+    suggestionIndex = 0;
+  }
+
+  /** Search as you type: the scan starts a moment after the last key. */
+  function scheduleFind(): void {
+    clearTimeout(findTimer);
+    findTimer = setTimeout(() => {
+      const query = searchText.trim();
+      if (query !== findQuery) {
+        runFind(query);
+      }
+    }, FIND_DEBOUNCE_MS);
+  }
+
   function onSearchKey(e: KeyboardEvent): void {
+    if (e.key === ' ' && e.ctrlKey) {
+      e.preventDefault();
+      updateSuggestions(true);
+      paint();
+      return;
+    }
+    if (suggestions) {
+      const count = suggestions.items.length;
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        suggestionIndex = (suggestionIndex + (e.key === 'ArrowDown' ? 1 : -1) + count) % count;
+        paint();
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        acceptSuggestion(suggestionIndex);
+        return;
+      }
+      if (e.key === 'Escape') {
+        // Closes the list; a second Escape clears the search.
+        e.preventDefault();
+        e.stopPropagation();
+        closeSuggestions();
+        return;
+      }
+    }
     if (e.key === 'Escape') {
       clearFind();
       return;
@@ -581,14 +687,9 @@ export function mountGraphView(
   /** Search as you type; the scan runs in the background and jumps to the first match it finds. */
   function onSearchInput(e: Event): void {
     searchText = (e.target as VscodeTextfield).value;
+    updateSuggestions();
     paint();
-    clearTimeout(findTimer);
-    findTimer = setTimeout(() => {
-      const query = searchText.trim();
-      if (query !== findQuery) {
-        runFind(query);
-      }
-    }, FIND_DEBOUNCE_MS);
+    scheduleFind();
   }
 
   function clearFind(): void {
@@ -597,6 +698,7 @@ export function mountGraphView(
       postMessage({ type: 'graphFindCancel' });
     }
     resetFind();
+    suggestions = undefined;
     setSearchText('');
     paint();
   }

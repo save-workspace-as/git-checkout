@@ -183,6 +183,77 @@ describe('commit graph', () => {
     assert.deepEqual(sent.at(-1), { type: 'graphExitActiveBranchOnly' });
   });
 
+  describe('filter suggestions in the search', () => {
+    const type = (field: El, value: string) => {
+      field.value = value;
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+    };
+    const items = (q: (selector: string) => El, container: HTMLElement) =>
+      [...container.querySelectorAll('.graph-suggest-item .graph-suggest-label')].map((label) => label.textContent);
+
+    it('offers the filters that start like the word being typed, and takes one with Enter or Tab', () => {
+      const { container, graph, q, press } = mount();
+      graph.handleHostMessage(page(three));
+      const field = q('.graph-search');
+      type(field, 'pa');
+      assert.deepEqual(items(q, container), ['path:']);
+      assert.equal(field.getAttribute('aria-expanded'), 'true');
+      press(field, 'Enter');
+      assert.equal(field.value, 'path:');
+      assert.deepEqual(items(q, container), [], 'path takes text, so there is nothing more to offer');
+
+      type(field, 's');
+      press(field, 'Tab');
+      assert.equal(field.value, 'since:');
+      assert.ok(items(q, container).includes('yesterday'), 'the values of the filter are offered next');
+    });
+
+    it('offers the authors of the loaded commits for author:, quoting a name with a space', () => {
+      const { container, graph, q, press } = mount();
+      graph.handleHostMessage(page(three));
+      const field = q('.graph-search');
+      type(field, 'author:Author');
+      assert.deepEqual(items(q, container), ['Author a', 'Author b', 'Author c']);
+      press(field, 'ArrowDown');
+      press(field, 'Enter');
+      assert.equal(field.value, 'author:"Author b" ');
+    });
+
+    it('moves through the list with the arrows, and closes it with Escape before Escape clears the search', () => {
+      const { container, graph, q, press, sent } = mount();
+      graph.handleHostMessage(page(three));
+      const field = q('.graph-search');
+      type(field, 'author:Author');
+      press(field, 'ArrowDown');
+      assert.equal(q('.graph-suggest-item.selected .graph-suggest-label').textContent, 'Author b');
+      press(field, 'ArrowUp'); press(field, 'ArrowUp');
+      assert.equal(q('.graph-suggest-item.selected .graph-suggest-label').textContent, 'Author c', 'wraps around');
+      press(field, 'Escape');
+      assert.deepEqual(items(q, container), []);
+      assert.equal(field.value, 'author:Author', 'the first Escape only closes the list');
+      assert.equal(sent.some((message) => message.type === 'graphFindCancel'), false);
+      press(field, 'Escape');
+      assert.equal(field.value, '');
+    });
+
+    it('takes a suggestion with the mouse, and Ctrl+Space shows every filter', () => {
+      const { container, graph, q, press, click } = mount();
+      graph.handleHostMessage(page(three));
+      const field = q('.graph-search');
+      press(field, ' ', { ctrlKey: true });
+      assert.deepEqual(items(q, container), ['author:', 'path:', 'since:', 'until:', 'content:', 'regex:']);
+      click(container.querySelectorAll('.graph-suggest-item')[1]);
+      assert.equal(field.value, 'path:');
+    });
+
+    it('does not offer anything for plain words, and leaves the arrows to the matches', () => {
+      const { container, graph, q } = mount();
+      graph.handleHostMessage(page(three));
+      type(q('.graph-search'), 'fix login');
+      assert.deepEqual(items(q, container), []);
+    });
+  });
+
   it('searches as you type, marks the matches, and steps through them with Enter', async () => {
     const { graph, q, rows, sent, press } = mount();
     graph.handleHostMessage(page(three));

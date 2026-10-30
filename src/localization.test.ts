@@ -81,7 +81,7 @@ describe('source strings', () => {
       /Git watch verify/,
       /Write a git commit message|Staged changes:/,
       // Error codes and key names, which are compared in code and never shown.
-      /: (Timeout|Cancelled|Lock|Home|End|Escape|Enter|Tab)$/,
+      /: (Timeout|Cancelled|Lock|Home|End|Escape|Enter|Tab|Backspace|Delete)$/,
     ];
     const unlocalized = findUnlocalized().filter((line) => !internal.some((pattern) => pattern.test(line)));
     assert.deepEqual(unlocalized, []);

@@ -136,6 +136,12 @@ body {
   max-width: 100%;
 }
 
+.modal:focus,
+.modal:focus-visible {
+  /* The dialog takes focus as it opens so Tab and Escape work; a box around the whole dialog says nothing. */
+  outline: none;
+}
+
 .modal button:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: 2px;
@@ -305,6 +311,11 @@ body {
   justify-content: center;
   background: var(--vscode-badge-background);
   color: var(--vscode-badge-foreground);
+}
+
+.commit-avatar:has(> .commit-avatar-image) {
+  background: transparent;
+  color: transparent;
 }
 
 .commit-avatar-image {
@@ -649,11 +660,54 @@ body.vscode-high-contrast-light {
   display: none;
 }
 
+.graph-search-wrap {
+  position: relative;
+  flex-shrink: 0;
+  margin: 6px 8px;
+}
+
 .graph-search {
   display: block;
-  flex-shrink: 0;
   width: auto;
-  margin: 6px 8px;
+}
+
+/* The list of filters under the search field, in the colors of the editor's suggestions. */
+.graph-suggest {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  min-width: 320px;
+  max-width: 100%;
+  margin-top: 2px;
+  padding: 3px;
+  border: 1px solid var(--vscode-editorSuggestWidget-border, var(--vscode-widget-border));
+  border-radius: 4px;
+  background: var(--vscode-editorSuggestWidget-background);
+  color: var(--vscode-editorSuggestWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+}
+
+.graph-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.graph-suggest-item.selected {
+  background: var(--vscode-editorSuggestWidget-selectedBackground, var(--vscode-list-activeSelectionBackground));
+  color: var(--vscode-editorSuggestWidget-selectedForeground, var(--vscode-list-activeSelectionForeground));
+}
+
+.graph-suggest-description {
+  margin-left: auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--vscode-descriptionForeground);
 }
 
 .graph-scroll {
@@ -905,11 +959,18 @@ body.vscode-high-contrast-light {
   height: 16px;
   border-radius: 50%;
   overflow: hidden;
+  background: var(--avatar-background);
   /* Initials scale with the avatar icon, not the UI font. */
   font-size: 8px;
   line-height: 16px;
   text-align: center;
   color: var(--vscode-editor-background);
+}
+
+/* A picture with transparent edges must not show the colored initials behind it. */
+.graph-avatar:has(> img) {
+  background: transparent;
+  color: transparent;
 }
 
 .graph-avatar img {
@@ -1562,6 +1623,8 @@ vscode-button-group.hidden {
 
 .wd-nontext {
   padding: 8px;
+  /* The diff column is as wide as its widest line; a picture must fit the column, not make it wider. */
+  contain: inline-size;
 }
 
 .wd-image-side-by-side {
@@ -1601,14 +1664,14 @@ vscode-button-group.hidden {
 /* A checkerboard behind the picture shows which parts of it are transparent. */
 .wd-image-frame {
   --wd-checker: color-mix(in srgb, var(--vscode-editor-foreground) 14%, transparent);
-  display: flex;
-  justify-content: center;
   padding: 8px;
   border: 1px solid var(--vscode-widget-border, var(--vscode-editorWidget-border));
   background: var(--vscode-editor-background);
 }
 
 .wd-image-frame img {
+  /* A block, so a picture wider than the frame shrinks with its height; as a flex item it kept its full height. */
+  margin: 0 auto;
   background: conic-gradient(var(--wd-checker) 25%, transparent 0 50%, var(--wd-checker) 0 75%, transparent 0) 0 0 / 16px 16px;
 }
 

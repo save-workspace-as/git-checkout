@@ -17,7 +17,7 @@ import type {
 } from '../../shared/changes/workingCopyProtocol';
 import { createLogger } from '../../log';
 import { buildWorkingCopyDiffArgs } from '../../core/gitDiffArgs';
-import { loadNonTextDiffSummary } from './nonTextDiffLoader';
+import { loadNonTextDiffSummary, loadUntrackedNonTextSummary } from './nonTextDiffLoader';
 import type { BinaryBlobSlice } from '../../shared/diff/binaryPayload';
 import { defaultChunkSize } from '../../shared/diff/binaryPayload';
 import { loadBinaryChunk, parseBlobRef } from './nonTextDiffLoader';
@@ -102,6 +102,32 @@ export class PatchStagingService {
       log.warn(`diff failed for ${rel}`, error);
       return emptyDiff(rel, side, l10n.t('Could not load diff for this file.'));
     }
+  }
+
+  /** The picture or other bytes of a file that only the working tree has; nothing for a text file. */
+  async loadUntrackedFileDiff(
+    repoRoot: string,
+    filePath: string,
+    viewOptions: WorkingCopyDiffViewOptions = DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS,
+  ): Promise<WorkingCopyFileDiffDto | undefined> {
+    const rel = assertRepoRelativePath(filePath);
+    const repo = this.gitService.getRepositories().find((r) => r.rootUri.fsPath === repoRoot);
+    if (!repo) {
+      return undefined;
+    }
+    const summary = await loadUntrackedNonTextSummary(this.cliRegistry.forRepository(repo), repoRoot, rel);
+    if (!summary) {
+      return undefined;
+    }
+    return {
+      path: rel,
+      side: 'unstaged',
+      binary: true,
+      nonTextKind: summary.kind,
+      imageMode: summary.kind === 'image' ? viewOptions.imageMode : undefined,
+      blobs: summary.blobs,
+      hunks: [],
+    };
   }
 
   async loadBinaryChunk(
