@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { getGitCliRegistry } from '../../core/gitCliRegistry';
 import { loadGitHubRepository } from '../../core/githubRepository';
 import { createLogger } from '../../log';
+import { remoteWebUrl } from '../../shared/history/remoteWebUrl';
 import { isAutolinkUrl, parseAutolinkRules, type AutolinkRule } from '../../shared/history/autolinks';
 import {
   canonicalGitHubCommitUrl,
@@ -51,4 +52,30 @@ export async function openPullRequestPage(repoRoot: string, branch: string): Pro
 /** The autolinks the user set up in `gitCheckout.autolinks`; the entries that cannot work are left out. */
 export function readAutolinks(): AutolinkRule[] {
   return parseAutolinkRules(vscode.workspace.getConfiguration('gitCheckout').get('autolinks'));
+}
+
+/** Opens the web page of a remote, from its first address, whatever kind of address that is. */
+export async function openRemoteInBrowser(repoRoot: string | null, remote: string): Promise<void> {
+  if (!repoRoot) {
+    void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+    return;
+  }
+  let urls: string[] = [];
+  try {
+    urls = (await getGitCliRegistry().getOrCreate(repoRoot).execRead(['remote', 'get-url', '--all', remote])).stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch (error) {
+    log.warn('could not read the address of the remote', error);
+  }
+  const page = urls.map(remoteWebUrl).find((url) => url !== undefined);
+  if (!page) {
+    void vscode.window.showWarningMessage(l10n.t("The remote '{0}' has no web page to open.", remote));
+    return;
+  }
+  log.info('open remote in the browser');
+  if (!(await vscode.env.openExternal(vscode.Uri.parse(page)))) {
+    void vscode.window.showWarningMessage(l10n.t('Could not open the link.'));
+  }
 }

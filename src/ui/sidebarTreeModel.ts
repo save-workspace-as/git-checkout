@@ -55,6 +55,7 @@ export const SIDEBAR_COMMANDS = {
   deleteTag: 'gitCheckout.sidebar.deleteTag',
   addRemote: 'gitCheckout.sidebar.addRemote',
   editRemote: 'gitCheckout.sidebar.editRemote',
+  openRemote: 'gitCheckout.sidebar.openRemote',
   removeRemote: 'gitCheckout.sidebar.removeRemote',
   createStash: 'gitCheckout.sidebar.createStash',
   clearStashes: 'gitCheckout.sidebar.clearStashes',

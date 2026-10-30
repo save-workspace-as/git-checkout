@@ -64,7 +64,7 @@ import {
   parseStoredChangesView,
   splitCommitMessage,
   type ChangesViewOptions } from '../shared/changes/changesProtocol';
-import { githubRepositoryFor, openGitHubIssueLink, readAutolinks } from '../features/history/githubLinkHost';
+import { githubRepositoryFor, openGitHubIssueLink, openRemoteInBrowser, readAutolinks } from '../features/history/githubLinkHost';
 import { GRAPH_CONTEXT_COMMANDS } from '../features/graph/graphContextCommands';
 
 import { showGitCheckoutQuickLaunch, type QuickLaunchHost } from './quickLaunch';
@@ -1327,6 +1327,11 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   runPullBranch(branchName: string): Promise<void> {
     return this.sync.runPullBranch(branchName);
+  }
+
+  /** Opens a remote's web page, whether it is set up with an SSH or an HTTPS address. */
+  async runOpenRemote(remote: string): Promise<void> {
+    await openRemoteInBrowser(this.activeRepoRoot(), remote);
   }
 
   async runOpenPullRequest(branchName: string): Promise<void> {

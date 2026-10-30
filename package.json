@@ -1251,6 +1251,36 @@
         "title": "%command.gitCheckout.blame.stepBack.title%"
       },
       {
+        "category": "%command.gitCheckout.remote.openFile.category%",
+        "command": "gitCheckout.remote.openFile",
+        "title": "%command.gitCheckout.remote.openFile.title%"
+      },
+      {
+        "category": "%command.gitCheckout.remote.copyFileLink.category%",
+        "command": "gitCheckout.remote.copyFileLink",
+        "title": "%command.gitCheckout.remote.copyFileLink.title%"
+      },
+      {
+        "category": "%command.gitCheckout.remote.openRepository.category%",
+        "command": "gitCheckout.remote.openRepository",
+        "title": "%command.gitCheckout.remote.openRepository.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.openOnGitHub.category%",
+        "command": "gitCheckout.graph.openOnGitHub",
+        "title": "%command.gitCheckout.graph.openOnGitHub.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.copyGitHubLink.category%",
+        "command": "gitCheckout.graph.copyGitHubLink",
+        "title": "%command.gitCheckout.graph.copyGitHubLink.title%"
+      },
+      {
+        "category": "%command.gitCheckout.sidebar.openRemote.category%",
+        "command": "gitCheckout.sidebar.openRemote",
+        "title": "%command.gitCheckout.sidebar.openRemote.title%"
+      },
+      {
         "command": "gitCheckout.repo.0.fetch",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.fetch.title%"
@@ -3335,6 +3365,30 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.remote.openFile",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.remote.copyFileLink",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.remote.openRepository",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.openOnGitHub",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.copyGitHubLink",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.sidebar.openRemote",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.0.fetch",
           "when": "false"
         },
@@ -4404,6 +4458,11 @@
           "command": "gitCheckout.sidebar.copySubmodulePath",
           "group": "9_copy@1",
           "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+        },
+        {
+          "command": "gitCheckout.sidebar.openRemote",
+          "group": "8_remote@0",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
         }
       ],
       "view/title": [
@@ -4733,6 +4792,16 @@
           "submenu": "gitCheckout.graph.branchMenu",
           "group": "0_branch",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && graphBranch"
+        },
+        {
+          "command": "gitCheckout.graph.openOnGitHub",
+          "group": "2_remote@1",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
+          "command": "gitCheckout.graph.copyGitHubLink",
+          "group": "2_remote@2",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         }
       ],
       "explorer/context": [
@@ -4760,6 +4829,16 @@
           "command": "gitCheckout.runCustomCommand",
           "group": "navigation@31",
           "when": "resourceScheme == file"
+        },
+        {
+          "command": "gitCheckout.remote.openFile",
+          "group": "navigation@23",
+          "when": "explorerResourceIsFolder == false && resourceScheme == file"
+        },
+        {
+          "command": "gitCheckout.remote.copyFileLink",
+          "group": "navigation@24",
+          "when": "explorerResourceIsFolder == false && resourceScheme == file"
         }
       ],
       "editor/context": [
@@ -4771,6 +4850,16 @@
         {
           "command": "gitCheckout.blame.toggleFile",
           "group": "navigation@23",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "gitCheckout.remote.openFile",
+          "group": "navigation@24",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "gitCheckout.remote.copyFileLink",
+          "group": "navigation@25",
           "when": "resourceScheme == file"
         }
       ],
