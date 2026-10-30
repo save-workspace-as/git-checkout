@@ -64,7 +64,7 @@ import {
   parseStoredChangesView,
   splitCommitMessage,
   type ChangesViewOptions } from '../shared/changes/changesProtocol';
-import { githubRepositoryFor, openGitHubIssueLink } from '../features/history/githubLinkHost';
+import { githubRepositoryFor, openGitHubIssueLink, readAutolinks } from '../features/history/githubLinkHost';
 import { GRAPH_CONTEXT_COMMANDS } from '../features/graph/graphContextCommands';
 
 import { showGitCheckoutQuickLaunch, type QuickLaunchHost } from './quickLaunch';
@@ -74,6 +74,8 @@ import { OperationFormController } from './operationFormController';
 import { buildUiState } from './uiState';
 import { readActiveEditorTokenColors } from './activeEditorTheme';
 import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
+import { ignoreRevsEnabled } from '../features/blame/blameSettings';
+import { autolinksBodyAttribute } from '../shared/history/autolinks';
 import { ScopedBottomViewSlot, type BottomSlot } from './bottomPanelViews';
 import { webviewImgSrc } from './webviewImgSrc';
 import { ScopedChangesList } from '../features/changes/changesList';
@@ -148,7 +150,7 @@ function getWebviewHtml(
   <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${codiconUri}" nonce="${nonce}" />
   <title>Git Checkout</title>
 </head>
-<body${l10nBodyAttribute(vscode.l10n.bundle)}>
+<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}>
   <div id="root"></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>
@@ -285,7 +287,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     // Each window runs its own rebase, conflict and history sessions, so two repositories can at once.
     this.interactiveRebase = new InteractiveRebaseController(gitService, cliRegistry);
     this.interactiveRebase.attachPoster((message) => this.postWhenReady(message));
-    this.pathHistory = new PathHistoryPanel(gitService, new PathHistoryService(cliRegistry), new BlameService(cliRegistry));
+    this.pathHistory = new PathHistoryPanel(gitService, new PathHistoryService(cliRegistry), new BlameService(cliRegistry, undefined, ignoreRevsEnabled));
     this.attachPathHistory(this.pathHistory);
     this.disposables.push(this.interactiveRebase, this.pathHistory);
     this.selectedRepoRoot = pinnedRepoRoot;
@@ -1180,7 +1182,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   private async openGitHubLink(url: string): Promise<void> {
     const root = this.activeRepoRoot();
     const github = root ? await githubRepositoryFor(root) : null;
-    await openGitHubIssueLink(url, github);
+    await openGitHubIssueLink(url, github, readAutolinks());
   }
 
 

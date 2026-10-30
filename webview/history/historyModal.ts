@@ -10,6 +10,7 @@ import { DEFAULT_COMMIT_DIFF_VIEW } from '../../src/shared/diff/commitDiffPresen
 import { DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS } from '../../src/shared/diff/diffViewOptions';
 import type { GitHubRepository } from '../../src/shared/history/githubReferences';
 import type { GraphCommitDto } from '../../src/shared/graph/graphProtocol';
+import type { CommitDiffLineDto } from '../../src/shared/history/commitDetailsProtocol';
 import type {
   PathHistoryHostMessage,
   PathHistoryViewOption,
@@ -60,7 +61,9 @@ export function mountHistoryModal(
     hasMore: false, loadingMore: false, selectedSha: null as string | null,
   };
   /** The Blame modal: the commit that last changed each line of the selected commit's diff. */
-  const blame = { shas: [] as string[], commits: {} as Record<string, BlameCommitDto> };
+  const blame = { shas: [] as string[], commits: {} as Record<string, BlameCommitDto>, lines: [] as CommitDiffLineDto[] };
+  /** A commit the host asked to select once the list has it. */
+  let wantedSha: string | null = null;
   let renderedSha: string | null = null;
   let viewOptions: CommitDiffViewOptions = { ...DEFAULT_COMMIT_DIFF_VIEW };
 
@@ -214,7 +217,8 @@ export function mountHistoryModal(
             path: message.path, scope: message.scope, canFollow: message.canFollow,
           });
           renderedSha = null;
-          Object.assign(blame, { shas: [], commits: {} });
+          wantedSha = message.select ?? null;
+          Object.assign(blame, { shas: [], commits: {}, lines: [] });
           viewer.setLineLead(undefined);
           if (options.blame) {
             viewer.showMessage(l10n.t('Select a commit to see its change.'));
@@ -250,7 +254,16 @@ export function mountHistoryModal(
             if (element) { element.scrollTop = 0; }
           }
           paint();
-          if (!message.append && history.commits[0]) {
+          if (wantedSha && history.commits.some((commit) => commit.sha === wantedSha)) {
+            const wanted = wantedSha;
+            wantedSha = null;
+            select(wanted);
+            list()?.querySelector<HTMLElement>(`[data-sha="${wanted}"]`)?.scrollIntoView({ block: 'nearest' });
+          } else if (wantedSha && message.page.hasMore) {
+            // The host keeps loading pages until the commit it wants is in the list.
+          } else if ((!message.append || wantedSha) && history.commits[0]) {
+            // Either the first page, or the commit that was wanted is not in the file's history after all.
+            wantedSha = null;
             select(history.commits[0].sha);
           } else if (history.commits.length === 0) {
             viewer.showMessage(l10n.t('No commits.'));
@@ -260,8 +273,13 @@ export function mountHistoryModal(
           if (message.sha === history.selectedSha) {
             Object.assign(blame, { shas: message.shas, commits: message.commits });
             viewer.setLineLead(blameGutter({
-              ...blame, github: history.github, isListed: (sha) => history.commits.some((commit) => commit.sha === sha),
-            }, { select, openLink: (url) => post({ type: 'openGitHubLink', url }) }));
+              shas: blame.shas, commits: blame.commits, github: history.github,
+              isListed: (sha) => history.commits.some((commit) => commit.sha === sha),
+              selectedSha: history.selectedSha, lineOf: (index) => blame.lines[index]?.line,
+            }, {
+              select, openLink: (url) => post({ type: 'openGitHubLink', url }),
+              stepBack: (line) => { if (history.selectedSha) { post({ type: 'pathHistoryBlameBefore', sha: history.selectedSha, line }); } },
+            }));
           }
           return;
         case 'pathHistoryDiff':
@@ -270,7 +288,7 @@ export function mountHistoryModal(
           }
           if (options.blame) {
             // The blame for these lines arrives after the diff.
-            Object.assign(blame, { shas: [], commits: {} });
+            Object.assign(blame, { shas: [], commits: {}, lines: message.lines });
             viewer.setLineLead(undefined);
           }
           if (message.error) {
@@ -282,6 +300,10 @@ export function mountHistoryModal(
             void viewer.showDiff(history.path, message.lines, message.binary, renderedSha === message.sha);
           }
           renderedSha = message.sha;
+          return;
+        case 'pathHistorySelectCommit':
+          select(message.sha);
+          list()?.querySelector<HTMLElement>(`[data-sha="${message.sha}"]`)?.scrollIntoView({ block: 'nearest' });
           return;
         case 'pathHistoryFailed':
           history.loadingMore = false;

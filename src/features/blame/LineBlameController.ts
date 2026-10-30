@@ -6,7 +6,7 @@ import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManage
 import { isUncommittedSha } from '../../shared/history/blameProtocol';
 import type { GitHubRepository } from '../../shared/history/githubReferences';
 import { locateRepoFile } from '../../shared/history/pathHistoryProtocol';
-import { githubRepositoryFor } from '../history/githubLinkHost';
+import { githubRepositoryFor, readAutolinks } from '../history/githubLinkHost';
 import { DEFAULT_BLAME_FORMAT, formatLineBlame, type LineBlame } from './lineBlameFormat';
 import { blameHoverMarkdown, HOVER_COMMANDS, OPEN_COMMIT_COMMAND, roundedAvatar, type BlameTarget } from './lineBlameHover';
 import type { LineBlameService } from './lineBlameService';
@@ -131,6 +131,26 @@ export class LineBlameController implements vscode.Disposable {
     await this.host.showCommitChange(target.sha, target.commitPath ?? target.path);
   }
 
+  /** The Blame modal for the file, with the commit of the line selected. */
+  async openInBlame(arg?: unknown): Promise<void> {
+    const target = this.targetOf(arg);
+    if (!target) {
+      return;
+    }
+    await this.host.selectRepository(target.repoRoot);
+    await this.host.pathHistoryPanel().showBlameAt(target.repoRoot, target.path, target.sha);
+  }
+
+  /** The Blame modal at the commit that changed the line before the line's own commit did. */
+  async blameBefore(arg?: unknown): Promise<void> {
+    const target = this.targetOf(arg);
+    if (!target) {
+      return;
+    }
+    await this.host.selectRepository(target.repoRoot);
+    await this.host.pathHistoryPanel().showBlameBefore(target.repoRoot, target.path, target.sha, target.commitPath ?? target.path, target.originalLine ?? target.line);
+  }
+
   /** The history of the line, as the history modal shows it for a hunk. */
   async lineHistory(arg?: unknown): Promise<void> {
     const target = this.targetOf(arg);
@@ -145,7 +165,7 @@ export class LineBlameController implements vscode.Disposable {
     const given = arg as Partial<BlameTarget> | undefined;
     if (given && typeof given.repoRoot === 'string' && typeof given.sha === 'string' && typeof given.path === 'string' && typeof given.line === 'number') {
       const text = (value: unknown): string | undefined => (typeof value === 'string' ? value : undefined);
-      return { repoRoot: given.repoRoot, sha: given.sha, path: given.path, line: given.line, commitPath: text(given.commitPath) };
+      return { repoRoot: given.repoRoot, sha: given.sha, path: given.path, line: given.line, commitPath: text(given.commitPath), originalLine: typeof given.originalLine === 'number' ? given.originalLine : undefined };
     }
     if (!this.shown || isUncommittedSha(this.shown.blame.sha)) {
       void vscode.window.showInformationMessage(l10n.t('The line has no commit yet.'));
@@ -207,7 +227,7 @@ export class LineBlameController implements vscode.Disposable {
     }
 
     const text = this.text(blame);
-    this.shown = { document, line, blame, target: { repoRoot: located.repoRoot, sha: blame.sha, path: located.path, line: line + 1, commitPath: blame.path } };
+    this.shown = { document, line, blame, target: { repoRoot: located.repoRoot, sha: blame.sha, path: located.path, line: line + 1, commitPath: blame.path, originalLine: blame.originalLine } };
     const end = document.lineAt(Math.min(line, document.lineCount - 1)).range.end;
     editor.setDecorations(
       this.decoration,
@@ -218,7 +238,7 @@ export class LineBlameController implements vscode.Disposable {
     if (statusBar) {
       this.statusItem.text = `$(git-commit) ${text}`;
       this.statusItem.command = isUncommittedSha(blame.sha) ? undefined : { command: OPEN_COMMIT_COMMAND, title: l10n.t('Show Commit in Graph') };
-      this.statusItem.tooltip = await this.markdownFor(this.shown);
+      this.statusItem.tooltip = await this.hoverMarkdown(this.shown.target);
       if (generation !== this.generation) {
         return;
       }
@@ -235,7 +255,7 @@ export class LineBlameController implements vscode.Disposable {
     if (!shown || shown.document !== document || position.line !== shown.line || (over !== 'line' && position.character < document.lineAt(position.line).text.length)) {
       return undefined;
     }
-    const markdown = await this.markdownFor(shown);
+    const markdown = await this.hoverMarkdown(shown.target);
     return markdown ? new vscode.Hover(markdown) : undefined;
   }
 
@@ -279,8 +299,9 @@ export class LineBlameController implements vscode.Disposable {
     return picture || undefined;
   }
 
-  private async markdownFor(shown: Shown): Promise<vscode.MarkdownString | undefined> {
-    const { repoRoot, sha } = shown.target;
+  /** The hover for the commit of one line: who and when, the message with its links, and the actions. */
+  async hoverMarkdown(target: BlameTarget): Promise<vscode.MarkdownString | undefined> {
+    const { repoRoot, sha } = target;
     const commit = isUncommittedSha(sha) ? { sha, author: '', authorMail: '', authorTime: 0, message: '' } : await this.service.commit(repoRoot, sha);
     if (!commit) {
       return undefined;
@@ -292,7 +313,7 @@ export class LineBlameController implements vscode.Disposable {
     }
     const github = await repository;
     const markdown = new vscode.MarkdownString(
-      blameHoverMarkdown(commit, shown.target, github, Date.now(), vscode.env.language, await this.avatarOf(github, commit)),
+      blameHoverMarkdown(commit, target, github, Date.now(), vscode.env.language, await this.avatarOf(github, commit), readAutolinks()),
       true,
     );
     markdown.isTrusted = { enabledCommands: HOVER_COMMANDS };

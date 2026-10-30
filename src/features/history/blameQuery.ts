@@ -1,8 +1,8 @@
 import type { BlameLine } from './gitBlameParser';
 import type { BlameLineDto } from '../../shared/history/blameProtocol';
 
-export function buildBlameArgs(revision: string, path: string, start: number, end: number): string[] {
-  const args = ['blame', '--porcelain', `-L${start},${end}`];
+export function buildBlameArgs(revision: string, path: string, start: number, end: number, extra: readonly string[] = []): string[] {
+  const args = ['blame', '--porcelain', ...extra, `-L${start},${end}`];
   if (revision) {
     args.push(revision);
   }
@@ -26,8 +26,8 @@ export function lineRanges(lines: readonly number[]): [number, number][] {
 }
 
 /** `git blame` of several line ranges at a revision in one call. */
-export function buildBlameRangesArgs(revision: string, path: string, ranges: readonly [number, number][]): string[] {
-  return ['blame', '--porcelain', ...ranges.map(([first, last]) => `-L${first},${last}`), revision, '--', path.replace(/\\/g, '/')];
+export function buildBlameRangesArgs(revision: string, path: string, ranges: readonly [number, number][], extra: readonly string[] = []): string[] {
+  return ['blame', '--porcelain', ...extra, ...ranges.map(([first, last]) => `-L${first},${last}`), revision, '--', path.replace(/\\/g, '/')];
 }
 
 /** Git's "file has only N lines" fatal, used to stop batched blame at EOF. */

@@ -76,6 +76,8 @@ async function openWindow(folder, port) {
     { key: 'ctrl+alt+shift+h', command: 'gitCheckout.pathHistory.file', args: context },
     { key: 'ctrl+alt+shift+b', command: 'gitCheckout.blame.file', args: context },
     { key: 'ctrl+alt+shift+o', command: 'workbench.action.quickOpen', args: historyFile.split('/').pop() },
+    { key: 'ctrl+alt+shift+f', command: 'gitCheckout.blame.toggleFile' },
+    { key: 'ctrl+alt+shift+l', command: 'gitCheckout.blame.toggleCodeLens' },
   ]));
   const cli = join(dirname(code), '..', 'Resources', 'app', 'bin', 'code');
   run(cli, ['--install-extension', vsix, '--user-data-dir', join(data, 'user'), '--extensions-dir', join(data, 'extensions')]);
@@ -248,6 +250,15 @@ try {
     await page.keyboard.press('Meta+k'); await page.keyboard.press('Meta+i'); await sleep(2500);
     await t.shot('14', 'line-blame');
     await page.keyboard.press('Escape');
+  }
+  if (wanted('15')) {
+    // The whole file's blame in the gutter, with the lenses above its functions.
+    if (!wanted('14')) { await page.keyboard.press('Control+Alt+Shift+o'); await sleep(1200); await page.keyboard.press('Enter'); await sleep(2500); }
+    await page.keyboard.press('Control+Alt+Shift+f'); await sleep(2500);
+    await page.keyboard.press('Control+Alt+Shift+l'); await sleep(3000);
+    await page.keyboard.press('Control+g'); await sleep(500);
+    await page.keyboard.type('1'); await page.keyboard.press('Enter'); await sleep(1500);
+    await t.shot('15', 'file-blame');
   }
   await stage.browser.close();
 } finally {

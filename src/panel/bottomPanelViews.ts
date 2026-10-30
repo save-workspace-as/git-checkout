@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
+import { autolinksBodyAttribute } from '../shared/history/autolinks';
+import { readAutolinks } from '../features/history/githubLinkHost';
 import type { HostMessage, WebviewMessage } from '../shared/protocol';
 import { webviewImgSrc } from './webviewImgSrc';
 
@@ -142,7 +144,7 @@ function viewHtml(
   <link rel="stylesheet" href="${styleUri}" />
   <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${codiconUri}" nonce="${nonce}" />
 </head>
-<body${l10nBodyAttribute(vscode.l10n.bundle)}>
+<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}>
   <div id="root"${rootAttributes}></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

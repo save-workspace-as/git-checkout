@@ -60,6 +60,8 @@ export type PathHistoryHostMessage =
       canFollow: boolean;
       /** `blame` shows the same commits in the Blame modal, with each line's last commit beside it. */
       mode?: 'history' | 'blame';
+      /** A commit to select once the list has it, instead of the newest. */
+      select?: string;
     }
   | {
       type: 'pathHistoryMeta';
@@ -80,6 +82,8 @@ export type PathHistoryHostMessage =
     }
   /** For the Blame modal: the commit that last changed each line of the selected commit's diff. */
   | { type: 'pathHistoryBlame'; sha: string; shas: string[]; commits: Record<string, BlameCommitDto> }
+  /** Select this commit, which the list has now. */
+  | { type: 'pathHistorySelectCommit'; sha: string }
   | { type: 'pathHistoryFailed' }
   | { type: 'pathHistoryClose' };
 
@@ -108,6 +112,8 @@ export type PathHistoryWebviewMessage =
   | { type: 'pathHistorySelect'; sha: string }
   | { type: 'pathHistoryClose' }
   | { type: 'pathHistoryOpenInEditor'; sha: string }
+  /** The Blame modal: step back from a line the selected commit changed to the commit that changed it before. */
+  | { type: 'pathHistoryBlameBefore'; sha: string; line: number }
   | { type: 'pathHistoryToggle'; option: 'follow' | 'merges' }
   | { type: 'pathHistoryReset' }
   | { type: 'pathHistoryViewOption'; option: PathHistoryViewOption };

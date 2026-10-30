@@ -16,6 +16,7 @@ Git Checkout runs on the **workspace** side, so Git always runs on the same mach
 - **Fetch, pull and push:** a form for the options, or Quick Fetch, Quick Pull and Quick Push for the tracked remote.
 - **Stashes, worktrees and submodules:** save, apply, pop and drop stashes; add, open and delete worktrees; initialize, update and sync submodules.
 - **Inline and status bar blame:** who last changed the line you are on, in faint text at its end and in the status bar. Hover it for the commit message with its issues and pull requests linked, the author's picture, and actions to show the commit in the graph, copy its hash, open the change the commit made, see the line's history or open it on GitHub.
+- **File blame and CodeLens:** Toggle File Blame (editor right-click menu, or Quick Launch) shows who changed each run of lines and when in a column left of the code, tinted from warm for recent changes to cool for old ones; hover a line's text for its commit. Git CodeLens (off by default; Toggle Git CodeLens) puts who last changed a file, class or function above it, and how many people wrote it.
 - **Edit any commit's message:** right-click a commit in the graph and choose Edit Commit Message…. A form shows the whole message; the commits after it are replayed with the same changes, authors and dates, and local changes are kept. It warns when a remote branch already has the commit, and stops for a commit on another branch or one followed by a merge.
 - **History tools:** file, folder and hunk history, a blame view that shows who last changed each line of a commit's change, cherry-pick, revert, reset, patches, archives (zip or tarball of any commit, branch or tag), and bisect.
 - **Housekeeping:** prune stale remote-tracking branches, delete merged branches, clean untracked files, sparse checkout, garbage collection, and repository statistics, all from Quick Launch.
@@ -57,8 +58,11 @@ To clone, press **Ctrl+N** (**Cmd+Shift+N**), choose **Clone Repository…** in 
 | `gitCheckout.branch.rememberCheckout` | on | Create Branch remembers whether it last checked out the new branch. |
 | `gitCheckout.diff.syntaxHighlighting` / `changeMarks` | on / on | Color code in diffs; show + and − beside changed lines. |
 | `gitCheckout.graph.compactBranchLabels` | on | Show a branch and its remote-tracking branches as one label. |
+| `gitCheckout.autolinks` | empty | Links for an issue tracker's references in commit messages. Each entry has a `prefix` (`JIRA-`) and a `url` with `<num>` for the number (`https://jira.example.com/browse/JIRA-<num>`), and optionally `ignoreCase` and `alphanumeric`. The names match GitLens's `autolinks`, so those entries can be copied. Reopen the Git Checkout window after changing it. |
 | `gitCheckout.blame.inline.enabled` | on | Show who last changed the cursor's line at its end, unless `git.blame.editorDecoration.enabled` is on. Turn it on or off with Toggle Inline Blame in Quick Launch. |
 | `gitCheckout.blame.inline.format` | `{author}, {date} • {summary}` | What that text says. Use `{author}`, `{date}`, `{datetime}`, `{summary}` and `{hash}`. |
+| `gitCheckout.blame.file.format` | `{author}, {date}` | What the file blame column says for each run of lines. |
+| `gitCheckout.codeLens.enabled` | off | Show the CodeLens for who changed a file, class or function last. |
 | `gitCheckout.blame.hover.over` | annotation | Hover only the blame text, or anywhere on the line (`line`). |
 | `gitCheckout.blame.statusBar.enabled` | on | Show the same in the status bar. VS Code's Git extension has its own (`git.blame.statusBarItem.enabled`, on by default); while that is on, this one stays hidden so the status bar does not say it twice. |
 | `gitCheckout.graph.githubAvatars` | on | Show authors' GitHub profile pictures for repositories on GitHub. Asks github.com which account made a commit, once per author. |

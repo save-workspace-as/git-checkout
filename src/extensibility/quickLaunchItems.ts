@@ -54,6 +54,8 @@ const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
   { label: l10n.t('Run Garbage Collection'), command: 'gitCheckout.gc' },
   { label: l10n.t('Save Stash…'), command: 'gitCheckout.sidebar.createStash' },
   { label: l10n.t('Sparse Checkout…'), command: 'gitCheckout.sparseCheckout' },
+  { label: l10n.t('Toggle File Blame'), command: 'gitCheckout.blame.toggleFile' },
+  { label: l10n.t('Toggle Git CodeLens'), command: 'gitCheckout.blame.toggleCodeLens' },
   { label: l10n.t('Toggle Inline Blame'), command: 'gitCheckout.blame.toggleInline' },
 ];
 

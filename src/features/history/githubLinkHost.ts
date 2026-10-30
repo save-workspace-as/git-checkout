@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { getGitCliRegistry } from '../../core/gitCliRegistry';
 import { loadGitHubRepository } from '../../core/githubRepository';
 import { createLogger } from '../../log';
+import { isAutolinkUrl, parseAutolinkRules, type AutolinkRule } from '../../shared/history/autolinks';
 import {
   canonicalGitHubCommitUrl,
   canonicalGitHubIssueUrl,
@@ -21,8 +22,8 @@ export async function githubRepositoryFor(repoRoot: string): Promise<GitHubRepos
   }
 }
 
-export async function openGitHubIssueLink(url: string, repo: GitHubRepository | null): Promise<void> {
-  const allowed = canonicalGitHubIssueUrl(url, repo) ?? canonicalGitHubCommitUrl(url, repo);
+export async function openGitHubIssueLink(url: string, repo: GitHubRepository | null, autolinks: readonly AutolinkRule[] = []): Promise<void> {
+  const allowed = canonicalGitHubIssueUrl(url, repo) ?? canonicalGitHubCommitUrl(url, repo) ?? (isAutolinkUrl(url, autolinks) ? url : null);
   if (!allowed) {
     log.warn('rejected a GitHub link');
     return;
@@ -45,4 +46,9 @@ export async function openPullRequestPage(repoRoot: string, branch: string): Pro
   if (!(await vscode.env.openExternal(vscode.Uri.parse(pullRequestUrl(repo, branch))))) {
     void vscode.window.showWarningMessage(l10n.t('Could not open the GitHub link.'));
   }
+}
+
+/** The autolinks the user set up in `gitCheckout.autolinks`; the entries that cannot work are left out. */
+export function readAutolinks(): AutolinkRule[] {
+  return parseAutolinkRules(vscode.workspace.getConfiguration('gitCheckout').get('autolinks'));
 }

@@ -38,6 +38,9 @@ import { registerExtensibilityCommands } from './extensibility/registerExtensibi
 import { showGitCheckoutQuickLaunch } from './panel/quickLaunch';
 import { LineBlameController } from './features/blame/LineBlameController';
 import { LineBlameService } from './features/blame/lineBlameService';
+import { ignoreRevsEnabled } from './features/blame/blameSettings';
+import { FileBlameController } from './features/blame/FileBlameController';
+import { BlameCodeLensProvider } from './features/blame/BlameCodeLensProvider';
 
 const log = createLogger('extension');
 
@@ -58,6 +61,8 @@ export interface GitCheckoutApi {
   mergeOpenPath(): string | undefined;
   /** What blame says about the line the cursor is on, as shown at its end (e2e only). */
   lineBlame(): { sha: string; text: string } | undefined;
+  /** What the gutter blame of the active file shows on each line, 1-based; undefined when it is off (e2e only). */
+  fileBlame(): Map<number, string> | undefined;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -128,13 +133,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   watchService.syncRepositories();
   void panelManager.syncRepoOperationContext();
 
-  const lineBlame = new LineBlameController(gitService, new LineBlameService(cliRegistry), panelManager, watchService.onDidRefresh);
+  const blameService = new LineBlameService(cliRegistry, ignoreRevsEnabled);
+  const lineBlame = new LineBlameController(gitService, blameService, panelManager, watchService.onDidRefresh);
+  const fileBlame = new FileBlameController(gitService, blameService, (target) => lineBlame.hoverMarkdown(target), watchService.onDidRefresh);
+  const codeLens = new BlameCodeLensProvider(gitService, blameService);
   context.subscriptions.push(
     lineBlame,
+    fileBlame,
+    codeLens,
+    vscode.languages.registerCodeLensProvider({ scheme: 'file' }, codeLens),
+    watchService.onDidRefresh(() => codeLens.refresh()),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration('gitCheckout.codeLens')) {
+        codeLens.refresh();
+      }
+    }),
+    vscode.commands.registerCommand('gitCheckout.blame.toggleFile', () => fileBlame.toggle()),
+    vscode.commands.registerCommand('gitCheckout.blame.toggleCodeLens', async () => {
+      const config = vscode.workspace.getConfiguration('gitCheckout.codeLens');
+      await config.update('enabled', !config.get<boolean>('enabled', false), vscode.ConfigurationTarget.Global);
+    }),
     vscode.commands.registerCommand('gitCheckout.blame.toggleInline', () => lineBlame.toggleInline()),
     vscode.commands.registerCommand('gitCheckout.blame.copyHash', (arg?: unknown) => lineBlame.copyHash(arg)),
     vscode.commands.registerCommand('gitCheckout.blame.openCommit', (arg?: unknown) => lineBlame.openCommit(arg)),
     vscode.commands.registerCommand('gitCheckout.blame.openChanges', (arg?: unknown) => lineBlame.openChanges(arg)),
+    vscode.commands.registerCommand('gitCheckout.blame.openInBlame', (arg?: unknown) => lineBlame.openInBlame(arg)),
+    vscode.commands.registerCommand('gitCheckout.blame.stepBack', (arg?: unknown) => lineBlame.blameBefore(arg)),
     vscode.commands.registerCommand('gitCheckout.blame.lineHistory', (arg?: unknown) => lineBlame.lineHistory(arg)),
   );
 
@@ -496,6 +520,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     operationFormState: () => panelManager.operationFormState(),
     mergeOpenPath: () => panelManager.mergeOpenPath(),
     lineBlame: () => lineBlame.currentLine(),
+    fileBlame: () => fileBlame.columnText(),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

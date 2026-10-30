@@ -2,10 +2,19 @@ import { createLogger } from '../../log';
 import { GitCliError } from '../../core/gitCliError';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { parseGitBlame, type BlameLine } from './gitBlameParser';
+import { ignoreRevsArgs } from '../blame/ignoreRevs';
+import { parseFileHunks, previousLines } from './blameStepBack';
 import { blameEndLine, buildBlameArgs, buildBlameRangesArgs, lineRanges, toBlameLineDtos } from './blameQuery';
 import { BLAME_LINE_BATCH, type BlameLineDto, type BlameLinesPage } from '../../shared/history/blameProtocol';
 
 const log = createLogger('blame');
+
+/** A line's earlier life: the commit that last changed it before, and where the line was in that commit. */
+export interface PreviousChange {
+  sha: string;
+  path: string;
+  line: number;
+}
 
 interface LineCache {
   lines: BlameLine[];
@@ -28,7 +37,24 @@ export class BlameService {
   constructor(
     private readonly cliRegistry: GitCliRegistry,
     private readonly lineBatch = BLAME_LINE_BATCH,
+    /** Whether `.git-blame-ignore-revs` is used; the setting, read each time. */
+    private readonly ignoreRevs: () => boolean = () => false,
   ) {}
+
+  /** Runs a blame, and runs it again without the ignore file when git cannot read that file, as with a commit it does not have. */
+  private async blame(repoRoot: string, build: (extra: string[]) => string[]): Promise<string> {
+    const cli = this.cliRegistry.getOrCreate(repoRoot);
+    const extra = ignoreRevsArgs(repoRoot, this.ignoreRevs());
+    if (extra.length === 0) {
+      return (await cli.execRead(build([]))).stdout;
+    }
+    try {
+      return (await cli.execRead(build(extra), { showErrorToast: false })).stdout;
+    } catch (error) {
+      log.warn('blame with the ignore file failed; blaming without it', error);
+      return (await cli.execRead(build([]))).stdout;
+    }
+  }
 
   invalidate(repoRoot?: string): void {
     if (!repoRoot) {
@@ -67,8 +93,33 @@ export class BlameService {
     if (ranges.length === 0) {
       return [];
     }
-    const result = await this.cliRegistry.getOrCreate(repoRoot).execRead(buildBlameRangesArgs(revision, path, ranges));
-    return toBlameLineDtos(parseGitBlame(result.stdout));
+    const stdout = await this.blame(repoRoot, (extra) => buildBlameRangesArgs(revision, path, ranges, extra));
+    return toBlameLineDtos(parseGitBlame(stdout));
+  }
+
+  /**
+   * The commit that last changed a line before `sha` did, for stepping back through a line's history. `line` is the
+   * line's number in the file as `sha` left it, and `path` the file's name there. Undefined when the line was added by
+   * `sha`, when `sha` is the first commit, or when git cannot tell.
+   */
+  async previousChange(repoRoot: string, sha: string, path: string, line: number): Promise<PreviousChange | undefined> {
+    const cli = this.cliRegistry.getOrCreate(repoRoot);
+    let diff: string;
+    try {
+      diff = (await cli.execRead(['diff', '-U0', '-M', '--no-color', '--no-ext-diff', `${sha}^`, sha], { showErrorToast: false })).stdout;
+    } catch (error) {
+      // The first commit has no parent to compare with, so there is nothing before it.
+      log.debug(`no earlier version of ${path} before ${sha}`, error);
+      return undefined;
+    }
+    const file = parseFileHunks(diff, path);
+    const range = file && previousLines(file.hunks, line);
+    if (!file || !range) {
+      return undefined;
+    }
+    const stdout = await this.blame(repoRoot, (extra) => ['blame', '--porcelain', ...extra, `-L${range.first},${range.last}`, `${sha}^`, '--', file.oldPath]);
+    const newest = parseGitBlame(stdout).reduce<BlameLine | undefined>((best, entry) => (!best || entry.authorTime > best.authorTime ? entry : best), undefined);
+    return newest && { sha: newest.sha, path: newest.path || file.oldPath, line: newest.originalLine };
   }
 
   private covers(entry: LineCache, startLine: number): boolean {
@@ -103,10 +154,8 @@ export class BlameService {
     const end = start + this.lineBatch - 1;
     log.debug(`blame ${path} ${revision || 'WORKTREE'} L${start},${end}`);
     try {
-      const result = await this.cliRegistry
-        .getOrCreate(repoRoot)
-        .execRead(buildBlameArgs(revision, path, start, end));
-      const parsed = parseGitBlame(result.stdout);
+      const stdout = await this.blame(repoRoot, (extra) => buildBlameArgs(revision, path, start, end, extra));
+      const parsed = parseGitBlame(stdout);
       if (parsed.length === 0) {
         entry.complete = true;
         return;

@@ -44,7 +44,14 @@ interface PathHistorySession {
   hasMore: boolean;
   /** Shown in the Blame modal rather than the History modal. */
   blame?: boolean;
+  /** The commits the modal has listed, newest first. */
+  loaded: string[];
+  /** A commit to bring into the list, loading pages until it is there. */
+  wanted?: string;
 }
+
+/** How many pages of commits are loaded to find one: more than this and the commit is far back, or not in the file's history. */
+const MAX_WANTED_PAGES = 30;
 
 function filePathFromArg(arg: unknown): string | undefined {
   if (!arg || typeof arg !== 'object' || !('fsPath' in arg) || !('scheme' in arg)) {
@@ -134,6 +141,24 @@ export class PathHistoryPanel implements vscode.Disposable {
       return;
     }
     await this.open({ scope: 'file', repoRoot: located.repoRoot, path: located.path, blame: true });
+  }
+
+  /** The Blame modal for a file, with the commit that last changed a line already selected. */
+  async showBlameAt(repoRoot: string, path: string, sha: string): Promise<void> {
+    await this.open({ scope: 'file', repoRoot, path, blame: true, select: sha });
+  }
+
+  /**
+   * The Blame modal at the commit that last changed a line before `sha` did. `commitPath` and `line` say where the line
+   * was in `sha`; the modal itself follows the file under `path`.
+   */
+  async showBlameBefore(repoRoot: string, path: string, sha: string, commitPath: string, line: number): Promise<void> {
+    const before = await this.blameService.previousChange(repoRoot, sha, commitPath, line);
+    if (!before) {
+      void vscode.window.showInformationMessage(l10n.t('This line has no earlier version.'));
+      return;
+    }
+    await this.showBlameAt(repoRoot, path, before.sha);
   }
 
   async showDirectory(arg?: unknown): Promise<void> {
@@ -271,9 +296,14 @@ export class PathHistoryPanel implements vscode.Disposable {
     startLine?: number;
     endLine?: number;
     blame?: boolean;
+    /** A commit to show first instead of the newest. */
+    select?: string;
   }): Promise<void> {
+    const { select, ...rest } = target;
     this.session = {
-      ...target,
+      ...rest,
+      loaded: [],
+      wanted: select,
       follow: defaultPathHistoryFollow(target.scope),
       includeMerges: false,
       skip: 0,
@@ -288,6 +318,7 @@ export class PathHistoryPanel implements vscode.Disposable {
       title: pathHistoryTitle(target.scope, target.path),
       canFollow: target.scope === 'file',
       mode: target.blame ? 'blame' : 'history',
+      ...(select ? { select } : {}),
     });
     this.syncContext();
     log.info(`${target.scope} history ${target.path}`);
@@ -310,6 +341,9 @@ export class PathHistoryPanel implements vscode.Disposable {
         session.selectedSha = message.sha;
         this.syncContext();
         await this.sendDiff(session, message.sha);
+        return;
+      case 'pathHistoryBlameBefore':
+        await this.stepBack(session, message.sha, message.line);
         return;
       case 'pathHistoryOpenInEditor':
         await this.transport?.openAtRevision(message.sha, session.path);
@@ -405,6 +439,7 @@ export class PathHistoryPanel implements vscode.Disposable {
       }
       session.skip += page.advance;
       session.hasMore = page.hasMore;
+      session.loaded = append ? session.loaded.concat(page.commits.map((commit) => commit.sha)) : page.commits.map((commit) => commit.sha);
       this.post({
         type: 'pathHistoryMeta',
         summary: pathHistorySummary(session),
@@ -413,6 +448,11 @@ export class PathHistoryPanel implements vscode.Disposable {
         includeMerges: session.includeMerges,
       });
       this.post({ type: 'pathHistoryPage', page, append });
+      const wanted = session.wanted;
+      if (wanted && !(await this.loadUntilWanted(session, epoch)) && session.hasMore && session.loaded[0]) {
+        // Too far back to find: the modal is waiting for a commit, so give it the newest.
+        this.post({ type: 'pathHistorySelectCommit', sha: session.loaded[0] });
+      }
     } catch (error) {
       if (epoch !== this.epoch) {
         return;
@@ -420,6 +460,50 @@ export class PathHistoryPanel implements vscode.Disposable {
       log.error('path history failed', error);
       void vscode.window.showErrorMessage(errorText(error));
       this.post({ type: 'pathHistoryFailed' });
+    }
+  }
+
+  /** Keeps loading pages while the commit asked for is not in the list and there are more. */
+  private async loadUntilWanted(session: PathHistorySession, epoch: number): Promise<boolean> {
+    for (let pages = 0; session.wanted && !session.loaded.includes(session.wanted) && session.hasMore && pages < MAX_WANTED_PAGES; pages++) {
+      if (epoch !== this.epoch || this.session !== session) {
+        return false;
+      }
+      await this.reloadMore(session);
+    }
+    const found = !!session.wanted && session.loaded.includes(session.wanted);
+    session.wanted = undefined;
+    return found;
+  }
+
+  private async reloadMore(session: PathHistorySession): Promise<void> {
+    const page = await this.service.loadPage(session.repoRoot, {
+      scope: session.scope,
+      path: session.path,
+      startLine: session.startLine,
+      endLine: session.endLine,
+      follow: session.follow,
+      includeMerges: session.includeMerges,
+      skip: session.skip,
+    });
+    session.skip += page.advance;
+    session.hasMore = page.hasMore;
+    session.loaded = session.loaded.concat(page.commits.map((commit) => commit.sha));
+    this.post({ type: 'pathHistoryPage', page, append: true });
+  }
+
+  /** The Blame modal's line button: show the commit that changed the line before the selected commit did. */
+  private async stepBack(session: PathHistorySession, sha: string, line: number): Promise<void> {
+    const before = await this.blameService.previousChange(session.repoRoot, sha, session.path, line);
+    if (!before) {
+      void vscode.window.showInformationMessage(l10n.t('This line has no earlier version.'));
+      return;
+    }
+    session.wanted = before.sha;
+    if (await this.loadUntilWanted(session, this.epoch) && this.session === session) {
+      this.post({ type: 'pathHistorySelectCommit', sha: before.sha });
+    } else {
+      void vscode.window.showInformationMessage(l10n.t('The earlier version of this line is not in the history of this file.'));
     }
   }
 

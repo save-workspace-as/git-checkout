@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { createLogger } from '../../log';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { parseGitBlame } from '../history/gitBlameParser';
+import { ignoreRevsArgs } from './ignoreRevs';
 import { parseCommitInfo, type CommitInfo, type LineBlame } from './lineBlameFormat';
 
 const log = createLogger('line-blame');
@@ -16,7 +17,11 @@ export class LineBlameService {
   private readonly files = new Map<string, FileBlame>();
   private readonly commits = new Map<string, CommitInfo>();
 
-  constructor(private readonly cliRegistry: GitCliRegistry) {}
+  constructor(
+    private readonly cliRegistry: GitCliRegistry,
+    /** Whether `.git-blame-ignore-revs` is used; the setting, read each time. */
+    private readonly ignoreRevs: () => boolean = () => false,
+  ) {}
 
   invalidate(repoRoot?: string): void {
     for (const key of [...this.files.keys()]) {
@@ -39,12 +44,23 @@ export class LineBlameService {
       return cached;
     }
     const cli = this.cliRegistry.getOrCreate(repoRoot);
-    const args = ['blame', '--porcelain', ...(contents === undefined ? [] : ['--contents', '-']), '--', path.replace(/\\/g, '/')];
+    const run = (extra: readonly string[]) => {
+      const args = ['blame', '--porcelain', ...extra, ...(contents === undefined ? [] : ['--contents', '-']), '--', path.replace(/\\/g, '/')];
+      return contents === undefined
+        ? cli.execRead(args, { showErrorToast: false })
+        : cli.execWriteWithInput(args, contents, { showErrorToast: false });
+    };
+    const ignore = ignoreRevsArgs(repoRoot, this.ignoreRevs());
     let stdout: string;
     try {
-      ({ stdout } = contents === undefined
-        ? await cli.execRead(args, { showErrorToast: false })
-        : await cli.execWriteWithInput(args, contents, { showErrorToast: false }));
+      ({ stdout } = await run(ignore).catch((error: unknown) => {
+        if (ignore.length === 0) {
+          throw error;
+        }
+        // The ignore file can name commits this clone does not have; blame is still wanted without it.
+        log.warn('blame with the ignore file failed; blaming without it', error);
+        return run([]);
+      }));
     } catch (error) {
       // An untracked or new file has no history to blame; that is expected while typing in one.
       log.debug('no blame for the file', error);
@@ -59,6 +75,7 @@ export class LineBlameService {
         authorTime: line.authorTime,
         summary: line.summary,
         path: line.path,
+        originalLine: line.originalLine,
       });
     }
     this.files.set(key, blame);

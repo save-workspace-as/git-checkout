@@ -42,6 +42,7 @@ Requirements: macOS with the screen unlocked and awake (a locked screen cannot b
 | 12 | `12-merge-conflict.png` | The Merge modal on a conflict, panel hidden |
 | 13 | `13-stage-lines.png` | Two selected lines with the Stage and Discard Changes buttons |
 | 14 | `14-line-blame.png` | A file with blame at the end of the cursor line and its hover (avatar, message, actions) |
+| 15 | `15-file-blame.png` | The same file with blame for every line in the gutter, tinted by age, and the CodeLens above its functions |
 
 A new feature that deserves a picture: add a block to `scripts/run.mjs` after the shot it is most like, with the next free id, and add its row here and to the website's `index.astro`.
 

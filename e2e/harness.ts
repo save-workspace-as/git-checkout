@@ -66,6 +66,7 @@ export interface GitCheckoutApi {
   /** The file the Merge modal is open for, if any. */
   mergeOpenPath(): string | undefined;
   lineBlame(): { sha: string; text: string } | undefined;
+  fileBlame(): Map<number, string> | undefined;
   operationFormState(): {
     sessionId: number;
     form: {
