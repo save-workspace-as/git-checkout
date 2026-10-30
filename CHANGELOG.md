@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.6.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.5.0...git-checkout-v0.6.0) (2026-10-30)
+
+
+### Features
+
+* Add GitHub link functionalities and remote management ([#25](https://github.com/save-workspace-as/git-checkout/issues/25)) ([616dead](https://github.com/save-workspace-as/git-checkout/commit/616dead0ce3b4c1203761d7a6f206409c52a666b))
+* **blame:** add autolink support for GitHub links and enhance blame functionality ([#24](https://github.com/save-workspace-as/git-checkout/issues/24)) ([975ac99](https://github.com/save-workspace-as/git-checkout/commit/975ac99c3d42ab55fbc1e852996fc3e7642c7a6c))
+* **blame:** implement line blame hover functionality with markdown support ([#21](https://github.com/save-workspace-as/git-checkout/issues/21)) ([85d1c42](https://github.com/save-workspace-as/git-checkout/commit/85d1c42a2a4314f5d4ae310b589940c200953180))
+* **edit-commit:** implement edit commit message functionality with validation and history preservation ([#23](https://github.com/save-workspace-as/git-checkout/issues/23)) ([2b51749](https://github.com/save-workspace-as/git-checkout/commit/2b51749f01c4d0ea1080258380fbaf5b46340e11))
+
 ## [0.5.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.4.0...git-checkout-v0.5.0) (2026-10-30)
 
 
