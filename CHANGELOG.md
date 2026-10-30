@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.4.0...git-checkout-v0.5.0) (2026-10-30)
+
+
+### Features
+
+* add merge_group trigger to CI workflow ([#13](https://github.com/save-workspace-as/git-checkout/issues/13)) ([e93beab](https://github.com/save-workspace-as/git-checkout/commit/e93beabc8816a294e5bae57d0550a7504af8fce7))
+* add screenshots to README for enhanced documentation ([#11](https://github.com/save-workspace-as/git-checkout/issues/11)) ([99fa8bc](https://github.com/save-workspace-as/git-checkout/commit/99fa8bcc3ab78c22654527876ae877dd0eec5d35))
+* **changes:** add selection actions for staging and discarding lines in diff view ([#18](https://github.com/save-workspace-as/git-checkout/issues/18)) ([f2abdd7](https://github.com/save-workspace-as/git-checkout/commit/f2abdd79f351b647a59829140e13d76d5ac380df))
+* **conflicts:** implement merge view for handling file conflicts ([#19](https://github.com/save-workspace-as/git-checkout/issues/19)) ([7d7d4ad](https://github.com/save-workspace-as/git-checkout/commit/7d7d4ad27adc75a193496460b387212417ca459a))
+* enhance commit message placeholders to include branch information and shortcuts ([#16](https://github.com/save-workspace-as/git-checkout/issues/16)) ([0896bc7](https://github.com/save-workspace-as/git-checkout/commit/0896bc712a4fc2caa88039fca850db010f957e67))
+* enhance non-text diff handling and search suggestions ([#20](https://github.com/save-workspace-as/git-checkout/issues/20)) ([88c7620](https://github.com/save-workspace-as/git-checkout/commit/88c7620cf3bfb37acc9801e4a33f6cc7c221bfbe))
+* **patch:** add create patch functionality and related UI updates ([#14](https://github.com/save-workspace-as/git-checkout/issues/14)) ([6661290](https://github.com/save-workspace-as/git-checkout/commit/6661290d322488d7c1ab98ad859b87c1062fbf32))
+* **search:** add regex search functionality to commit graph and related UI updates ([#17](https://github.com/save-workspace-as/git-checkout/issues/17)) ([cd211da](https://github.com/save-workspace-as/git-checkout/commit/cd211dadebf7069fbbf12de7709a65ab67e2119e))
+* **undo:** add undo functionality for last Git operation ([#15](https://github.com/save-workspace-as/git-checkout/issues/15)) ([08ca03d](https://github.com/save-workspace-as/git-checkout/commit/08ca03df135d2e09a8ae4e7a53868a476b85119d))
+
 ## [0.4.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.3.0...git-checkout-v0.4.0) (2026-10-28)
 
 
