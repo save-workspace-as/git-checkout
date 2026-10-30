@@ -5748,7 +5748,7 @@
     "watch:extension": "node esbuild.extension.mjs --watch",
     "watch:webview": "node esbuild.webview.mjs --watch"
   },
-  "version": "0.5.0",
+  "version": "0.6.0",
   "overrides": {
     "@vscode-elements/elements": {
       "@vscode/codicons": "$@vscode/codicons"
