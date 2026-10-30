@@ -13,6 +13,16 @@ const log = createLogger('history');
 
 export type ResetMode = 'soft' | 'mixed' | 'hard' | 'keep';
 
+/** What the Edit Commit Message form shows about a commit. */
+export interface CommitMessageInfo {
+  message: string;
+  subject: string;
+  /** Remote-tracking branches that already have the commit: editing it means a force push. */
+  pushedTo: string[];
+  /** Why the commit cannot be edited, when it cannot. */
+  problem?: string;
+}
+
 export interface HistoryRunOptions {
   cancellationToken?: vscode.CancellationToken;
 }
@@ -124,6 +134,71 @@ export class HistoryService {
     const cli = this.cli(repoRoot);
     const upstream = (await cli.execRead(['rev-parse', `${oldest}^`])).stdout.trim();
     await this.runWrite(repoRoot, ['rebase', '--onto', upstream, newest, 'HEAD'], options);
+  }
+
+  /**
+   * What the Edit Commit Message form needs: the whole message, and why the commit cannot be edited when it cannot.
+   * Only a commit of the checked-out branch can change, and rewriting through a merge commit would flatten it.
+   */
+  async commitMessageInfo(repoRoot: string, sha: string): Promise<CommitMessageInfo> {
+    const cli = this.cli(repoRoot);
+    const message = (await cli.execRead(['show', '-s', '--format=%B', sha, '--'])).stdout.replace(/\s+$/, '');
+    const subject = message.split('\n', 1)[0] ?? '';
+    const onBranch = await cli.execRead(['merge-base', '--is-ancestor', sha, 'HEAD'], { showErrorToast: false }).then(
+      () => true,
+      (error: unknown) => {
+        // Exit status 1 means "not an ancestor", which is the answer rather than a failure.
+        log.debug('commit is not on the checked-out branch', error);
+        return false;
+      },
+    );
+    if (!onBranch) {
+      return { message, subject, pushedTo: [], problem: l10n.t('Only a commit of the checked-out branch can be edited. Check out the branch that has it first.') };
+    }
+    const parents = await this.getParents(repoRoot, sha);
+    const merges = (await cli.execRead(['rev-list', '--merges', '--count', 'HEAD', '--not', ...parents])).stdout.trim();
+    if (merges !== '0') {
+      return { message, subject, pushedTo: [], problem: l10n.t('This commit is followed by a merge commit, which editing would flatten. Use Interactive Rebase instead.') };
+    }
+    const remotes = (await cli.execRead(['branch', '-r', '--contains', sha, '--format=%(refname:short)'])).stdout
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.endsWith('/HEAD'));
+    return { message, subject, pushedTo: remotes };
+  }
+
+  /**
+   * Gives a commit of the checked-out branch a new message and replays the commits after it on top, with the same
+   * trees, so nothing can conflict. The last commit is amended with only its message, whatever is staged. Other
+   * branches that contain the commit keep the old one.
+   */
+  async rewordCommit(repoRoot: string, sha: string, message: string, options?: HistoryRunOptions): Promise<void> {
+    if (!message.trim() || message.includes('\0')) {
+      throw new Error(l10n.t('Enter a non-empty commit message without null characters.'));
+    }
+    const cli = this.cli(repoRoot);
+    const head = (await cli.execRead(['rev-parse', 'HEAD'])).stdout.trim();
+    const full = (await cli.execRead(['rev-parse', sha])).stdout.trim();
+    if (full === head) {
+      const args = ['commit', '--amend', '--only', '--allow-empty', '-m', message];
+      if (this.settings.gitSkipHooks()) {
+        args.push('--no-verify');
+      }
+      await this.runWrite(repoRoot, args, options);
+      return;
+    }
+    const [author, parents] = await Promise.all([
+      cli.execRead(['show', '-s', '--format=%an%x00%ae%x00%aI', full, '--']),
+      this.getParents(repoRoot, full),
+    ]);
+    const [name, email, date] = author.stdout.trim().split('\0');
+    // execWriteWithInput takes the repository's write lock itself.
+    const created = await cli.execWriteWithInput(
+      ['commit-tree', `${full}^{tree}`, ...parents.flatMap((parent) => ['-p', parent])],
+      message.endsWith('\n') ? message : `${message}\n`,
+      { env: { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_AUTHOR_DATE: date }, cancellationToken: options?.cancellationToken },
+    );
+    await this.runWrite(repoRoot, ['rebase', '--autostash', '--onto', created.stdout.trim(), full], options);
   }
 
   async getParents(repoRoot: string, sha: string): Promise<string[]> {

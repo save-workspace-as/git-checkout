@@ -16,7 +16,7 @@ import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
-import { MERGE_TYPE_FAST_FORWARD, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
+import { MERGE_TYPE_FAST_FORWARD, editCommitMessageForm, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('history');
@@ -227,6 +227,39 @@ export class HistoryOperationsController {
         const mode = values.mode as ResetMode;
         await this.ctx.sync.runSyncOp(l10n.t('Reset'), (repoRoot, token) =>
           this.ctx.historyService.reset(repoRoot, mode, sha, { cancellationToken: token }),
+        );
+        return true;
+      },
+    });
+  }
+
+  /** Edit Commit Message: a form with the commit's message, and the commit replaced by one with the new message. */
+  async runEditMessage(sha: string): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    const info = await this.ctx.historyService.commitMessageInfo(root, sha);
+    if (info.problem) {
+      void vscode.window.showWarningMessage(info.problem);
+      return;
+    }
+    await this.ctx.operationForm.show(editCommitMessageForm(sha, info.subject, info.message, info.pushedTo), {
+      validate: (values) => {
+        const errors: Record<string, string> = {};
+        if (!String(values.message ?? '').trim()) {
+          errors.message = l10n.t('Enter a commit message.');
+        }
+        return errors;
+      },
+      submit: async (values) => {
+        const message = String(values.message ?? '');
+        if (message.trim() === info.message.trim()) {
+          return true;
+        }
+        await this.ctx.sync.runSyncOp(l10n.t('Edit Commit Message'), (repoRoot, token) =>
+          this.ctx.historyService.rewordCommit(repoRoot, sha, message, { cancellationToken: token }),
         );
         return true;
       },

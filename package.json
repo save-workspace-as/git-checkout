@@ -343,6 +343,11 @@
         "title": "%command.gitCheckout.graph.checkout.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.editMessage.category%",
+        "command": "gitCheckout.graph.editMessage",
+        "title": "%command.gitCheckout.graph.editMessage.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.cherryPick.category%",
         "command": "gitCheckout.graph.cherryPick",
         "title": "%command.gitCheckout.graph.cherryPick.title%"
@@ -2537,6 +2542,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.editMessage",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.graph.cherryPick",
           "when": "false"
         },
@@ -4461,6 +4470,11 @@
         {
           "command": "gitCheckout.graph.reset",
           "group": "1_history@4",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
+          "command": "gitCheckout.graph.editMessage",
+          "group": "1_history@5",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {

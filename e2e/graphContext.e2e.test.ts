@@ -192,6 +192,30 @@ describe('Graph context menu: commit menu', () => {
     assert.equal(git('branch', '--show-current'), '');
   });
 
+  it('Edit Commit Message…: opens the message of an older commit and rewrites it, keeping the commits after it', async () => {
+    const older = commitFile('older.txt', 'older\n', 'older commit\n\nthe body');
+    commitFile('newer.txt', 'newer\n', 'newer commit');
+    const trees = git('log', '--format=%T');
+    const command = vscode.commands.executeCommand('gitCheckout.graph.editMessage', menuContext(older));
+    const state = await waitFor('Edit Commit Message modal', async () => ctx.api.operationFormState());
+    assert.equal(state.form.values.message, 'older commit\n\nthe body');
+    assert.match(String(state.form.values.commit), /^[0-9a-f]{7} older commit$/);
+    await submitForm(ctx.api, command, 'Edit Commit Message', { message: 'older commit, reworded\n\nnew body' });
+    assert.equal(git('log', '--format=%s', '-2'), 'newer commit\nolder commit, reworded');
+    assert.equal(git('log', '-1', '--format=%b', 'HEAD~1'), 'new body');
+    assert.equal(git('log', '--format=%T'), trees, 'no commit changed what it contains');
+    assert.equal(git('branch', '--show-current'), 'main');
+  });
+
+  it('Edit Commit Message…: says so instead of opening a form for a commit that another branch has', async () => {
+    const [first] = topicWork();
+    const warnings: string[] = [];
+    restore.push(answer('showWarningMessage', async (message: unknown) => { warnings.push(String(message)); return undefined; }));
+    await vscode.commands.executeCommand('gitCheckout.graph.editMessage', menuContext(first));
+    assert.equal(ctx.api.operationFormState(), undefined);
+    assert.match(warnings.join('\n'), /checked-out branch/);
+  });
+
   it('New Branch…: opens the form at that commit and creates the branch', async () => {
     const [first] = topicWork();
     const command = vscode.commands.executeCommand('gitCheckout.graph.newBranch', menuContext(first));
