@@ -1,6 +1,6 @@
 {
   "extension.displayName": "Git Checkout",
-  "extension.description": "A graphical Git client for VS Code: commit graph, staging, history, and branch tools. It runs where your code lives, including remote workspaces.",
+  "extension.description": "A graphical Git client for VS Code: commit graph, staging, blame, interactive rebase, merge conflicts, worktrees, submodules and stashes. Works over SSH, WSL and in containers.",
   "capabilities.untrustedWorkspaces.description": "Git Checkout runs Git, which can run repository hooks and the tools configured in it. Trust this workspace to use it.",
   "capabilities.virtualWorkspaces.description": "Git Checkout runs the Git command line, which needs the files of the repository on disk.",
   "command.gitCheckout.open.title": "Open",
@@ -451,5 +451,21 @@
   "command.gitCheckout.revealRepository.linux.title": "Open Containing Folder",
   "config.gitCheckout.shortcuts.enabled.description": "Turn the Git Checkout keyboard shortcuts on or off. They apply only while a Git Checkout window, sidebar or bottom view has focus, and turning them off gives those keys back to VS Code there. To rebind or remove a single shortcut, run Git Checkout: Keyboard Shortcuts.",
   "command.gitCheckout.clone.title": "Clone…",
-  "command.gitCheckout.clone.category": "Git Checkout"
+  "command.gitCheckout.clone.category": "Git Checkout",
+  "command.gitCheckout.blame.toggleInline.title": "Toggle Inline Blame",
+  "command.gitCheckout.blame.toggleInline.category": "Git Checkout",
+  "command.gitCheckout.blame.copyHash.title": "Copy Commit Hash of Line",
+  "command.gitCheckout.blame.copyHash.category": "Git Checkout",
+  "command.gitCheckout.blame.openCommit.title": "Show Commit of Line in Graph",
+  "command.gitCheckout.blame.openCommit.category": "Git Checkout",
+  "command.gitCheckout.blame.lineHistory.title": "Show History of Line",
+  "command.gitCheckout.blame.lineHistory.category": "Git Checkout",
+  "config.gitCheckout.blame.inline.enabled.description": "Show who last changed the line the cursor is on, in faint text at the end of the line. Hover the text for the commit, its linked issues and pull requests, and actions. Not shown while VS Code's own `git.blame.editorDecoration.enabled` is on.",
+  "config.gitCheckout.blame.inline.format.description": "What the text at the end of the line says. Use {author}, {date} (3 days ago), {datetime} (the day and time), {summary} and {hash}.",
+  "config.gitCheckout.blame.statusBar.enabled.description": "Show who last changed the line the cursor is on in the status bar. Not shown while VS Code's own `git.blame.statusBarItem.enabled` is on, which shows the same.",
+  "command.gitCheckout.blame.openChanges.title": "Open Changes of Line",
+  "command.gitCheckout.blame.openChanges.category": "Git Checkout",
+  "config.gitCheckout.blame.hover.over.description": "Where hovering shows the commit of the cursor line.",
+  "config.gitCheckout.blame.hover.over.annotation": "Only on the blame text at the end of the line.",
+  "config.gitCheckout.blame.hover.over.line": "Anywhere on the line."
 }

@@ -44,10 +44,9 @@ for i in range(len(lines) // 2, len(lines)):
 open(p, 'w').write('\n'.join(lines))
 PY
 
-# A local copy stands in for GitHub, so nothing goes to the network but the avatars.
+# The remote is the real GitHub address, so issue links and the avatars resolve; auto-fetch is off, so nothing else uses the network.
 git clone -q --bare "$WORK/stage/git-checkout" "$WORK/origin.git"
 git remote set-url origin "https://github.com/save-workspace-as/git-checkout.git"
-git config "url.$WORK/origin.git.insteadOf" "https://github.com/save-workspace-as/git-checkout.git"
 
 # The merge repository: two branches that change the same lines of a file differently, merged.
 git clone -q --no-hardlinks "$WORK/stage/git-checkout" "$WORK/merge/git-checkout" 2>/dev/null
@@ -56,7 +55,6 @@ git config user.name "$NAME"; git config user.email "$EMAIL"
 git checkout -q main
 git reset -q --hard HEAD~1
 git remote set-url origin "https://github.com/save-workspace-as/git-checkout.git"
-git config "url.$WORK/origin.git.insteadOf" "https://github.com/save-workspace-as/git-checkout.git"
 for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v 'refs/remotes/origin/main$\|refs/remotes/origin/HEAD$'); do git update-ref -d "$ref"; done
 FILE=$(git ls-files 'src/shared/changes/*.ts' | grep -v test | head -1)
 edit() { python3 - "$FILE" "$1" <<'PY'

@@ -1387,7 +1387,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   }
 
 
-  commitFilesSnapshot(): { sha: string; baseSha?: string; files: CommitFileChangeDto[] } | undefined {
+  commitFilesSnapshot(): { sha: string; baseSha?: string; files: CommitFileChangeDto[]; shownPath?: string } | undefined {
     return this.details.commitFilesSnapshot();
   }
 
@@ -1477,6 +1477,18 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   revealRefInGraph(ref: string): Promise<void> {
     return this.graph.revealRefInGraph(ref);
+  }
+
+  /**
+   * Shows a commit in the graph and, in the Commit tab, the change it made to `path`. The commit's files load after
+   * the graph selects it, so this waits for them before picking the file.
+   */
+  async showCommitChange(sha: string, path: string): Promise<void> {
+    await this.graph.revealRefInGraph(sha);
+    for (let attempt = 0; attempt < 50 && this.details.commitFilesSnapshot()?.sha !== sha; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    await this.details.showChangedFile(sha, undefined, path);
   }
 
   /** Scrolls the graph to the checked-out commit. */
