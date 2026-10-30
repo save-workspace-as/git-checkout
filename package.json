@@ -13,7 +13,9 @@
     }
   },
   "categories": [
-    "SCM Providers"
+    "SCM Providers",
+    "Visualization",
+    "Other"
   ],
   "contributes": {
     "commands": [
@@ -309,6 +311,31 @@
         "command": "gitCheckout.blame.file",
         "icon": "$(git-commit)",
         "title": "%command.gitCheckout.blame.file.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.toggleInline.category%",
+        "command": "gitCheckout.blame.toggleInline",
+        "title": "%command.gitCheckout.blame.toggleInline.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.copyHash.category%",
+        "command": "gitCheckout.blame.copyHash",
+        "title": "%command.gitCheckout.blame.copyHash.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.openCommit.category%",
+        "command": "gitCheckout.blame.openCommit",
+        "title": "%command.gitCheckout.blame.openCommit.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.openChanges.category%",
+        "command": "gitCheckout.blame.openChanges",
+        "title": "%command.gitCheckout.blame.openChanges.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.lineHistory.category%",
+        "command": "gitCheckout.blame.lineHistory",
+        "title": "%command.gitCheckout.blame.lineHistory.title%"
       },
       {
         "category": "%command.gitCheckout.graph.checkout.category%",
@@ -1748,6 +1775,34 @@
     ],
     "configuration": {
       "properties": {
+        "gitCheckout.blame.hover.over": {
+          "default": "annotation",
+          "description": "%config.gitCheckout.blame.hover.over.description%",
+          "enum": [
+            "annotation",
+            "line"
+          ],
+          "enumDescriptions": [
+            "%config.gitCheckout.blame.hover.over.annotation%",
+            "%config.gitCheckout.blame.hover.over.line%"
+          ],
+          "type": "string"
+        },
+        "gitCheckout.blame.inline.enabled": {
+          "default": true,
+          "description": "%config.gitCheckout.blame.inline.enabled.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.blame.inline.format": {
+          "default": "{author}, {date} \u2022 {summary}",
+          "description": "%config.gitCheckout.blame.inline.format.description%",
+          "type": "string"
+        },
+        "gitCheckout.blame.statusBar.enabled": {
+          "default": true,
+          "description": "%config.gitCheckout.blame.statusBar.enabled.description%",
+          "type": "boolean"
+        },
         "gitCheckout.branch.nameSeparator": {
           "default": "/",
           "description": "%config.gitCheckout.branch.nameSeparator.description%",
@@ -2455,6 +2510,26 @@
         },
         {
           "command": "gitCheckout.blame.file",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.toggleInline",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.copyHash",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.openCommit",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.openChanges",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.lineHistory",
           "when": "false"
         },
         {
@@ -5442,15 +5517,35 @@
   },
   "keywords": [
     "git",
-    "graph",
+    "git client",
+    "git gui",
+    "git graph",
     "commit graph",
-    "history",
+    "git history",
+    "file history",
+    "git log",
+    "git blame",
+    "blame",
+    "git diff",
+    "stage lines",
+    "stage hunk",
     "branch",
-    "rebase",
-    "stash",
-    "worktree",
     "merge",
-    "clone"
+    "merge conflicts",
+    "conflict resolution",
+    "rebase",
+    "interactive rebase",
+    "cherry-pick",
+    "stash",
+    "git stash",
+    "tag",
+    "worktree",
+    "git worktree",
+    "submodule",
+    "git submodule",
+    "clone",
+    "bisect",
+    "git flow"
   ],
   "bugs": {
     "url": "https://github.com/save-workspace-as/git-checkout/issues"

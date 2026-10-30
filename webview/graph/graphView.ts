@@ -105,6 +105,9 @@ function avatar(commit: GraphCommitDto): TemplateResult {
       : nothing}</span>`;
 }
 
+/** How long the row of a revealed commit stays marked: the length of the fade in styles.css. */
+const REVEAL_FLASH_MS = 1800;
+
 export function mountGraphView(
   container: HTMLElement,
   postMessage: (message: WebviewMessage) => void,
@@ -136,6 +139,9 @@ export function mountGraphView(
   let anchorSha: string | null = null;
   /** Row the keyboard moves from: the last one clicked or arrowed to. */
   let cursorSha: string | null = null;
+  /** The commit a reveal just brought into view; its row flashes and the flash is cleared when it is over. */
+  let flashSha: string | null = null;
+  let flashTimer: ReturnType<typeof setTimeout> | undefined;
   let inspectTimer: ReturnType<typeof setTimeout> | undefined;
   let hasMore = false;
   let notice = '';
@@ -396,7 +402,7 @@ export function mountGraphView(
       <div class=${classMap({
         'graph-row': true, 'graph-grid': true,
         'graph-row-cursor': commit.sha === cursorSha, 'graph-row-selected': selected, 'graph-row-head': isHeadCommit(commit),
-        'graph-row-reflog': commit.reflogOnly === true, 'graph-row-match': matchSet.has(commit.sha),
+        'graph-row-reflog': commit.reflogOnly === true, 'graph-row-match': matchSet.has(commit.sha), 'graph-row-flash': commit.sha === flashSha,
         'graph-row-bisect-good': bisectMark === 'good', 'graph-row-bisect-bad': bisectMark === 'bad',
         'graph-row-bisect-skip': bisectMark === 'skip',
       })} id="graph-row-${commit.sha}" role="option" aria-selected=${String(selected)}
@@ -531,6 +537,12 @@ export function mountGraphView(
     if (index >= 0) {
       scroller().scrollTop = Math.max(0, index * GRAPH_ROW_HEIGHT - scroller().clientHeight / 2);
     }
+    flashSha = sha;
+    clearTimeout(flashTimer);
+    flashTimer = setTimeout(() => {
+      flashSha = null;
+      paint();
+    }, REVEAL_FLASH_MS);
     paint();
     inspectCommit(sha);
   }

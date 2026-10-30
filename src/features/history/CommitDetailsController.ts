@@ -228,8 +228,8 @@ export class CommitDetailsController {
   }
 
   /** The files the Changes tab lists, for tests. */
-  commitFilesSnapshot(): { sha: string; baseSha?: string; files: CommitFileChangeDto[] } | undefined {
-    return this.shownFiles;
+  commitFilesSnapshot(): { sha: string; baseSha?: string; files: CommitFileChangeDto[]; shownPath?: string } | undefined {
+    return this.shownFiles && { ...this.shownFiles, shownPath: this.shownDiffFile?.path };
   }
 
   /** The file list picked a file: show its diff beside the commit summary. */

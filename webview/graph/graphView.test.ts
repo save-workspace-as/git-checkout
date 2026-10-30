@@ -335,6 +335,17 @@ describe('commit graph', () => {
     assert.match(document.querySelector('.graph-status-text')!.textContent!, /gone is not in this view/);
   });
 
+  it('marks the row of a revealed commit, then lets the mark go and keeps the selection', async () => {
+    const { graph, rows, selected } = mount();
+    graph.handleHostMessage(page(three));
+    graph.handleHostMessage({ type: 'graphReveal', ref: 'topic', sha: 'c'.repeat(40), reachable: true });
+    const flashing = () => rows().filter((row) => row.classList.contains('graph-row-flash')).map((row) => row.id.slice(10, 11));
+    assert.deepEqual(flashing(), ['c']);
+    await new Promise((done) => setTimeout(done, 1900));
+    assert.deepEqual(flashing(), []);
+    assert.deepEqual(selected(), ['c'], 'the commit stays selected');
+  });
+
   it('keeps the same commits in view when a refresh puts new ones above them', () => {
     const { graph, q } = mount();
     const name = (index: number) => String.fromCharCode(97 + (index % 26)) + String.fromCharCode(97 + Math.floor(index / 26));

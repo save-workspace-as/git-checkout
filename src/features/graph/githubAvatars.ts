@@ -44,6 +44,8 @@ export interface GitHubAvatarHost {
 export class GitHubAvatars {
   private readonly byEmail = new Map<string, string | null>();
   private pausedUntil = 0;
+  /** Commits GitHub did not know (not pushed yet), so the same one is not asked about again. */
+  private readonly unknownShas = new Set<string>();
 
   constructor(private readonly host: GitHubAvatarHost) {}
 
@@ -64,7 +66,7 @@ export class GitHubAvatars {
     const pending = new Map<string, string>();
     for (const commit of commits) {
       const key = commit.authorEmail.trim().toLowerCase();
-      if (key && this.known(key) === undefined && !pending.has(key)) {
+      if (key && this.known(key) === undefined && !pending.has(key) && !this.unknownShas.has(commit.sha)) {
         pending.set(key, commit.sha);
       }
     }
@@ -81,6 +83,11 @@ export class GitHubAvatars {
           this.pausedUntil = this.host.now() + RATE_LIMIT_PAUSE_MS;
           log.warn(`GitHub rate limit reached; avatars resume in ${RATE_LIMIT_PAUSE_MS / 60_000} minutes`);
           break;
+        }
+        if (response.status === 404 || response.status === 422) {
+          // GitHub does not have this commit, so it says nothing about the author; another commit of theirs may be there.
+          this.unknownShas.add(sha);
+          continue;
         }
         const avatar = response.status === 200 ? avatarFromCommitResponse(response.body) : null;
         this.byEmail.set(email, avatar);

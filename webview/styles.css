@@ -492,6 +492,13 @@ body.vscode-high-contrast-light {
   font-weight: var(--vscode-editor-font-weight);
 }
 
+/* VS Code's webview stylesheet gives every <code> a gray inline box; in a viewer the line is the box. */
+.commit-diff-line code {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+}
+
 .commit-diff-line {
   display: flex;
   white-space: pre;
@@ -785,6 +792,24 @@ body.vscode-high-contrast-light {
 
 .graph-row-match {
   background: var(--vscode-editor-findMatchHighlightBackground);
+}
+
+/* The row of a commit that navigation brought into view: marked like a search match, then faded out. */
+.graph-row-flash {
+  animation: graph-row-flash 1.8s ease-out;
+}
+
+@keyframes graph-row-flash {
+  from {
+    background: var(--vscode-editor-findMatchHighlightBackground);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .graph-row-flash {
+    animation: none;
+    background: var(--vscode-editor-findMatchHighlightBackground);
+  }
 }
 
 /* The same selection as the file lists: the active selection colours, kept when focus moves away. */

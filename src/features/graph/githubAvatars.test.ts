@@ -43,9 +43,26 @@ describe('GitHub avatars', () => {
       'https://api.github.com/repos/acme/app/commits/aaa', 'https://api.github.com/repos/acme/app/commits/ccc',
     ]);
     assert.ok(h.asked.every((entry) => entry.token === 'secret'));
-    assert.equal(avatars.known('nobody@example.com'), null, 'an author without an account is not asked about again');
+    assert.equal(avatars.known('nobody@example.com'), undefined, 'a commit GitHub does not have says nothing about its author');
     await avatars.lookUp(repo, [{ sha: 'eee', authorEmail: 'ada@example.com' }]);
     assert.equal(h.asked.length, 2);
+  });
+
+  it('asks about another commit of an author whose first commit is not on GitHub, and not again about the same one', async () => {
+    const h = host({ pushed: { status: 200, body: { author: { avatar_url: 'https://avatars.githubusercontent.com/u/2' } } } });
+    const avatars = new GitHubAvatars(h.value);
+    await avatars.lookUp(repo, [{ sha: 'local', authorEmail: 'ada@example.com' }]);
+    await avatars.lookUp(repo, [{ sha: 'local', authorEmail: 'ada@example.com' }]);
+    assert.equal(h.asked.length, 1, 'the unpushed commit is asked about once');
+    const found = await avatars.lookUp(repo, [{ sha: 'local', authorEmail: 'ada@example.com' }, { sha: 'pushed', authorEmail: 'ada@example.com' }]);
+    assert.deepEqual(found, { 'ada@example.com': 'https://avatars.githubusercontent.com/u/2' });
+  });
+
+  it('remembers an author whose commit GitHub knows but who has no account', async () => {
+    const h = host({ aaa: { status: 200, body: { author: null } } });
+    const avatars = new GitHubAvatars(h.value);
+    await avatars.lookUp(repo, [{ sha: 'aaa', authorEmail: 'ghost@example.com' }]);
+    assert.equal(avatars.known('ghost@example.com'), null);
   });
 
   it('stops asking for a while once GitHub reports the rate limit', async () => {

@@ -1,6 +1,6 @@
 # Git Checkout
 
-A graphical Git client for VS Code. See your history as a graph, stage and commit changes, and handle branches, tags, stashes, worktrees, submodules, rebases and merge conflicts without leaving the editor. It uses VS Code's own look and keys.
+A graphical Git client for VS Code. See your history as a commit graph, stage lines and commit, see who changed each line with Git blame, and handle branches, tags, stashes, worktrees, submodules, interactive rebases and merge conflicts without leaving the editor. It uses VS Code's own look and keys.
 
 ![The commit graph with branches, tags and a stash, and the Commit tab beside it](docs/screenshots/01-commit-graph.png)
 
@@ -15,6 +15,7 @@ Git Checkout runs on the **workspace** side, so Git always runs on the same mach
 - **Clone:** clone a repository into a folder you choose, with a progress notification you can cancel.
 - **Fetch, pull and push:** a form for the options, or Quick Fetch, Quick Pull and Quick Push for the tracked remote.
 - **Stashes, worktrees and submodules:** save, apply, pop and drop stashes; add, open and delete worktrees; initialize, update and sync submodules.
+- **Inline and status bar blame:** who last changed the line you are on, in faint text at its end and in the status bar. Hover it for the commit message with its issues and pull requests linked, the author's picture, and actions to show the commit in the graph, copy its hash, open the change the commit made, see the line's history or open it on GitHub.
 - **History tools:** file, folder and hunk history, a blame view that shows who last changed each line of a commit's change, cherry-pick, revert, reset, patches, archives (zip or tarball of any commit, branch or tag), and bisect.
 - **Housekeeping:** prune stale remote-tracking branches, delete merged branches, clean untracked files, sparse checkout, garbage collection, and repository statistics, all from Quick Launch.
 - **Pull requests:** open GitHub's new pull request page for a branch.
@@ -55,6 +56,10 @@ To clone, press **Ctrl+N** (**Cmd+Shift+N**), choose **Clone Repository…** in 
 | `gitCheckout.branch.rememberCheckout` | on | Create Branch remembers whether it last checked out the new branch. |
 | `gitCheckout.diff.syntaxHighlighting` / `changeMarks` | on / on | Color code in diffs; show + and − beside changed lines. |
 | `gitCheckout.graph.compactBranchLabels` | on | Show a branch and its remote-tracking branches as one label. |
+| `gitCheckout.blame.inline.enabled` | on | Show who last changed the cursor's line at its end, unless `git.blame.editorDecoration.enabled` is on. Turn it on or off with Toggle Inline Blame in Quick Launch. |
+| `gitCheckout.blame.inline.format` | `{author}, {date} • {summary}` | What that text says. Use `{author}`, `{date}`, `{datetime}`, `{summary}` and `{hash}`. |
+| `gitCheckout.blame.hover.over` | annotation | Hover only the blame text, or anywhere on the line (`line`). |
+| `gitCheckout.blame.statusBar.enabled` | on | Show the same in the status bar. VS Code's Git extension has its own (`git.blame.statusBarItem.enabled`, on by default); while that is on, this one stays hidden so the status bar does not say it twice. |
 | `gitCheckout.graph.githubAvatars` | on | Show authors' GitHub profile pictures for repositories on GitHub. Asks github.com which account made a commit, once per author. |
 | `gitCheckout.graph.gravatar` | off | Show Gravatar images for authors. This sends a hash of each author's email to gravatar.com. |
 | `gitCheckout.branch.nameSeparator` | `/` | Separator used when a new branch name is prefilled from the current branch. |

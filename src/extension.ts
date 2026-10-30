@@ -36,6 +36,8 @@ import { GRAPH_CONTEXT_COMMANDS } from './features/graph/graphContextCommands';
 import type { WebviewMessage } from './shared/protocol';
 import { registerExtensibilityCommands } from './extensibility/registerExtensibilityCommands';
 import { showGitCheckoutQuickLaunch } from './panel/quickLaunch';
+import { LineBlameController } from './features/blame/LineBlameController';
+import { LineBlameService } from './features/blame/lineBlameService';
 
 const log = createLogger('extension');
 
@@ -54,6 +56,8 @@ export interface GitCheckoutApi {
   /** What the Merge Conflicts window last showed (e2e only). */
   operationFormState(): ReturnType<GitCheckoutPanelManager['operationFormState']>;
   mergeOpenPath(): string | undefined;
+  /** What blame says about the line the cursor is on, as shown at its end (e2e only). */
+  lineBlame(): { sha: string; text: string } | undefined;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -123,6 +127,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
 
   watchService.syncRepositories();
   void panelManager.syncRepoOperationContext();
+
+  const lineBlame = new LineBlameController(gitService, new LineBlameService(cliRegistry), panelManager, watchService.onDidRefresh);
+  context.subscriptions.push(
+    lineBlame,
+    vscode.commands.registerCommand('gitCheckout.blame.toggleInline', () => lineBlame.toggleInline()),
+    vscode.commands.registerCommand('gitCheckout.blame.copyHash', (arg?: unknown) => lineBlame.copyHash(arg)),
+    vscode.commands.registerCommand('gitCheckout.blame.openCommit', (arg?: unknown) => lineBlame.openCommit(arg)),
+    vscode.commands.registerCommand('gitCheckout.blame.openChanges', (arg?: unknown) => lineBlame.openChanges(arg)),
+    vscode.commands.registerCommand('gitCheckout.blame.lineHistory', (arg?: unknown) => lineBlame.lineHistory(arg)),
+  );
 
   const settings = createWorkspaceGitCheckoutSettings();
   const operations = new RepoOperationService(gitService, cliRegistry);
@@ -481,6 +495,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     selectRepository: (repoRoot) => panelManager.selectRepository(repoRoot),
     operationFormState: () => panelManager.operationFormState(),
     mergeOpenPath: () => panelManager.mergeOpenPath(),
+    lineBlame: () => lineBlame.currentLine(),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

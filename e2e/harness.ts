@@ -48,7 +48,7 @@ export interface GitCheckoutApi {
   changesLists: Record<'unstaged' | 'staged', vscode.TreeDataProvider<ChangeRow>>;
   revisionLists: Record<'commitFiles' | 'tree', vscode.TreeDataProvider<RevisionRow>>;
   /** The files the Changes tab lists. */
-  commitFiles(): { sha: string; baseSha?: string; files: { path: string; status: string }[] } | undefined;
+  commitFiles(): { sha: string; baseSha?: string; files: { path: string; status: string }[]; shownPath?: string } | undefined;
   selectRepository(repoRoot: string): Promise<void>;
   /** What the banner above the graph says about the selected repository; `undefined` when it is hidden. */
   operationBanner(): Promise<{
@@ -65,6 +65,7 @@ export interface GitCheckoutApi {
   autoFetchNow(): Promise<void>;
   /** The file the Merge modal is open for, if any. */
   mergeOpenPath(): string | undefined;
+  lineBlame(): { sha: string; text: string } | undefined;
   operationFormState(): {
     sessionId: number;
     form: {

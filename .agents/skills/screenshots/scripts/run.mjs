@@ -67,7 +67,7 @@ async function openWindow(folder, port) {
     'telemetry.telemetryLevel': 'off', 'update.mode': 'none', 'extensions.autoCheckUpdates': false, 'extensions.autoUpdate': false,
     'chat.disableAIFeatures': true, 'window.commandCenter': false, 'window.title': 'Git Checkout — ${rootName}',
     'window.titleBarStyle': 'custom', 'security.workspace.trust.enabled': false, 'editor.minimap.enabled': false,
-    'git.autofetch': false, 'gitCheckout.autoFetch.enabled': false, 'gitCheckout.graph.githubAvatars': true, 'gitCheckout.graph.gravatar': false,
+    'git.autofetch': false, 'git.blame.statusBarItem.enabled': false, 'gitCheckout.autoFetch.enabled': false, 'gitCheckout.graph.githubAvatars': true, 'gitCheckout.graph.gravatar': false,
   }, null, 2));
   // The commands that open a modal for a file need the file; a key runs each.
   const context = { webviewSection: 'commitTree', commitTreeKind: 'blob', path: historyFile, preventDefaultContextMenuItems: true };
@@ -75,6 +75,7 @@ async function openWindow(folder, port) {
     { key: 'ctrl+alt+shift+r', command: 'gitCheckout.interactiveRebase' },
     { key: 'ctrl+alt+shift+h', command: 'gitCheckout.pathHistory.file', args: context },
     { key: 'ctrl+alt+shift+b', command: 'gitCheckout.blame.file', args: context },
+    { key: 'ctrl+alt+shift+o', command: 'workbench.action.quickOpen', args: historyFile.split('/').pop() },
   ]));
   const cli = join(dirname(code), '..', 'Resources', 'app', 'bin', 'code');
   run(cli, ['--install-extension', vsix, '--user-data-dir', join(data, 'user'), '--extensions-dir', join(data, 'extensions')]);
@@ -237,6 +238,16 @@ try {
       await t.shot('06', 'image-preview');
     }
     await t.restore();
+  }
+  if (wanted('14')) {
+    // The file in an editor, the cursor on a line, and the hover of the blame at its end.
+    await page.keyboard.press('Control+Alt+Shift+o'); await sleep(1200); await page.keyboard.press('Enter'); await sleep(2500);
+    await page.keyboard.press('Control+g'); await sleep(500);
+    await page.keyboard.type(option('blame-line') ?? '20'); await page.keyboard.press('Enter'); await sleep(300);
+    await page.keyboard.press('End'); await sleep(1800);
+    await page.keyboard.press('Meta+k'); await page.keyboard.press('Meta+i'); await sleep(2500);
+    await t.shot('14', 'line-blame');
+    await page.keyboard.press('Escape');
   }
   await stage.browser.close();
 } finally {
