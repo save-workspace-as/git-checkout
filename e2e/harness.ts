@@ -67,6 +67,7 @@ export interface GitCheckoutApi {
   mergeOpenPath(): string | undefined;
   lineBlame(): { sha: string; text: string } | undefined;
   fileBlame(): Map<number, string> | undefined;
+  seedPullRequests(repoRoot: string, state: unknown): void;
   operationFormState(): {
     sessionId: number;
     form: {

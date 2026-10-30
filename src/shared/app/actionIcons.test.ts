@@ -40,6 +40,7 @@ const COMMAND_ACTIONS: Record<string, ActionIcon> = {
   'gitCheckout.pathHistory.file': 'fileHistory',
   'gitCheckout.blame.file': 'blame',
   'gitCheckout.searchCommits': 'search',
+  'gitCheckout.pullRequests.refresh': 'refresh',
   'gitCheckout.sidebar.search': 'search',
   'gitCheckout.sidebar.showSubmoduleDiff': 'openDiff',
 };

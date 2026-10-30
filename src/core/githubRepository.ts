@@ -1,4 +1,4 @@
-import { pickGitHubRepository, type GitHubRepository } from '../shared/history/githubReferences';
+import { pickGitHubRemote, pickGitHubRepository, type GitHubRepository } from '../shared/history/githubReferences';
 import { loadRemoteUrls, parseRemoteNames } from './gitRefParser';
 
 export async function loadGitHubRepository(cli: {
@@ -11,4 +11,12 @@ export async function loadGitHubRepository(cli: {
   }
   const remotes = await loadRemoteUrls(cli, names);
   return pickGitHubRepository(remotes);
+}
+
+/** The GitHub repository and the name of the remote that points at it, which the pull request refs are fetched from. */
+export async function loadGitHubRemote(cli: {
+  execRead: (args: string[]) => Promise<{ stdout: string }>;
+}): Promise<{ remote: string; repo: GitHubRepository } | null> {
+  const names = parseRemoteNames((await cli.execRead(['remote'])).stdout);
+  return names.length === 0 ? null : pickGitHubRemote(await loadRemoteUrls(cli, names));
 }

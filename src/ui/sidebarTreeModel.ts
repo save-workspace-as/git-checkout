@@ -102,6 +102,10 @@ export const SIDEBAR_CONTEXT = {
   stashesSection: 'section.stashes',
   stash: 'stash',
   worktreesSection: 'section.worktrees',
+  pullRequestsSection: 'section.pullRequests',
+  pullRequestCategory: 'pullRequests.category',
+  pullRequest: 'pullRequest',
+  pullRequestAction: 'pullRequests.action',
   worktree: 'worktree',
   worktreeCurrent: 'worktree.current',
   submodulesSection: 'section.submodules',
@@ -124,6 +128,7 @@ export type SidebarNodeKind =
   | 'stash'
   | 'worktree'
   | 'submodule'
+  | 'pullRequest'
   | 'message';
 
 export interface SidebarNode {
@@ -142,6 +147,10 @@ export interface SidebarNode {
   expanded?: boolean;
   /** Root of the repository this row belongs to. */
   repoRoot?: string;
+  /** A codicon for the row, instead of the one its kind has, with a theme color id for it. */
+  icon?: { id: string; color?: string };
+  /** What a click on the row runs, instead of what its kind does. */
+  command?: { id: string; args?: unknown[] };
   children: SidebarNode[];
 }
 
@@ -193,6 +202,8 @@ export function buildSidebarTree(
   stashes: readonly StashEntryDto[] = [],
   gitWorktrees: readonly GitWorktreeDto[] = [],
   submodules: readonly GitSubmoduleDto[] = [],
+  /** The Pull Requests section, when there is one to show. */
+  pullRequests?: SidebarNode,
 ): SidebarNode[] {
   const changedCount = worktree.stagedCount + worktree.unstagedCount;
   const elsewhere = elsewhereByBranch(gitWorktrees);
@@ -232,6 +243,7 @@ export function buildSidebarTree(
       contextValue: SIDEBAR_CONTEXT.remotesSection,
       children: remoteNodes(snapshot),
     },
+    ...(pullRequests ? [pullRequests] : []),
     {
       id: 'section:tags',
       kind: 'section',
@@ -358,8 +370,14 @@ export function treeItemSpec(node: SidebarNode): SidebarTreeItemSpec {
     icon: nodeIcon(node),
     collapsible: nodeCollapsible(node),
   };
+  if (node.icon) {
+    spec.icon = node.icon.id;
+    spec.iconColor = node.icon.color;
+  }
   const commandId = clickCommand(node);
-  if (commandId) {
+  if (node.command) {
+    spec.command = { id: node.command.id, args: node.command.args ?? [node] };
+  } else if (commandId) {
     spec.command = { id: commandId, args: [node] };
   }
   return spec;
@@ -764,6 +782,8 @@ function nodeIcon(node: SidebarNode): string | undefined {
       return 'tag';
     case 'stash':
       return 'git-stash';
+    case 'pullRequest':
+      return 'git-pull-request';
     case 'message':
       return 'warning';
     case 'section':

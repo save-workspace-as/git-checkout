@@ -36,6 +36,7 @@ export const ACTION_ICONS = {
   olderCommit: 'chevron-left',
   newerCommit: 'chevron-right',
   search: 'search',
+  refresh: 'refresh',
   branch: 'git-branch',
   remoteBranch: 'cloud',
   tag: 'tag',
