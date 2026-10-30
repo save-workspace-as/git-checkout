@@ -137,6 +137,41 @@ describe('History modal', () => {
   });
 });
 
+describe('Blame modal opened at a commit', () => {
+  function open(select: string) {
+    const shell = document.createElement('div');
+    document.body.append(shell);
+    const sent: WebviewMessage[] = [];
+    const modal = mountHistoryModal(shell, (message) => sent.push(message), { blame: true });
+    modal.applyHostMessage({ type: 'pathHistoryOpen', scope: 'file', path: 'a.ts', title: 'Blame', canFollow: true, mode: 'blame', select });
+    return { modal, sent };
+  }
+  const page = (letters: string[], hasMore: boolean, append: boolean) =>
+    ({ type: 'pathHistoryPage', append, page: { commits: letters.map((letter) => commit(letter)), hasMore } }) as never;
+
+  it('selects that commit instead of the newest', () => {
+    const { modal, sent } = open('b'.repeat(40));
+    modal.applyHostMessage(page(['a', 'b', 'c'], false, false));
+    assert.deepEqual(sent.at(-1), { type: 'pathHistorySelect', sha: 'b'.repeat(40) });
+    assert.equal(sent.filter((message) => message.type === 'pathHistorySelect').length, 1, 'the newest is never selected on the way');
+  });
+
+  it('waits for the pages that have it, and selects it when it arrives', () => {
+    const { modal, sent } = open('d'.repeat(40));
+    modal.applyHostMessage(page(['a', 'b'], true, false));
+    assert.equal(sent.some((message) => message.type === 'pathHistorySelect'), false);
+    modal.applyHostMessage(page(['c', 'd'], false, true));
+    assert.deepEqual(sent.at(-1), { type: 'pathHistorySelect', sha: 'd'.repeat(40) });
+  });
+
+  it('falls back to the newest when the history does not have it', () => {
+    const { modal, sent } = open('z'.repeat(40));
+    modal.applyHostMessage(page(['a', 'b'], true, false));
+    modal.applyHostMessage(page(['c'], false, true));
+    assert.deepEqual(sent.at(-1), { type: 'pathHistorySelect', sha: 'a'.repeat(40) });
+  });
+});
+
 describe('Blame modal', () => {
   function mountBlame() {
     const shell = document.createElement('div');
@@ -223,6 +258,24 @@ describe('Blame modal', () => {
     modal.applyHostMessage(blameOf({ [B]: people[B] }, ['', B, '', '']));
     (shell.querySelector('.blame-hash') as HTMLElement).click();
     assert.deepEqual(sent.at(-1), { type: 'pathHistorySelect', sha: B });
+  });
+
+  it('offers to blame before this change on the lines the selected commit changed, and asks the host for that line', async () => {
+    const { modal, shell, sent } = mountBlame();
+    modal.applyHostMessage({ type: 'pathHistoryDiff', sha: A, binary: false, lines: [...diff] } as never);
+    await settle();
+    modal.applyHostMessage(blameOf(people, ['', B, A, A]));
+    const buttons = [...shell.querySelectorAll('.blame-before')] as El[];
+    assert.equal(buttons.length, 1, 'only the run of lines this commit changed has it, not the line another commit wrote');
+    assert.equal(buttons[0].getAttribute('title'), 'Blame before this change');
+    buttons[0].click();
+    assert.deepEqual(sent.at(-1), { type: 'pathHistoryBlameBefore', sha: A, line: 2 });
+  });
+
+  it('selects the commit the host asks for', () => {
+    const { modal, sent } = mountBlame();
+    modal.applyHostMessage({ type: 'pathHistorySelectCommit', sha: 'c'.repeat(40) });
+    assert.deepEqual(sent.at(-1), { type: 'pathHistorySelect', sha: 'c'.repeat(40) });
   });
 
   it('opens the selected commit of the file in an editor from the header', () => {

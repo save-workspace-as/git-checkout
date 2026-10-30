@@ -31,6 +31,8 @@ export const ACTION_ICONS = {
   reflog: 'book',
   fileHistory: 'history',
   blame: 'git-commit',
+  openBlame: 'person',
+  blameBefore: 'versions',
   olderCommit: 'chevron-left',
   newerCommit: 'chevron-right',
   search: 'search',

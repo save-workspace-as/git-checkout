@@ -11,6 +11,8 @@ export interface LineBlame {
   summary: string;
   /** The file's path in that commit, which differs from today's when the file was renamed since. */
   path?: string;
+  /** The line's number in that commit's version of the file, for stepping back from it. */
+  originalLine?: number;
 }
 
 /** A commit as the hover shows it. */
@@ -24,6 +26,7 @@ export interface CommitInfo {
 }
 
 export const DEFAULT_BLAME_FORMAT = '{author}, {date} \u2022 {summary}';
+export const DEFAULT_FILE_BLAME_FORMAT = '{author}, {date}';
 
 const MAX_SUMMARY = 80;
 

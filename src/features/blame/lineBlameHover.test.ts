@@ -33,7 +33,7 @@ describe('blameHoverMarkdown', () => {
 
   it('offers the actions for the commit, and the GitHub page only for a repository on GitHub', () => {
     const text = hover('subject');
-    for (const command of ['openCommit', 'copyHash', 'openChanges', 'lineHistory']) {
+    for (const command of ['openCommit', 'copyHash', 'openChanges', 'openInBlame', 'stepBack', 'lineHistory']) {
       assert.match(text, new RegExp(`command:gitCheckout\\.blame\\.${command}\\?`));
     }
     assert.match(text, /\(https:\/\/github\.com\/octo\/app\/commit\/abcdef1234567890 "Open on GitHub"\)/);
@@ -67,6 +67,14 @@ describe('blameHoverMarkdown', () => {
     assert.doesNotMatch(text, /\]\(command:workbench/);
     assert.doesNotMatch(text, /\]\(command:evil/);
     assert.doesNotMatch(text, /<b>/);
+  });
+
+  it('links a tracker reference, and names a GitHub one as GitHub but a tracker one as itself', () => {
+    const jira = { prefix: 'JIRA-', url: 'https://jira.example.com/browse/JIRA-<num>', ignoreCase: false, alphanumeric: false };
+    const text = blameHoverMarkdown(commit('JIRA-12 fix (#3)'), target, repo, NOW, 'en', undefined, [jira]);
+    assert.match(text, /\[JIRA-12\]\(https:\/\/jira\.example\.com\/browse\/JIRA-12\)/);
+    assert.match(text, /\$\(link\) \[JIRA-12\]\(https:\/\/jira/);
+    assert.match(text, /\$\(link\) \[GitHub \\?#3\]/);
   });
 
   it('says a line that is not committed yet is yours', () => {

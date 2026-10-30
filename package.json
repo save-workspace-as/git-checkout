@@ -18,6 +18,58 @@
     "Other"
   ],
   "contributes": {
+    "colors": [
+      {
+        "defaults": {
+          "dark": "#ff7b4a55",
+          "highContrast": "#ff7b4a99",
+          "highContrastLight": "#ff7b4a99",
+          "light": "#ff7b4a66"
+        },
+        "description": "%color.gitCheckout.blameHeat1%",
+        "id": "gitCheckout.blameHeat1"
+      },
+      {
+        "defaults": {
+          "dark": "#ffb74a48",
+          "highContrast": "#ffb74a80",
+          "highContrastLight": "#ffb74a80",
+          "light": "#ffb74a5a"
+        },
+        "description": "%color.gitCheckout.blameHeat2%",
+        "id": "gitCheckout.blameHeat2"
+      },
+      {
+        "defaults": {
+          "dark": "#e8d44d3a",
+          "highContrast": "#e8d44d70",
+          "highContrastLight": "#e8d44d70",
+          "light": "#e8d44d55"
+        },
+        "description": "%color.gitCheckout.blameHeat3%",
+        "id": "gitCheckout.blameHeat3"
+      },
+      {
+        "defaults": {
+          "dark": "#73c99130",
+          "highContrast": "#73c99165",
+          "highContrastLight": "#73c99165",
+          "light": "#73c99150"
+        },
+        "description": "%color.gitCheckout.blameHeat4%",
+        "id": "gitCheckout.blameHeat4"
+      },
+      {
+        "defaults": {
+          "dark": "#6a9bd822",
+          "highContrast": "#6a9bd855",
+          "highContrastLight": "#6a9bd855",
+          "light": "#6a9bd840"
+        },
+        "description": "%color.gitCheckout.blameHeat5%",
+        "id": "gitCheckout.blameHeat5"
+      }
+    ],
     "commands": [
       {
         "category": "%command.gitCheckout.open.category%",
@@ -311,6 +363,17 @@
         "command": "gitCheckout.blame.file",
         "icon": "$(git-commit)",
         "title": "%command.gitCheckout.blame.file.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.toggleFile.category%",
+        "command": "gitCheckout.blame.toggleFile",
+        "title": "%command.gitCheckout.blame.toggleFile.title%",
+        "toggled": "gitCheckout.fileBlameActive"
+      },
+      {
+        "category": "%command.gitCheckout.blame.toggleCodeLens.category%",
+        "command": "gitCheckout.blame.toggleCodeLens",
+        "title": "%command.gitCheckout.blame.toggleCodeLens.title%"
       },
       {
         "category": "%command.gitCheckout.blame.toggleInline.category%",
@@ -1178,6 +1241,16 @@
         "title": "%command.gitCheckout.revealRepository.linux.title%"
       },
       {
+        "category": "%command.gitCheckout.blame.openInBlame.category%",
+        "command": "gitCheckout.blame.openInBlame",
+        "title": "%command.gitCheckout.blame.openInBlame.title%"
+      },
+      {
+        "category": "%command.gitCheckout.blame.stepBack.category%",
+        "command": "gitCheckout.blame.stepBack",
+        "title": "%command.gitCheckout.blame.stepBack.title%"
+      },
+      {
         "command": "gitCheckout.repo.0.fetch",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.fetch.title%"
@@ -1780,6 +1853,55 @@
     ],
     "configuration": {
       "properties": {
+        "gitCheckout.autoFetch.enabled": {
+          "default": true,
+          "description": "%config.gitCheckout.autoFetch.enabled.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.autoFetch.intervalSeconds": {
+          "default": 180,
+          "description": "%config.gitCheckout.autoFetch.intervalSeconds.description%",
+          "minimum": 30,
+          "type": "number"
+        },
+        "gitCheckout.autolinks": {
+          "default": [],
+          "description": "%config.gitCheckout.autolinks.description%",
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "alphanumeric": {
+                "default": false,
+                "description": "%config.gitCheckout.autolinks.alphanumeric%",
+                "type": "boolean"
+              },
+              "ignoreCase": {
+                "default": false,
+                "description": "%config.gitCheckout.autolinks.ignoreCase%",
+                "type": "boolean"
+              },
+              "prefix": {
+                "description": "%config.gitCheckout.autolinks.prefix%",
+                "type": "string"
+              },
+              "url": {
+                "description": "%config.gitCheckout.autolinks.url%",
+                "type": "string"
+              }
+            },
+            "required": [
+              "prefix",
+              "url"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "gitCheckout.blame.file.format": {
+          "default": "{author}, {date}",
+          "description": "%config.gitCheckout.blame.file.format.description%",
+          "type": "string"
+        },
         "gitCheckout.blame.hover.over": {
           "default": "annotation",
           "description": "%config.gitCheckout.blame.hover.over.description%",
@@ -1793,13 +1915,18 @@
           ],
           "type": "string"
         },
+        "gitCheckout.blame.ignoreRevs": {
+          "default": true,
+          "description": "%config.gitCheckout.blame.ignoreRevs.description%",
+          "type": "boolean"
+        },
         "gitCheckout.blame.inline.enabled": {
           "default": true,
           "description": "%config.gitCheckout.blame.inline.enabled.description%",
           "type": "boolean"
         },
         "gitCheckout.blame.inline.format": {
-          "default": "{author}, {date} \u2022 {summary}",
+          "default": "{author}, {date} • {summary}",
           "description": "%config.gitCheckout.blame.inline.format.description%",
           "type": "string"
         },
@@ -1822,6 +1949,43 @@
             "%config.gitCheckout.branch.nameSeparator.enum.underscore%"
           ],
           "type": "string"
+        },
+        "gitCheckout.branch.rememberCheckout": {
+          "default": true,
+          "description": "%config.gitCheckout.branch.rememberCheckout.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.checkout.updateSubmodules": {
+          "default": true,
+          "description": "%config.gitCheckout.checkout.updateSubmodules.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.clone.defaultFolder": {
+          "default": "",
+          "description": "%config.gitCheckout.clone.defaultFolder.description%",
+          "type": "string"
+        },
+        "gitCheckout.codeLens.enabled": {
+          "default": false,
+          "description": "%config.gitCheckout.codeLens.enabled.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.commit.pushAfterCommit": {
+          "default": false,
+          "description": "%config.gitCheckout.commit.pushAfterCommit.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.commit.subjectLengthLimit": {
+          "default": 70,
+          "description": "%config.gitCheckout.commit.subjectLengthLimit.description%",
+          "minimum": 0,
+          "type": "number"
+        },
+        "gitCheckout.commit.subjectWarningLength": {
+          "default": 50,
+          "description": "%config.gitCheckout.commit.subjectWarningLength.description%",
+          "minimum": 0,
+          "type": "number"
         },
         "gitCheckout.customCommands": {
           "default": [],
@@ -1857,6 +2021,16 @@
           },
           "type": "array"
         },
+        "gitCheckout.diff.changeMarks": {
+          "default": true,
+          "description": "%config.gitCheckout.diff.changeMarks.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.diff.syntaxHighlighting": {
+          "default": true,
+          "description": "%config.gitCheckout.diff.syntaxHighlighting.description%",
+          "type": "boolean"
+        },
         "gitCheckout.externalDiff.enabled": {
           "default": false,
           "description": "%config.gitCheckout.externalDiff.enabled.description%",
@@ -1867,22 +2041,32 @@
           "description": "%config.gitCheckout.externalMerge.enabled.description%",
           "type": "boolean"
         },
+        "gitCheckout.fetch.includeTags": {
+          "default": false,
+          "description": "%config.gitCheckout.fetch.includeTags.description%",
+          "type": "boolean"
+        },
         "gitCheckout.git.skipHooks": {
           "default": false,
           "description": "%config.gitCheckout.git.skipHooks.description%",
           "type": "boolean"
         },
-        "gitCheckout.graph.gravatar": {
-          "default": false,
-          "description": "%config.gitCheckout.graph.gravatar.description%",
-          "tags": [
-            "usesOnlineServices"
-          ],
+        "gitCheckout.graph.compactBranchLabels": {
+          "default": true,
+          "description": "%config.gitCheckout.graph.compactBranchLabels.description%",
           "type": "boolean"
         },
         "gitCheckout.graph.githubAvatars": {
           "default": true,
           "description": "%config.gitCheckout.graph.githubAvatars.description%",
+          "tags": [
+            "usesOnlineServices"
+          ],
+          "type": "boolean"
+        },
+        "gitCheckout.graph.gravatar": {
+          "default": false,
+          "description": "%config.gitCheckout.graph.gravatar.description%",
           "tags": [
             "usesOnlineServices"
           ],
@@ -1935,69 +2119,6 @@
         "gitCheckout.shortcuts.enabled": {
           "default": true,
           "description": "%config.gitCheckout.shortcuts.enabled.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.autoFetch.enabled": {
-          "default": true,
-          "description": "%config.gitCheckout.autoFetch.enabled.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.autoFetch.intervalSeconds": {
-          "default": 180,
-          "description": "%config.gitCheckout.autoFetch.intervalSeconds.description%",
-          "minimum": 30,
-          "type": "number"
-        },
-        "gitCheckout.branch.rememberCheckout": {
-          "default": true,
-          "description": "%config.gitCheckout.branch.rememberCheckout.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.checkout.updateSubmodules": {
-          "default": true,
-          "description": "%config.gitCheckout.checkout.updateSubmodules.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.clone.defaultFolder": {
-          "default": "",
-          "description": "%config.gitCheckout.clone.defaultFolder.description%",
-          "type": "string"
-        },
-        "gitCheckout.commit.pushAfterCommit": {
-          "default": false,
-          "description": "%config.gitCheckout.commit.pushAfterCommit.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.commit.subjectLengthLimit": {
-          "default": 70,
-          "description": "%config.gitCheckout.commit.subjectLengthLimit.description%",
-          "minimum": 0,
-          "type": "number"
-        },
-        "gitCheckout.commit.subjectWarningLength": {
-          "default": 50,
-          "description": "%config.gitCheckout.commit.subjectWarningLength.description%",
-          "minimum": 0,
-          "type": "number"
-        },
-        "gitCheckout.diff.changeMarks": {
-          "default": true,
-          "description": "%config.gitCheckout.diff.changeMarks.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.diff.syntaxHighlighting": {
-          "default": true,
-          "description": "%config.gitCheckout.diff.syntaxHighlighting.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.fetch.includeTags": {
-          "default": false,
-          "description": "%config.gitCheckout.fetch.includeTags.description%",
-          "type": "boolean"
-        },
-        "gitCheckout.graph.compactBranchLabels": {
-          "default": true,
-          "description": "%config.gitCheckout.graph.compactBranchLabels.description%",
           "type": "boolean"
         },
         "gitCheckout.watch.debounceMs": {
@@ -2515,6 +2636,14 @@
         },
         {
           "command": "gitCheckout.blame.file",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.toggleFile",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.toggleCodeLens",
           "when": "false"
         },
         {
@@ -3195,6 +3324,14 @@
         },
         {
           "command": "gitCheckout.revealRepository.linux",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.openInBlame",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.blame.stepBack",
           "when": "false"
         },
         {
@@ -4629,6 +4766,11 @@
         {
           "command": "gitCheckout.blame.file",
           "group": "navigation@22",
+          "when": "resourceScheme == file"
+        },
+        {
+          "command": "gitCheckout.blame.toggleFile",
+          "group": "navigation@23",
           "when": "resourceScheme == file"
         }
       ],
