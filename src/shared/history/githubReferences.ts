@@ -65,20 +65,26 @@ export function parseGitHubRemoteUrl(raw: string): GitHubRepository | null {
 }
 
 /** Prefer `origin` when it is a GitHub remote; otherwise the first GitHub remote. */
-export function pickGitHubRepository(
+export function pickGitHubRemote(
   remotes: readonly { name: string; urls: readonly string[] }[],
-): GitHubRepository | null {
+): { remote: string; repo: GitHubRepository } | null {
   const origin = remotes.find((remote) => remote.name === 'origin');
   const ordered = origin ? [origin, ...remotes.filter((remote) => remote !== origin)] : remotes;
   for (const remote of ordered) {
     for (const url of remote.urls) {
       const parsed = parseGitHubRemoteUrl(url);
       if (parsed) {
-        return parsed;
+        return { remote: remote.name, repo: parsed };
       }
     }
   }
   return null;
+}
+
+export function pickGitHubRepository(
+  remotes: readonly { name: string; urls: readonly string[] }[],
+): GitHubRepository | null {
+  return pickGitHubRemote(remotes)?.repo ?? null;
 }
 
 /**

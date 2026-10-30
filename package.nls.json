@@ -502,5 +502,20 @@
   "command.gitCheckout.graph.copyGitHubLink.title": "Copy GitHub Link to Commit",
   "command.gitCheckout.graph.copyGitHubLink.category": "Git Checkout",
   "command.gitCheckout.sidebar.openRemote.title": "Open Remote in Browser",
-  "command.gitCheckout.sidebar.openRemote.category": "Git Checkout"
+  "command.gitCheckout.sidebar.openRemote.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.refresh.title": "Refresh Pull Requests",
+  "command.gitCheckout.pullRequests.refresh.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.signIn.title": "Sign in to GitHub",
+  "command.gitCheckout.pullRequests.signIn.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.grantAccess.title": "Allow Access to Private Repositories",
+  "command.gitCheckout.pullRequests.grantAccess.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.checkout.title": "Checkout Pull Request",
+  "command.gitCheckout.pullRequests.checkout.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.checkoutInWorktree.title": "Checkout Pull Request in Worktree",
+  "command.gitCheckout.pullRequests.checkoutInWorktree.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.openOnGitHub.title": "Open Pull Request on GitHub",
+  "command.gitCheckout.pullRequests.openOnGitHub.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.copyLink.title": "Copy Pull Request Link",
+  "command.gitCheckout.pullRequests.copyLink.category": "Git Checkout",
+  "config.gitCheckout.pullRequests.enabled.description": "List the open pull requests of a repository on GitHub in the sidebar, using your GitHub sign-in in VS Code. Turn this off to hide the section and stop asking GitHub."
 }

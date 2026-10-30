@@ -39,6 +39,8 @@ import { showGitCheckoutQuickLaunch } from './panel/quickLaunch';
 import { LineBlameController } from './features/blame/LineBlameController';
 import { LineBlameService } from './features/blame/lineBlameService';
 import { ignoreRevsEnabled } from './features/blame/blameSettings';
+import { PullRequestController } from './features/pullRequests/PullRequestController';
+import { PullRequestStore, type PullRequestState } from './features/pullRequests/PullRequestStore';
 import { RemoteLinkController } from './features/history/RemoteLinkController';
 import { FileBlameController } from './features/blame/FileBlameController';
 import { BlameCodeLensProvider } from './features/blame/BlameCodeLensProvider';
@@ -64,6 +66,8 @@ export interface GitCheckoutApi {
   lineBlame(): { sha: string; text: string } | undefined;
   /** What the gutter blame of the active file shows on each line, 1-based; undefined when it is off (e2e only). */
   fileBlame(): Map<number, string> | undefined;
+  /** Sets what the Pull Requests section shows for a repository, as if GitHub had answered (e2e only). */
+  seedPullRequests(repoRoot: string, state: PullRequestState): void;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -118,7 +122,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   context.subscriptions.push(windows);
   const panelManager = windows.facade();
 
-  const { providers: sidebars, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService);
+  const pullRequests = new PullRequestStore(cliRegistry);
+  context.subscriptions.push(pullRequests);
+  new PullRequestController(pullRequests, cliRegistry, panelManager).register(context);
+  const { providers: sidebars, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
 
   const statusBar = new DiagnosticsStatusBar(gitService);
   context.subscriptions.push(statusBar);
@@ -530,6 +537,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     mergeOpenPath: () => panelManager.mergeOpenPath(),
     lineBlame: () => lineBlame.currentLine(),
     fileBlame: () => fileBlame.columnText(),
+    seedPullRequests: (repoRoot, state) => pullRequests.seed(repoRoot, state),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

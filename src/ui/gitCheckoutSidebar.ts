@@ -31,6 +31,8 @@ import {
     type SidebarNode,
 } from './sidebarTreeModel';
 import { registerRepositoryMenuCommands } from './repositoryMenuCommands';
+import { pullRequestSection } from './pullRequestNodes';
+import type { PullRequestStore } from '../features/pullRequests/PullRequestStore';
 
 const log = createLogger('sidebar');
 
@@ -55,6 +57,7 @@ class SidebarProvider
     private readonly repos: { roots: readonly string[] },
     private readonly search: { query: string },
     private readonly onRepository: (slot: number, root: string | null, headRef: string | null) => void,
+    private readonly pullRequests?: PullRequestStore,
   ) {}
 
   refresh(): void {
@@ -106,6 +109,7 @@ class SidebarProvider
         data.stashes,
         data.worktrees,
         data.submodules,
+        this.pullRequests && pullRequestSection(this.pullRequests.peek(root)),
       );
       this.onRepository(this.slot, root, data.snapshot.headRef);
       const tree = withSidebarSearch(sections, this.search.query);
@@ -143,6 +147,7 @@ export function registerGitCheckoutSidebar(
   panel: GitCheckoutPanelManager,
   gitService: GitExtensionService,
   watchService: GitWatchService,
+  pullRequests?: PullRequestStore,
 ): { providers: vscode.TreeDataProvider<SidebarNode>[]; badge(): number | undefined } {
   const search = { query: '' };
   const repos: { roots: readonly string[] } = { roots: panel.repositoryRoots() };
@@ -156,7 +161,7 @@ export function registerGitCheckoutSidebar(
   };
   const providers = Array.from(
     { length: SIDEBAR_REPO_SLOTS },
-    (_, slot) => new SidebarProvider(panel, slot, repos, search, onRepository),
+    (_, slot) => new SidebarProvider(panel, slot, repos, search, onRepository, pullRequests),
   );
   const syncRepositoryCount = (): void => {
     const count = Math.min(Math.max(repos.roots.length, 1), SIDEBAR_REPO_SLOTS);
@@ -220,6 +225,7 @@ export function registerGitCheckoutSidebar(
     }),
     vscode.workspace.onDidChangeWorkspaceFolders(refreshAll),
     watchService.onDidRefresh(refreshAll),
+    ...(pullRequests ? [pullRequests.onDidChange(refreshAll)] : []),
     panel.onDidChangeRefs(refreshAll),
   );
 

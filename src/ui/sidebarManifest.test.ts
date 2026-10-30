@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { REVEAL_COMMAND_BASES, platformCommandIds } from '../shared/app/platformCommands';
+import { PULL_REQUEST_COMMANDS } from './pullRequestNodes';
 import {
   SIDEBAR_COMMANDS,
   SIDEBAR_CONTEXT,
@@ -27,9 +28,13 @@ const manifest = JSON.parse(readFileSync(join(__dirname, '../../package.json'), 
   };
 };
 const { contributes } = manifest;
-const sidebarCommands = (Object.values(SIDEBAR_COMMANDS) as string[]).flatMap((id) =>
-  (REVEAL_COMMAND_BASES as readonly string[]).includes(id) ? platformCommandIds(id) : [id],
-);
+const sidebarCommands = [
+  ...(Object.values(SIDEBAR_COMMANDS) as string[]).flatMap((id) =>
+    (REVEAL_COMMAND_BASES as readonly string[]).includes(id) ? platformCommandIds(id) : [id],
+  ),
+  // The pull request rows have their own commands, since they act on GitHub and not on a ref.
+  ...Object.values(PULL_REQUEST_COMMANDS),
+];
 /** Item menus apply to every repository view, not just the first. */
 const SIDEBAR_VIEWS_WHEN = String.raw`view =~ /^gitCheckout\.sidebar(\.\d+)?$/`;
 const itemMenus = contributes.menus['view/item/context'].filter((m) =>
@@ -116,6 +121,8 @@ describe('sidebar manifest contributions', () => {
       SIDEBAR_CONTEXT.allCommits,
       SIDEBAR_CONTEXT.folder,
       SIDEBAR_CONTEXT.message,
+      // A button that signs in or tries again; clicking it is all it does.
+      SIDEBAR_CONTEXT.pullRequestAction,
     ]);
     for (const contextValue of Object.values(SIDEBAR_CONTEXT)) {
       if (!withoutMenus.has(contextValue)) {

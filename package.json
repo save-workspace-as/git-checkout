@@ -1281,6 +1281,42 @@
         "title": "%command.gitCheckout.sidebar.openRemote.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.refresh.category%",
+        "command": "gitCheckout.pullRequests.refresh",
+        "icon": "$(refresh)",
+        "title": "%command.gitCheckout.pullRequests.refresh.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.signIn.category%",
+        "command": "gitCheckout.pullRequests.signIn",
+        "title": "%command.gitCheckout.pullRequests.signIn.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.grantAccess.category%",
+        "command": "gitCheckout.pullRequests.grantAccess",
+        "title": "%command.gitCheckout.pullRequests.grantAccess.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.checkout.category%",
+        "command": "gitCheckout.pullRequests.checkout",
+        "title": "%command.gitCheckout.pullRequests.checkout.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.checkoutInWorktree.category%",
+        "command": "gitCheckout.pullRequests.checkoutInWorktree",
+        "title": "%command.gitCheckout.pullRequests.checkoutInWorktree.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.openOnGitHub.category%",
+        "command": "gitCheckout.pullRequests.openOnGitHub",
+        "title": "%command.gitCheckout.pullRequests.openOnGitHub.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.copyLink.category%",
+        "command": "gitCheckout.pullRequests.copyLink",
+        "title": "%command.gitCheckout.pullRequests.copyLink.title%"
+      },
+      {
         "command": "gitCheckout.repo.0.fetch",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.fetch.title%"
@@ -2145,6 +2181,14 @@
           "description": "%config.gitCheckout.network.timeoutMs.description%",
           "minimum": 10000,
           "type": "number"
+        },
+        "gitCheckout.pullRequests.enabled": {
+          "default": true,
+          "description": "%config.gitCheckout.pullRequests.enabled.description%",
+          "tags": [
+            "usesOnlineServices"
+          ],
+          "type": "boolean"
         },
         "gitCheckout.shortcuts.enabled": {
           "default": true,
@@ -3389,6 +3433,34 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.pullRequests.refresh",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.signIn",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.grantAccess",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.checkout",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.checkoutInWorktree",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.openOnGitHub",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.copyLink",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.0.fetch",
           "when": "false"
         },
@@ -4463,6 +4535,41 @@
           "command": "gitCheckout.sidebar.openRemote",
           "group": "8_remote@0",
           "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
+        },
+        {
+          "command": "gitCheckout.pullRequests.checkout",
+          "group": "1_checkout@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.checkoutInWorktree",
+          "group": "1_checkout@2",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.openOnGitHub",
+          "group": "2_open@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.copyLink",
+          "group": "2_open@2",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.refresh",
+          "group": "3_refresh@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.refresh",
+          "group": "1_refresh@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.pullRequests"
+        },
+        {
+          "command": "gitCheckout.pullRequests.refresh",
+          "group": "1_refresh@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequests.category"
         }
       ],
       "view/title": [
