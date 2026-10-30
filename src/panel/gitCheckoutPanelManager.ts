@@ -931,6 +931,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'historyReset':
         await this.runReset(message.sha);
         break;
+      case 'historyEditMessage':
+        await this.operations.runEditMessage(message.sha);
+        break;
       case 'historyCherryPick':
         await this.runCherryPick(message.sha);
         break;

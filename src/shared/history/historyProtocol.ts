@@ -28,6 +28,7 @@ export type HistoryWebviewMessage =
   | { type: 'historyMerge'; ref: string }
   | { type: 'historyRebaseOnto'; ref: string }
   | { type: 'historyReset'; sha: string }
+  | { type: 'historyEditMessage'; sha: string }
   | { type: 'historyCherryPick'; sha: string }
   | { type: 'historyRevert'; sha: string }
   | { type: 'historyArchive'; ref: string }

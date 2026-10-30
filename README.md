@@ -16,6 +16,7 @@ Git Checkout runs on the **workspace** side, so Git always runs on the same mach
 - **Fetch, pull and push:** a form for the options, or Quick Fetch, Quick Pull and Quick Push for the tracked remote.
 - **Stashes, worktrees and submodules:** save, apply, pop and drop stashes; add, open and delete worktrees; initialize, update and sync submodules.
 - **Inline and status bar blame:** who last changed the line you are on, in faint text at its end and in the status bar. Hover it for the commit message with its issues and pull requests linked, the author's picture, and actions to show the commit in the graph, copy its hash, open the change the commit made, see the line's history or open it on GitHub.
+- **Edit any commit's message:** right-click a commit in the graph and choose Edit Commit Message…. A form shows the whole message; the commits after it are replayed with the same changes, authors and dates, and local changes are kept. It warns when a remote branch already has the commit, and stops for a commit on another branch or one followed by a merge.
 - **History tools:** file, folder and hunk history, a blame view that shows who last changed each line of a commit's change, cherry-pick, revert, reset, patches, archives (zip or tarball of any commit, branch or tag), and bisect.
 - **Housekeeping:** prune stale remote-tracking branches, delete merged branches, clean untracked files, sparse checkout, garbage collection, and repository statistics, all from Quick Launch.
 - **Pull requests:** open GitHub's new pull request page for a branch.

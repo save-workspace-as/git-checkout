@@ -40,6 +40,7 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
       op: 'squash',
       shas: ['aaa', 'bbb'],
     });
+    assert.deepEqual(message('gitCheckout.graph.editMessage'), { type: 'historyEditMessage', sha: 'aaa' });
     assert.deepEqual(message('gitCheckout.graph.newBranch'), { type: 'historyNewBranch', sha: 'aaa' });
     // A branch or tag the commit has is a better start point than its hash.
     const newBranch = GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.newBranch'];

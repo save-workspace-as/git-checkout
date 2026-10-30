@@ -72,6 +72,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyNewTag', sha: c.sha }),
   },
+  'gitCheckout.graph.editMessage': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyEditMessage', sha: c.sha }),
+  },
   'gitCheckout.graph.cherryPick': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyCherryPick', sha: c.sha }),

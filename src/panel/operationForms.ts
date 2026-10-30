@@ -148,6 +148,24 @@ export function resetForm(branch: string, target: string): OperationFormDefiniti
   };
 }
 
+/** Edit Commit Message: the commit it is for, with the whole message to change. */
+export function editCommitMessageForm(sha: string, subject: string, message: string, pushedTo: readonly string[]): OperationFormDefinition {
+  return {
+    title: l10n.t('Edit Commit Message'),
+    submitLabel: l10n.t('Edit Message'),
+    ...(pushedTo.length > 0
+      ? { notice: { kind: 'warning' as const, message: l10n.t("'{0}' already has this commit. Editing it rewrites history, so the branch needs a force push.", pushedTo[0]) } }
+      : {}),
+    values: { commit: `${sha.slice(0, 7)} ${subject}`, message },
+    fields: [
+      { id: 'commit', type: 'text', label: l10n.t('Commit'), readOnly: true,
+        description: l10n.t('The commit whose message changes. Its author, date and changes stay the same.') },
+      { id: 'message', type: 'text', label: l10n.t('Message'), multiline: true, required: true,
+        description: l10n.t('The subject, then a blank line, then the body.') },
+    ],
+  };
+}
+
 export function rebaseForm(
   source: string,
   target: string,

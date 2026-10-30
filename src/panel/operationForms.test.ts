@@ -10,6 +10,7 @@ import {
   remoteBranchDeleteForm,
   stashCreateForm,
   tagCreateForm,
+  editCommitMessageForm,
   validateBranchRenameForm,
   validateTagForm,
   worktreeCreateForm,
@@ -267,6 +268,26 @@ describe('operation-specific form definitions', () => {
   });
 });
 
+describe('edit commit message form', () => {
+  it('shows the commit and the whole message, and needs a message', () => {
+    const form = editCommitMessageForm('abcdef1234', 'subject', 'subject\n\nbody', []);
+    assert.equal(form.title, 'Edit Commit Message');
+    assert.equal(form.submitLabel, 'Edit Message');
+    assert.deepEqual(form.values, { commit: 'abcdef1 subject', message: 'subject\n\nbody' });
+    assert.deepEqual(form.fields.map((field) => field.id), ['commit', 'message']);
+    const message = form.fields.find((field) => field.id === 'message');
+    assert.equal(message?.type === 'text' && message.multiline, true);
+    assert.equal(message?.type === 'text' && message.required, true);
+    assert.equal(form.notice, undefined);
+  });
+
+  it('warns when a remote branch already has the commit', () => {
+    const form = editCommitMessageForm('abcdef1234', 's', 's', ['origin/main']);
+    assert.equal(form.notice?.kind, 'warning');
+    assert.match(form.notice?.message ?? '', /'origin\/main' already has this commit.*force push/);
+  });
+});
+
 describe('operation form wording', () => {
   const stash = { index: 0, selector: 'stash@{0}', sha: 'abc', message: 'wip' };
   const forms = [
@@ -279,7 +300,7 @@ describe('operation form wording', () => {
     tagCreateForm('HEAD', true), branchRenameForm('a', { remote: 'origin', branch: 'a' }),
     branchDeleteForm('a', null), remoteBranchDeleteForm('origin/a'),
     upstreamRefForm({ remoteBranches: [], branches: [] } as never, 'a'),
-    stashCreateForm(true), submoduleAddForm(), remoteAddForm([]),
+    stashCreateForm(true), submoduleAddForm(), remoteAddForm([]), editCommitMessageForm('abcdef1234', 'subject', 'subject\n\nbody', []),
   ];
 
   it('gives every form a submit label that names its action', () => {

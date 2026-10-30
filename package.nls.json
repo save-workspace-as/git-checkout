@@ -467,5 +467,7 @@
   "command.gitCheckout.blame.openChanges.category": "Git Checkout",
   "config.gitCheckout.blame.hover.over.description": "Where hovering shows the commit of the cursor line.",
   "config.gitCheckout.blame.hover.over.annotation": "Only on the blame text at the end of the line.",
-  "config.gitCheckout.blame.hover.over.line": "Anywhere on the line."
+  "config.gitCheckout.blame.hover.over.line": "Anywhere on the line.",
+  "command.gitCheckout.graph.editMessage.title": "Edit Commit Message…",
+  "command.gitCheckout.graph.editMessage.category": "Git Checkout"
 }
