@@ -39,6 +39,7 @@ import { showGitCheckoutQuickLaunch } from './panel/quickLaunch';
 import { LineBlameController } from './features/blame/LineBlameController';
 import { LineBlameService } from './features/blame/lineBlameService';
 import { ignoreRevsEnabled } from './features/blame/blameSettings';
+import { RemoteLinkController } from './features/history/RemoteLinkController';
 import { FileBlameController } from './features/blame/FileBlameController';
 import { BlameCodeLensProvider } from './features/blame/BlameCodeLensProvider';
 
@@ -133,6 +134,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   watchService.syncRepositories();
   void panelManager.syncRepoOperationContext();
 
+  const remoteLinks = new RemoteLinkController(gitService, cliRegistry, () => panelManager.activeRepoRoot() ?? undefined);
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gitCheckout.remote.openFile', (arg?: unknown) => remoteLinks.openFile(arg)),
+    vscode.commands.registerCommand('gitCheckout.remote.copyFileLink', (arg?: unknown) => remoteLinks.copyFileLink(arg)),
+    vscode.commands.registerCommand('gitCheckout.remote.openRepository', () => remoteLinks.openRepository()),
+    vscode.commands.registerCommand('gitCheckout.graph.openOnGitHub', (graphContext?: GraphCommitContext) => remoteLinks.openCommit(graphContext?.sha)),
+    vscode.commands.registerCommand('gitCheckout.graph.copyGitHubLink', (graphContext?: GraphCommitContext) => remoteLinks.copyCommitLink(graphContext?.sha)),
+  );
   const blameService = new LineBlameService(cliRegistry, ignoreRevsEnabled);
   const lineBlame = new LineBlameController(gitService, blameService, panelManager, watchService.onDidRefresh);
   const fileBlame = new FileBlameController(gitService, blameService, (target) => lineBlame.hoverMarkdown(target), watchService.onDidRefresh);

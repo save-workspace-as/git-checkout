@@ -490,5 +490,17 @@
   "command.gitCheckout.blame.openInBlame.title": "Show Blame at Commit",
   "command.gitCheckout.blame.openInBlame.category": "Git Checkout",
   "command.gitCheckout.blame.stepBack.title": "Blame Before This Change",
-  "command.gitCheckout.blame.stepBack.category": "Git Checkout"
+  "command.gitCheckout.blame.stepBack.category": "Git Checkout",
+  "command.gitCheckout.remote.openFile.title": "Open File on GitHub",
+  "command.gitCheckout.remote.openFile.category": "Git Checkout",
+  "command.gitCheckout.remote.copyFileLink.title": "Copy GitHub Link to File",
+  "command.gitCheckout.remote.copyFileLink.category": "Git Checkout",
+  "command.gitCheckout.remote.openRepository.title": "Open Repository on GitHub",
+  "command.gitCheckout.remote.openRepository.category": "Git Checkout",
+  "command.gitCheckout.graph.openOnGitHub.title": "Open Commit on GitHub",
+  "command.gitCheckout.graph.openOnGitHub.category": "Git Checkout",
+  "command.gitCheckout.graph.copyGitHubLink.title": "Copy GitHub Link to Commit",
+  "command.gitCheckout.graph.copyGitHubLink.category": "Git Checkout",
+  "command.gitCheckout.sidebar.openRemote.title": "Open Remote in Browser",
+  "command.gitCheckout.sidebar.openRemote.category": "Git Checkout"
 }

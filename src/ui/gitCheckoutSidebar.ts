@@ -340,6 +340,7 @@ export function registerGitCheckoutSidebar(
       });
     },
     [SIDEBAR_COMMANDS.removeRemote]: withRef((name) => mutate({ op: 'remoteRemove', name })),
+    [SIDEBAR_COMMANDS.openRemote]: withRef((name) => panel.runOpenRemote(name)),
     [SIDEBAR_COMMANDS.editRemote]: withRef((name) => mutate({ op: 'remoteEdit', name })),
     [SIDEBAR_COMMANDS.createStash]: (arg?: unknown) => panel.runCreateStash(arg),
     [SIDEBAR_COMMANDS.clearStashes]: () => panel.runClearStashes(),
