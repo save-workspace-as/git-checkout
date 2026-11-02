@@ -9,7 +9,7 @@ import {
     mockRepository,
 } from '../../core/testing/serviceTestUtils';
 import { GitChangeStatus, type GitChange } from '../../core/vscodeGitApi';
-import { MAX_PATHS_PER_COMMAND, WorkingTreeService, parsePorcelainStatus } from './workingTreeService';
+import { MAX_PATHS_PER_COMMAND, WorkingTreeService, parseBranchStatus, parsePorcelainStatus } from './workingTreeService';
 
 const REPO = '/repo';
 
@@ -235,5 +235,22 @@ describe('WorkingTreeService working copy', () => {
       await svc.runActions(REPO, []);
       assert.deepEqual(calls, []);
     });
+  });
+});
+
+describe('parseBranchStatus', () => {
+  it('reads the branch, how far it is from its upstream, and counts the changes', () => {
+    assert.deepEqual(parseBranchStatus('## main...origin/main [ahead 1, behind 2]\n M a.txt\nA  b.txt\n?? c.txt\n'), {
+      branch: 'main', upstreamTrack: '[ahead 1, behind 2]', changedCount: 3,
+    });
+    assert.deepEqual(parseBranchStatus('## feat/x...origin/feat/x\n'), { branch: 'feat/x', upstreamTrack: null, changedCount: 0 });
+    assert.deepEqual(parseBranchStatus('## main...origin/main [gone]\n'), { branch: 'main', upstreamTrack: '[gone]', changedCount: 0 });
+    assert.deepEqual(parseBranchStatus('## local-only\n M a.txt\n'), { branch: 'local-only', upstreamTrack: null, changedCount: 1 });
+  });
+
+  it('has no branch for a detached HEAD, and names the branch of a repository with no commit yet', () => {
+    assert.deepEqual(parseBranchStatus('## HEAD (no branch)\n'), { branch: null, upstreamTrack: null, changedCount: 0 });
+    assert.deepEqual(parseBranchStatus('## No commits yet on main\n?? a.txt\n'), { branch: 'main', upstreamTrack: null, changedCount: 1 });
+    assert.deepEqual(parseBranchStatus(''), { branch: null, upstreamTrack: null, changedCount: 0 });
   });
 });

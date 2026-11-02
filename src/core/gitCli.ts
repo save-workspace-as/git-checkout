@@ -108,6 +108,12 @@ export interface GitExecOptions {
   cancellationToken?: CancellationToken;
   showErrorToast?: boolean;
   network?: boolean;
+  /**
+   * For a write that does not touch the index or the working tree, such as a fetch: it does not wait for the other writes
+   * of the repository or hold the reads back while it runs. A fetch of many branches can take minutes, and the status, the
+   * refs and the graph should not wait for it.
+   */
+  concurrent?: boolean;
   /** When true, stdout is returned as raw bytes (latin1 round-trip safe for base64). */
   binaryStdout?: boolean;
   /** Extra environment variables for the git child process. */
@@ -189,6 +195,9 @@ export class GitCli {
   }
 
   async execWrite(args: string[], options?: GitExecOptions): Promise<GitExecResult> {
+    if (options?.concurrent) {
+      return this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true);
+    }
     return this.queue.runWrite(() => this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true));
   }
 

@@ -151,3 +151,33 @@ describe('GitCli environment', { skip: process.platform === 'win32' }, () => {
     });
   });
 });
+
+describe('GitCli concurrent writes', { skip: process.platform === 'win32' }, () => {
+  /** A `git` whose `fetch` takes a while and whose other commands answer at once. */
+  function withSlowFetch<T>(run: (cli: GitCli) => Promise<T>): Promise<T> {
+    const dir = mkdtempSync(join(tmpdir(), 'git-checkout-fake-git-'));
+    const script = join(dir, 'git');
+    writeFileSync(script, '#!/bin/sh\ncase " $* " in *" fetch "*) sleep 1; printf fetch;; *) printf other;; esac\n');
+    chmodSync(script, 0o755);
+    return run(new GitCli(script, dir, new GitOperationQueue())).finally(() => rmSync(dir, { recursive: true, force: true }));
+  }
+
+  it('holds the reads back behind a fetch that is a write, but not behind one that is concurrent', async () => {
+    await withSlowFetch(async (cli) => {
+      const timeOf = async (task: Promise<unknown>): Promise<number> => {
+        const start = Date.now();
+        await task;
+        return Date.now() - start;
+      };
+      const queued = cli.execWrite(['fetch']);
+      const waited = await timeOf(cli.execRead(['status']));
+      await queued;
+      assert.ok(waited >= 800, `the read waited ${waited}ms for the fetch`);
+
+      const background = cli.execWrite(['fetch'], { concurrent: true });
+      const free = await timeOf(cli.execRead(['status']));
+      assert.ok(free < 500, `the read took ${free}ms beside the fetch`);
+      assert.equal((await background).stdout, 'fetch');
+    });
+  });
+});

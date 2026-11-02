@@ -124,7 +124,7 @@ export class InteractiveRebaseService {
         });
       }
       const todo = serializeRebaseTodo(lines);
-      const { sequenceEditor } = writeTempRebaseTodo(todo);
+      const { sequenceEditor, cleanup } = writeTempRebaseTodo(todo);
       const args = ['rebase', '-i'];
       if (options.updateRefs) {
         args.push('--update-refs');
@@ -136,8 +136,13 @@ export class InteractiveRebaseService {
       const execOpts = this.execOptions(options.cancellationToken, {
         GIT_SEQUENCE_EDITOR: sequenceEditor,
       });
-      // execWrite already takes the repo write lock. Wrapping it in runWrite deadlocks the queue.
-      await cli.execWrite(args, execOpts);
+      try {
+        // execWrite already takes the repo write lock. Wrapping it in runWrite deadlocks the queue.
+        await cli.execWrite(args, execOpts);
+      } finally {
+        // Git has read the todo by the time the rebase finishes or stops.
+        cleanup();
+      }
       await this.cleanupMessages(repoRoot);
     };
 

@@ -165,4 +165,25 @@ describe('WorkingTreeService integration', () => {
       temp.cleanup();
     }
   });
+
+  it('summarizes a repository with one status: its branch, its upstream and its changes', async () => {
+    const temp = initTempRepository();
+    try {
+      writeFileSync(path.join(temp.repoRoot, 'a.txt'), 'a\n');
+      runGit(temp.repoRoot, ['add', 'a.txt']);
+      runGit(temp.repoRoot, ['commit', '-m', 'init']);
+      runGit(temp.repoRoot, ['branch', 'upstream']);
+      runGit(temp.repoRoot, ['branch', '--set-upstream-to=upstream']);
+      writeFileSync(path.join(temp.repoRoot, 'a.txt'), 'changed\n');
+      writeFileSync(path.join(temp.repoRoot, 'new.txt'), 'new\n');
+      const svc = new WorkingTreeService(mockGitExtensionService([]), mockCliRegistry(temp.repoRoot, temp.cli));
+
+      const summary = await svc.summary(temp.repoRoot);
+      assert.ok(summary.branch);
+      assert.equal(summary.upstreamTrack, null);
+      assert.equal(summary.changedCount, 2);
+    } finally {
+      temp.cleanup();
+    }
+  });
 });
