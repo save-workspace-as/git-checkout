@@ -51,6 +51,10 @@ const touched = run('sh', ['-c', "git log --name-only --format= | grep -E '\\.(t
 const historyFile = (touched.find((match) => Number(match[1]) === 4) ?? touched.find((match) => Number(match[1]) >= 3) ?? touched[0])[2];
 console.log(`history of ${historyFile}`);
 
+// The file the demo changed but did not stage, for the shots of the Changes section.
+const changedFile = run('sh', ['-c', "git status --porcelain | grep '^ M' | head -1 | cut -c4-"], { cwd: join(work, 'stage', 'git-checkout') });
+console.log(`unstaged change in ${changedFile}`);
+
 const swift = join(work, 'window');
 if (!existsSync(swift)) { run('swiftc', ['-o', swift, join(here, 'window.swift')]); }
 
@@ -67,7 +71,7 @@ async function openWindow(folder, port) {
     'telemetry.telemetryLevel': 'off', 'update.mode': 'none', 'extensions.autoCheckUpdates': false, 'extensions.autoUpdate': false,
     'chat.disableAIFeatures': true, 'window.commandCenter': false, 'window.title': 'Git Checkout — ${rootName}',
     'window.titleBarStyle': 'custom', 'security.workspace.trust.enabled': false, 'editor.minimap.enabled': false,
-    'git.autofetch': false, 'git.blame.statusBarItem.enabled': false, 'gitCheckout.autoFetch.enabled': false, 'gitCheckout.graph.githubAvatars': true, 'gitCheckout.graph.gravatar': false,
+    'git.autofetch': false, 'gitCheckout.pullRequests.enabled': false, 'typescript.validate.enable': false, 'javascript.validate.enable': false, 'git.blame.statusBarItem.enabled': false, 'gitCheckout.autoFetch.enabled': false, 'gitCheckout.graph.githubAvatars': true, 'gitCheckout.graph.gravatar': false,
   }, null, 2));
   // The commands that open a modal for a file need the file; a key runs each.
   const context = { webviewSection: 'commitTree', commitTreeKind: 'blob', path: historyFile, preventDefaultContextMenuItems: true };
@@ -139,32 +143,48 @@ function tools(window) {
       await page.keyboard.press('Enter'); await sleep(800);
     },
     async openGitCheckout() {
-      await page.locator('.activitybar .action-item').nth(5).click(); await sleep(800);
+      await t.command('View: Show Git Checkout'); await sleep(800);
       await t.command('Git Checkout: Open'); await sleep(4000);
-      await page.getByText('Worktrees', { exact: true }).first().click().catch(() => {});
     },
-    tab: async (name) => { await page.getByRole('tab', { name: new RegExp(`^${name}`) }).first().click(); await sleep(1200); },
-    maximize: async () => { await page.locator('.part.panel [aria-label="Maximize Panel"]').first().click(); await sleep(1000); },
-    restore: async () => { await page.locator('.part.panel [aria-label="Restore Panel"]').first().click(); await sleep(1000); },
-    /** The bottom panel drawn down to its tab bar, so a view above it has the room. */
-    async collapsePanel() {
-      const r = await page.evaluate(() => { const p = document.querySelector('.part.panel').getBoundingClientRect(); return { top: p.top, h: p.height }; });
-      if (r.h < 120) { return; }
-      await page.mouse.move(700, r.top - 2); await page.mouse.down();
-      await page.mouse.move(700, r.top + 100, { steps: 6 }); await page.mouse.move(700, 800, { steps: 10 });
-      await page.mouse.up(); await sleep(900);
+    /** Opens or folds one collapsible of the Git Checkout sidebar. */
+    async section(name, open) {
+      const header = page.locator('.pane-header').filter({ has: page.locator('.title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
+      if (await header.count() === 0) { return; }
+      const expanded = (await header.getAttribute('aria-expanded')) === 'true';
+      if (expanded !== open) { await header.click(); await sleep(700); }
     },
-    async expandPanel() {
-      const r = await page.evaluate(() => { const p = document.querySelector('.part.panel').getBoundingClientRect(); return { top: p.top, h: p.height }; });
-      if (r.h > 200) { return; }
-      await page.mouse.move(700, r.top - 2); await page.mouse.down();
-      await page.mouse.move(700, r.top - 150, { steps: 8 }); await page.mouse.move(700, 570, { steps: 8 });
-      await page.mouse.up(); await sleep(900);
+    /** Opens exactly the collapsibles named, so the ones shown have the room. */
+    async layout(...open) {
+      for (const name of SECTIONS) { await t.section(name, open.includes(name)); }
+      await sleep(600);
+    },
+    /** A row of a native list in the sidebar, by its text. */
+    row: (text) => page.locator('.pane-body .monaco-list-row').filter({ hasText: text }).first(),
+    async clickRow(text) { await t.row(text).click(); await sleep(1800); },
+    /** Sets the height of one collapsible by dragging the sash at its bottom edge. */
+    async setHeight(name, px) {
+      const pane = page.locator('.pane').filter({ has: page.locator('.pane-header .title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
+      const box = await pane.boundingBox();
+      if (!box) { return; }
+      const x = box.x + box.width / 2;
+      const y = box.y + box.height;
+      await page.mouse.move(x, y); await page.mouse.down();
+      await page.mouse.move(x, y - (box.height - px), { steps: 8 }); await page.mouse.up(); await sleep(600);
+    },
+    /** Closes the tab in front, the diff or the preview a shot opened. */
+    async closeTab() { await page.keyboard.press('Meta+w'); await sleep(700); },
+    /** Brings the graph forward again after a diff or a preview opened in front of it. */
+    async showGraph() { await page.locator('.tabs-container .tab').filter({ hasText: /^Git Checkout/ }).first().click(); await sleep(900); },
+    /** The first row of the list in one collapsible. */
+    async clickFirstRow(name) {
+      const pane = page.locator('.pane').filter({ has: page.locator('.pane-header .title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
+      await pane.locator('.monaco-list-row').first().click(); await sleep(1800);
     },
   };
   return t;
 }
 
+const SECTIONS = ['Repositories', 'Commit Message', 'Changes', 'Commit', 'File Tree', 'Repository', 'Pull Requests'];
 const pickCommit = async (graph, index) => { await graph.locator('.graph-row .graph-subject').nth(index).click(); await sleep(800); };
 const clearSearch = async (graph, page) => {
   await graph.locator('vscode-textfield.graph-search').click();
@@ -180,12 +200,10 @@ try {
   const { page } = t;
   await t.openGitCheckout();
   const graph = await t.graph();
-  await t.expandPanel();
   await pickCommit(graph, 5);
-  await t.tab('Commit');
+  await t.layout('Changes');
 
-  // The three modals and the graph with the bottom panel drawn down to its tab bar.
-  await t.collapsePanel();
+  // The three modals, over the graph.
   if (wanted('08')) { await page.keyboard.press('Control+Alt+Shift+h'); await sleep(3500); await t.shot('08', 'file-history'); await page.keyboard.press('Escape'); await sleep(800); }
   if (wanted('09')) { await page.keyboard.press('Control+Alt+Shift+b'); await sleep(3500); await t.shot('09', 'blame'); await page.keyboard.press('Escape'); await sleep(800); }
   if (wanted('11')) {
@@ -194,21 +212,20 @@ try {
     await t.shot('11', 'interactive-rebase'); await page.keyboard.press('Escape'); await sleep(800);
   }
   await pickCommit(graph, 5);
-  if (wanted('01')) { await t.shot('01', 'commit-graph'); }
+  if (wanted('01')) { await t.layout('Commit'); await t.shot('01', 'commit-graph'); }
   if (wanted('02')) {
     await graph.locator('vscode-textfield.graph-search').click();
     await page.keyboard.type(`path:${historyFile.split('/').slice(0, -1).join('/') || historyFile}`); await page.keyboard.press('Enter'); await sleep(2500);
     await t.shot('02', 'graph-search');
     await clearSearch(graph, page);
   }
-
-  // The rest need the bottom panel open.
-  await t.expandPanel();
   if (wanted('10')) { await pickCommit(graph, 5); await page.keyboard.press('Meta+p'); await sleep(1500); await t.shot('10', 'quick-launch'); await page.keyboard.press('Escape'); await sleep(600); }
+
+  // A change picked in the sidebar opens its diff as a tab beside the graph.
   if (wanted('03') || wanted('13')) {
-    await t.tab('Changes');
-    await page.getByText(historyFile.split('/').pop()).first().click().catch(() => {}); await sleep(1500);
-    await t.maximize();
+    await t.layout('Commit Message', 'Changes');
+    await t.setHeight('Commit Message', 240);
+    await t.clickRow(changedFile.split('/').pop());
     if (wanted('03')) { await t.shot('03', 'stage-and-unstage'); }
     if (wanted('13')) {
       const diff = await t.find(() => document.querySelectorAll('.commit-diff-line[data-line]').length > 0);
@@ -221,26 +238,31 @@ try {
       await sleep(700);
       await t.shot('13', 'stage-lines');
     }
-    await t.restore();
+    await t.closeTab();
   }
-  if (wanted('04')) { await pickCommit(graph, 5); await t.tab('Commit'); await t.maximize(); await t.shot('04', 'commit-details'); await t.restore(); }
+  // A file of a commit opens its diff the same way.
+  if (wanted('04')) { await t.showGraph(); await t.layout('Commit'); await pickCommit(graph, 5); await t.clickRow('.ts'); await t.shot('04', 'commit-details'); await t.closeTab(); }
   if (wanted('07')) {
-    await graph.getByText('refresh the extension icon').first().click(); await sleep(800);
-    await t.tab('Commit'); await t.maximize();
-    await page.getByText('icon.png', { exact: true }).first().click(); await sleep(2500);
-    await t.shot('07', 'image-diff'); await t.restore();
+    await t.showGraph();
+    await graph.locator('.graph-subject').filter({ hasText: /^feat\(branding\): refresh the extension icon$/ }).first().click(); await sleep(800);
+    await t.layout('Commit');
+    await t.clickRow('icon.png');
+    await t.shot('07', 'image-diff');
+    await t.closeTab();
   }
   if (wanted('05') || wanted('06')) {
-    await t.tab('File Tree'); await t.maximize();
-    await page.getByText('src', { exact: true }).last().click().catch(() => {}); await sleep(800);
+    await t.showGraph();
+    await t.layout('File Tree');
+    await t.row('src').click().catch(() => {}); await sleep(800);
     if (wanted('05')) { await t.shot('05', 'file-tree'); }
     if (wanted('06')) {
-      await page.getByText('resources', { exact: true }).last().click(); await sleep(800);
-      await page.getByText('icon.png', { exact: true }).last().click(); await sleep(2000);
+      await t.row('resources').click(); await sleep(800);
+      await t.clickRow('icon.png');
       await t.shot('06', 'image-preview');
+      await t.closeTab();
     }
-    await t.restore();
   }
+  if (wanted('14') || wanted('15')) { await t.showGraph(); await t.layout('Repositories', 'Changes'); }
   if (wanted('14')) {
     // The file in an editor, the cursor on a line, and the hover of the blame at its end.
     await page.keyboard.press('Control+Alt+Shift+o'); await sleep(1200); await page.keyboard.press('Enter'); await sleep(2500);
@@ -270,7 +292,7 @@ if (wanted('12')) {
   try {
     const t = tools(merge);
     await t.openGitCheckout();
-    await t.page.keyboard.press('Meta+j'); await sleep(1500); // the bottom panel is not in this shot
+    await t.layout('Changes');
     await t.page.getByRole('button', { name: 'Resolve', exact: true }).first().click().catch(async () => {
       const graph = await t.graph();
       await graph.getByText('Resolve', { exact: true }).first().click();

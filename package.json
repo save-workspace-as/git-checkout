@@ -21,7 +21,7 @@
     "colors": [
       {
         "defaults": {
-          "dark": "#ff7b4a55",
+          "dark": "#ff7b4a1c",
           "highContrast": "#ff7b4a99",
           "highContrastLight": "#ff7b4a99",
           "light": "#ff7b4a66"
@@ -31,7 +31,7 @@
       },
       {
         "defaults": {
-          "dark": "#ffb74a48",
+          "dark": "#ffb74a1a",
           "highContrast": "#ffb74a80",
           "highContrastLight": "#ffb74a80",
           "light": "#ffb74a5a"
@@ -41,7 +41,7 @@
       },
       {
         "defaults": {
-          "dark": "#e8d44d3a",
+          "dark": "#e8d44d16",
           "highContrast": "#e8d44d70",
           "highContrastLight": "#e8d44d70",
           "light": "#e8d44d55"
@@ -51,7 +51,7 @@
       },
       {
         "defaults": {
-          "dark": "#73c99130",
+          "dark": "#73c99114",
           "highContrast": "#73c99165",
           "highContrastLight": "#73c99165",
           "light": "#73c99150"
@@ -61,7 +61,7 @@
       },
       {
         "defaults": {
-          "dark": "#6a9bd822",
+          "dark": "#6a9bd812",
           "highContrast": "#6a9bd855",
           "highContrastLight": "#6a9bd855",
           "light": "#6a9bd840"

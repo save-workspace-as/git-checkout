@@ -3,7 +3,8 @@ import CoreGraphics
 import Foundation
 
 let want = Int32(CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "0") ?? 0
-let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as! [[String: Any]]
+// Only a window that is on screen has anything to capture; the others of the process come out blank.
+let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly], kCGNullWindowID) as! [[String: Any]]
 for window in list {
   let pid = window["kCGWindowOwnerPID"] as? Int32 ?? 0
   let bounds = window["kCGWindowBounds"] as? [String: Any] ?? [:]
