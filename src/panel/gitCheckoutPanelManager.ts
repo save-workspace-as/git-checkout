@@ -35,7 +35,6 @@ import { RepoOperationService } from '../features/operations/repoOperationServic
 import { CommitDetailsService } from '../features/history/commitDetailsService';
 import { WorkingTreeService } from '../features/changes/workingTreeService';
 import { createLogger } from '../log';
-import type { WorktreeStatusDto } from '../shared/changes/dailyGitProtocol';
 import { type BisectMark } from '../shared/bisect/bisectProtocol';
 import { ALL_COMMITS_FILTER, type GraphCommitContext } from '../shared/graph/graphProtocol';
 import { IDLE_REPO_OPERATION } from '../shared/history/historyProtocol';
@@ -1801,12 +1800,15 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   loadSidebarData(repoRoot?: string): Promise<{
     snapshot: RefsSnapshotDto;
-    worktree: WorktreeStatusDto;
     stashes: StashEntryDto[];
     worktrees: GitWorktreeDto[];
     submodules: GitSubmoduleDto[];
   } | null> {
     return this.refs.loadSidebarData(repoRoot);
+  }
+
+  loadRepositorySummary(repoRoot: string): ReturnType<RefsController['loadRepositorySummary']> {
+    return this.refs.loadRepositorySummary(repoRoot);
   }
 
   /** A second request while every commit is already shown jumps to HEAD. */

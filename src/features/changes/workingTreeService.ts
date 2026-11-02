@@ -59,6 +59,17 @@ export class WorkingTreeService {
     return parsePorcelainStatus(result.stdout);
   }
 
+  /**
+   * One `git status` for the row of a repository, instead of everything the sidebar's sections need. It leaves out what
+   * changed inside submodules, which git otherwise checks one submodule at a time, and the row only counts changes.
+   */
+  async summary(repoRoot: string): Promise<RepositorySummary> {
+    const result = await this.cliRegistry
+      .getOrCreate(repoRoot)
+      .execRead(['status', '--porcelain=v1', '--branch', '--ignore-submodules=dirty']);
+    return parseBranchStatus(result.stdout);
+  }
+
   async listChanges(repoRoot: string): Promise<WorkingCopyEntryDto[]> {
     const repo = this.gitService.getRepositories().find((r) => r.rootUri.fsPath === repoRoot);
     if (!repo) {
@@ -261,6 +272,29 @@ export class WorkingTreeService {
     }
     return repo;
   }
+}
+
+/** What a repository's row says: its branch, how far it is from its upstream, and how many changes it has. */
+export interface RepositorySummary {
+  /** The checked-out branch; null while HEAD is detached or the repository has no commit yet. */
+  branch: string | null;
+  /** The upstream's state as `git for-each-ref` words it, such as `[ahead 1, behind 2]` or `[gone]`. */
+  upstreamTrack: string | null;
+  changedCount: number;
+}
+
+/** Reads `git status --porcelain=v1 --branch`: its first line says where the branch stands, and the rest are the changes. */
+export function parseBranchStatus(output: string): RepositorySummary {
+  const [first = '', ...rest] = output.split(/\r?\n/);
+  const counts = parsePorcelainStatus(rest.join('\n'));
+  let branch: string | null = null;
+  let upstreamTrack: string | null = null;
+  const header = /^## (?:No commits yet on |Initial commit on )?(.+?)(?:\.\.\.(\S+?))?(?: (\[.*\]))?$/.exec(first);
+  if (header && !header[1].startsWith('HEAD (no branch)')) {
+    branch = header[1];
+    upstreamTrack = header[3] ?? null;
+  }
+  return { branch, upstreamTrack, changedCount: counts.stagedCount + counts.unstagedCount };
 }
 
 export function parsePorcelainStatus(output: string): WorktreeStatusDto {

@@ -104,7 +104,7 @@ export class RemoteSyncService {
       }
       log.info(`${args.join(' ')} in ${repoRoot}`);
       if (choices.all || tags) {
-        await this.cliRegistry.getOrCreate(repoRoot).execWrite(args, { ...execOpts, network: true });
+        await this.cliRegistry.getOrCreate(repoRoot).execWrite(args, { ...execOpts, network: true, concurrent: true });
         return;
       }
       await this.runApiOrCli(repoRoot, () => repo.fetch({ remote: choices.remote }), args, execOpts);

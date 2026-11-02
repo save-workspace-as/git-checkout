@@ -190,7 +190,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     async fetch(root) {
       await cliRegistry.getOrCreate(root).execWrite(
         ['fetch', '--all', ...(settings.fetchIncludeTags() ? ['--tags'] : [])],
-        { network: true, timeoutMs: settings.networkTimeoutMs() },
+        { network: true, concurrent: true, timeoutMs: settings.networkTimeoutMs() },
       );
     },
   });

@@ -1,5 +1,7 @@
 import { REVEAL_COMMAND_BASES, platformCommandIds } from '../shared/app/platformCommands';
 import { basename } from 'node:path';
+import { Debouncer } from '../core/debounce';
+import { sameWorktreePath } from '../features/worktrees/worktreeParser';
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { changeCountBadge, parseCountBadgeMode } from './changeCountBadge';
@@ -183,12 +185,18 @@ function sidebarTreeItem(node: SidebarNode): vscode.TreeItem {
 class RepositoriesProvider implements vscode.TreeDataProvider<SidebarNode> {
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
-  private nodes: Promise<SidebarNode[]> | undefined;
+  /** One row for each repository, kept until something in that repository changes. */
+  private readonly rows = new Map<string, Promise<SidebarNode>>();
 
   constructor(private readonly panel: GitCheckoutPanelManager) {}
 
-  refresh(): void {
-    this.nodes = undefined;
+  /** Reads one repository's row again, or every row, and tells the view. */
+  refresh(root?: string): void {
+    if (root === undefined || !this.rows.has(root)) {
+      this.rows.clear();
+    } else {
+      this.rows.delete(root);
+    }
     this._onDidChangeTreeData.fire();
   }
 
@@ -208,8 +216,7 @@ class RepositoriesProvider implements vscode.TreeDataProvider<SidebarNode> {
     if (node) {
       return Promise.resolve([]);
     }
-    this.nodes ??= this.load();
-    return this.nodes;
+    return Promise.all(this.panel.repositoryRoots().map((root) => this.row(root)));
   }
 
   /** The row of a repository, for selecting it in the view. */
@@ -217,19 +224,19 @@ class RepositoriesProvider implements vscode.TreeDataProvider<SidebarNode> {
     return (await this.getChildren()).find((node) => node.repoRoot === root);
   }
 
-  private load(): Promise<SidebarNode[]> {
-    return Promise.all(
-      this.panel.repositoryRoots().map(async (root) => {
-        try {
-          const data = await this.panel.loadSidebarData(root);
-          const head = data?.snapshot.branches.find((branch) => branch.isHead);
-          return repositoryNode(root, basename(root), data?.snapshot.headRef ?? null, head?.upstreamTrack ?? null, data ? data.worktree.stagedCount + data.worktree.unstagedCount : 0);
-        } catch (error) {
+  private row(root: string): Promise<SidebarNode> {
+    let row = this.rows.get(root);
+    if (!row) {
+      row = this.panel.loadRepositorySummary(root).then(
+        (summary) => repositoryNode(root, basename(root), summary.branch && `refs/heads/${summary.branch}`, summary.upstreamTrack, summary.changedCount),
+        (error: unknown) => {
           log.warn(`could not read ${root}`, error);
           return repositoryNode(root, basename(root), null, null, 0);
-        }
-      }),
-    );
+        },
+      );
+      this.rows.set(root, row);
+    }
+    return row;
   }
 }
 
@@ -280,6 +287,29 @@ export function registerGitCheckoutSidebar(
       setTimeout(() => { highlighting = false; }, 100);
     }
   }
+  // Events come in bursts: a file change, the command that made it, the watcher's own report. One refresh covers them,
+  // and a change in another repository only reads that repository's row again.
+  const refreshLater = new Debouncer(150);
+  let everythingChanged = false;
+  const changedElsewhere = new Set<string>();
+  const refreshSoon = (root?: string): void => {
+    const active = panel.activeRepoRoot();
+    if (root === undefined || !active || sameWorktreePath(root, active)) {
+      everythingChanged = true;
+    } else {
+      changedElsewhere.add(root);
+    }
+    refreshLater.schedule(() => {
+      const rows = [...changedElsewhere];
+      changedElsewhere.clear();
+      if (everythingChanged) {
+        everythingChanged = false;
+        refreshAll();
+        return;
+      }
+      rows.forEach((row) => repositories.refresh(row));
+    });
+  };
   const setSearchQuery = (query: string): void => {
     search.query = query.trim();
     void vscode.commands.executeCommand('setContext', 'gitCheckout.sidebarSearching', search.query.length > 0);
@@ -331,14 +361,16 @@ export function registerGitCheckoutSidebar(
   }
   updateBadge();
   context.subscriptions.push(
-    gitService.onDidChangeDiagnostics(refreshAll),
+    { dispose: () => refreshLater.dispose() },
+    gitService.onDidChangeDiagnostics(() => refreshSoon()),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('scm.countBadge')) { updateBadge(); }
     }),
-    vscode.workspace.onDidChangeWorkspaceFolders(refreshAll),
-    watchService.onDidRefresh(refreshAll),
+    vscode.workspace.onDidChangeWorkspaceFolders(() => refreshSoon()),
+    watchService.onDidRefresh((event) => refreshSoon(event.repoRoot)),
+    // A pull request list changing is a single event, not a burst, so it shows at once.
     ...(pullRequests ? [pullRequests.onDidChange(refreshAll)] : []),
-    panel.onDidChangeRefs(refreshAll),
+    panel.onDidChangeRefs(() => refreshSoon()),
   );
 
   const withRef =

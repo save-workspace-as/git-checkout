@@ -1,15 +1,17 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { defaultStartRef } from '../graph/commitGraphService';
 import { GitCliError } from '../../core/gitCliError';
 import { createLogger } from '../../log';
-import type { WorktreeStatusDto } from '../../shared/changes/dailyGitProtocol';
 import { ALL_COMMITS_FILTER } from '../../shared/graph/graphProtocol';
 import type { RefsMutateOp, RefsSnapshotDto } from '../../shared/branches/refsProtocol';
 import { type StashEntryDto } from '../../shared/stash/stashProtocol';
 import type { GitSubmoduleDto } from '../../shared/submodules/submoduleProtocol';
 import type { GitWorktreeDto } from '../../shared/worktrees/worktreeProtocol';
 import { copyTextToClipboard } from '../../panel/clipboardHost';
+import type { RepositorySummary } from '../changes/workingTreeService';
 import { runRefsMutation } from './refsMutationsHost';
 import { promptUpstreamRef } from './setUpstreamHost';
 import { tagDetailsForm } from '../../panel/operationForms';
@@ -55,7 +57,6 @@ export class RefsController {
 
   async loadSidebarData(repoRoot?: string): Promise<{
     snapshot: RefsSnapshotDto;
-    worktree: WorktreeStatusDto;
     stashes: StashEntryDto[];
     worktrees: GitWorktreeDto[];
     submodules: GitSubmoduleDto[];
@@ -65,9 +66,10 @@ export class RefsController {
     if (!root || !this.ctx.graphReady()) {
       return null;
     }
-    const [snapshot, worktree, stashes, worktrees, submodules] = await Promise.all([
+    // A repository without a .gitmodules file has no submodules; `git submodule status --recursive` is the slowest of these calls.
+    const hasSubmodules = existsSync(join(root, '.gitmodules'));
+    const [snapshot, stashes, worktrees, submodules] = await Promise.all([
       this.ctx.refsService.loadSnapshot(root),
-      this.ctx.workingTreeService.getStatus(root),
       this.ctx.stashService.list(root).catch((error: unknown) => {
         log.warn('stash list failed', error);
         return [];
@@ -76,12 +78,19 @@ export class RefsController {
         log.warn('worktree list failed', error);
         return [];
       }),
-      this.ctx.submoduleService.list(root).catch((error: unknown) => {
-        log.warn('submodule list failed', error);
-        return [];
-      }),
+      hasSubmodules
+        ? this.ctx.submoduleService.list(root).catch((error: unknown) => {
+            log.warn('submodule list failed', error);
+            return [];
+          })
+        : Promise.resolve([]),
     ]);
-    return { snapshot, worktree, stashes, worktrees, submodules };
+    return { snapshot, stashes, worktrees, submodules };
+  }
+
+  /** The branch, upstream state and change count of a repository: one `git status`, for a row of the Repositories view. */
+  loadRepositorySummary(repoRoot: string): Promise<RepositorySummary> {
+    return this.ctx.workingTreeService.summary(repoRoot);
   }
 
   runCopyBranchName(branchName: string): Promise<void> {
