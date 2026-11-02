@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.6.0...git-checkout-v0.7.0) (2026-11-02)
+
+
+### Features
+
+* implement concurrent fetch and status updates for improved performance ([#33](https://github.com/save-workspace-as/git-checkout/issues/33)) ([52f2de3](https://github.com/save-workspace-as/git-checkout/commit/52f2de35163bfee973313796f4b09a7c16ad7e1c))
+* initialize site with Astro framework and essential components ([#31](https://github.com/save-workspace-as/git-checkout/issues/31)) ([14ecffe](https://github.com/save-workspace-as/git-checkout/commit/14ecffe7c00a62fe5223fd64856e6d0d5533f1f2))
+* **pr:** add pull request management features ([#26](https://github.com/save-workspace-as/git-checkout/issues/26)) ([200922a](https://github.com/save-workspace-as/git-checkout/commit/200922ac006ea2822a22e00005360b8e3562ccf7))
+* **screenshots:** enhance Git Checkout functionality and documentation ([#30](https://github.com/save-workspace-as/git-checkout/issues/30)) ([66e63c0](https://github.com/save-workspace-as/git-checkout/commit/66e63c07906dd5a92f9e4208aeef3b84eca48aa8))
+
 ## [0.6.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.5.0...git-checkout-v0.6.0) (2026-10-30)
 
 
