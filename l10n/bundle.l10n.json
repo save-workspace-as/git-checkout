@@ -37,7 +37,6 @@
   "{0} @ {1}": "{0} @ {1}",
   "{0} already exists and is not empty.": "{0} already exists and is not empty.",
   "{0} authors ({1} +{2})": "{0} authors ({1} +{2})",
-  "{0} changes": "{0} changes",
   "{0} commit": "{0} commit",
   "{0} commit(s) may conflict when replayed ({1}). Start rebase anyway?": "{0} commit(s) may conflict when replayed ({1}). Start rebase anyway?",
   "{0} commit(s) may conflict when replayed onto {1}.": "{0} commit(s) may conflict when replayed onto {1}.",
