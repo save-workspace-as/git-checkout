@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
@@ -25,5 +25,16 @@ describe('sidebar layout', () => {
     for (const id of ['gitCheckout.repositories', 'gitCheckout.commitForm', 'gitCheckout.changes']) {
       assert.equal(views.get(id)?.visibility, undefined, id);
     }
+  });
+});
+
+describe('the number on the Git Checkout icon', () => {
+  it('is set by the Repositories view alone, since the icon adds up the badges of every view in its container', () => {
+    const sources = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) =>
+        entry.isDirectory() ? sources(join(dir, entry.name)) : /\.ts$/.test(entry.name) && !/\.test\.ts$/.test(entry.name) ? [join(dir, entry.name)] : [],
+      );
+    const setters = sources(join(__dirname, '..')).filter((file) => /\.badge\s*=(?!=)/.test(readFileSync(file, 'utf8')));
+    assert.deepEqual(setters.map((file) => file.slice(file.lastIndexOf('src/'))), ['src/ui/gitCheckoutSidebar.ts']);
   });
 });

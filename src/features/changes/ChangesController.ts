@@ -70,18 +70,15 @@ export class ChangesController {
     }
   }
 
-  /** The Unstaged and Staged views name their change counts. */
+  /**
+   * The Changes list shows its groups and their counts. It has no badge of its own: the Activity Bar icon adds up the badges of every
+   * view in the container, so the count is on the Repositories view alone.
+   */
   async updateChangesTitles(): Promise<void> {
     const entries = filterChangeEntries(this.changeEntries, this.ctx.changesView);
     const staged = entries.filter((entry) => entry.group === 'staged');
     const unstaged = entries.filter((entry) => entry.group !== 'staged');
     this.ctx.changesList.show({ staged, unstaged, tree: this.ctx.changesView.mode === 'tree' });
-    const listView = this.ctx.changesList.view;
-    if (listView) {
-      listView.badge = entries.length > 0
-        ? { value: entries.length, tooltip: l10n.t('{0} changes', entries.length) }
-        : undefined;
-    }
     for (const [key, value] of [
       ['gitCheckout.changes.hasStageable', unstaged.some((entry) => entry.status !== 'ignored')],
       ['gitCheckout.changes.hasStaged', staged.length > 0],
