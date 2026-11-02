@@ -64,7 +64,6 @@ export type CommitDetailsWebviewMessage =
   /** Two commits are selected: show the changes from `base` (the older) to `commit`. */
   | { type: 'commitComparePreview'; base: GraphCommitDto; commit: GraphCommitDto }
   | { type: 'commitViewReady' }
-  | { type: 'commitFilesReady' }
   /** Open the file as it was at `sha` (or before its deletion) in an editor. */
   | { type: 'commitFileOpen'; sha: string; baseSha?: string; path: string; status: string; oldPath?: string }
   /** The file list selected a file in the shown commit or comparison. */

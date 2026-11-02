@@ -97,8 +97,7 @@ describe('keyboard shortcuts', () => {
     ['gitCheckout.graph.toggleActiveBranchOnly', 'ctrl+shift+a', 'cmd+shift+a'],
     ['gitCheckout.changes.commit', 'ctrl+enter', 'cmd+enter'],
     ['gitCheckout.changes.commitAndPush', 'ctrl+shift+enter', 'cmd+shift+enter'],
-    ['gitCheckout.changes.stage', 'ctrl+shift+s', 'cmd+s'],
-    ['gitCheckout.changes.unstage', 'ctrl+shift+s', 'cmd+s'],
+    ['gitCheckout.changes.toggle', 'ctrl+shift+s', 'cmd+s'],
     ['gitCheckout.changes.stageAll', 'ctrl+alt+shift+s', 'cmd+alt+shift+s'],
     ['gitCheckout.changes.discard', 'ctrl+shift+d', 'cmd+shift+d'],
     ['gitCheckout.changes.open', 'ctrl+o', 'cmd+alt+shift+o'],
@@ -132,7 +131,7 @@ describe('keyboard shortcuts', () => {
 
   it('scopes the shortcuts that need a row or a field to the list or view that has it', () => {
     const list = ['gitCheckout.changes.discard', 'gitCheckout.changes.open', 'gitCheckout.changes.externalDiff', 'gitCheckout.changes.copyPath'];
-    const unscoped = bindings.filter((entry) => list.includes(entry.command) && !/focusedView == gitCheckout\.(unstaged|staged)/.test(entry.when ?? ''));
+    const unscoped = bindings.filter((entry) => list.includes(entry.command) && !/focusedView == gitCheckout\.changes/.test(entry.when ?? ''));
     assert.deepEqual(unscoped.map((entry) => `${entry.key} ${entry.command}`), []);
   });
 });

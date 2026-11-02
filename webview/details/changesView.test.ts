@@ -58,23 +58,23 @@ describe('Changes tab diff and commit form', () => {
 
   it('tells the shortcuts in the message field without naming a host', () => {
     const { q } = mount();
-    const hint = q('.changes-subject').getAttribute('placeholder');
-    assert.equal(hint, 'Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)');
+    const hint = q('.changes-message').getAttribute('placeholder');
+    assert.equal(hint, 'Message (Ctrl/Cmd+Enter to commit)');
     assert.doesNotMatch(hint ?? '', /github/i);
-    assert.equal(q('.changes-subject').getAttribute('aria-label'), 'Commit subject');
+    assert.equal(q('.changes-message').getAttribute('aria-label'), 'Commit message');
   });
 
   it('names the checked-out branch in the message field, and drops it on a detached HEAD', () => {
     const { q, view } = mount();
     view.applyHostMessage({ type: 'workingCopySnapshot', snapshot: { entries, flags: [], branch: 'main' } });
     assert.equal(
-      q('.changes-subject').getAttribute('placeholder'),
-      "Message (Ctrl/Cmd+Enter to commit on 'main'; add Shift to also push to the remote)",
+      q('.changes-message').getAttribute('placeholder'),
+      "Message (Ctrl/Cmd+Enter to commit on 'main')",
     );
     view.applyHostMessage(snapshot(entries));
     assert.equal(
-      q('.changes-subject').getAttribute('placeholder'),
-      'Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)',
+      q('.changes-message').getAttribute('placeholder'),
+      'Message (Ctrl/Cmd+Enter to commit)',
     );
   });
 
@@ -82,16 +82,23 @@ describe('Changes tab diff and commit form', () => {
     const { posted, view, q } = mount();
     assert.equal(q('.changes-commit').hasAttribute('disabled'), true);
     view.applyHostMessage(snapshot(entries));
-    typeInto(q('.changes-subject'), ' Add things ');
+    typeInto(q('.changes-message'), ' Add things ');
     assert.equal(q('.changes-commit').hasAttribute('disabled'), false);
-    typeInto(q('.changes-description'), 'Because');
+    typeInto(q('.changes-message'), ' Add things \n\nBecause');
     q('.changes-commit').click();
     assert.deepEqual(plain(posted.at(-1)), {
       type: 'changesCommit', subject: 'Add things', description: 'Because', amend: false,
     });
     view.applyHostMessage({ type: 'changesCommitted' });
-    assert.equal(q('.changes-subject').value, '');
-    assert.equal(q('.changes-description').value, '');
+    assert.equal(q('.changes-message').value, '');
+  });
+
+  it('measures only the first line of the message against the subject limits', () => {
+    const { q } = mount();
+    typeInto(q('.changes-message'), `Short subject\n\n${'a long body line '.repeat(20)}`);
+    assert.equal(q('.changes-subject-hint'), null);
+    typeInto(q('.changes-message'), 'x'.repeat(80));
+    assert.match(q('.changes-subject-hint').textContent ?? '', /80 characters, over the limit of 70/);
   });
 
   it('offers Commit and push… beside Commit, which commits and asks for the Push form', () => {
@@ -100,7 +107,7 @@ describe('Changes tab diff and commit form', () => {
     assert.equal(q('.changes-commit-push').parentElement, q('.changes-commit').parentElement);
     assert.equal(q('.changes-commit-push').hasAttribute('disabled'), true);
     view.applyHostMessage(snapshot(entries));
-    typeInto(q('.changes-subject'), 'Ship it');
+    typeInto(q('.changes-message'), 'Ship it');
     assert.equal(q('.changes-commit-push').hasAttribute('disabled'), false);
     q('.changes-commit-push').click();
     assert.deepEqual(plain(posted.at(-1)), {
@@ -111,25 +118,25 @@ describe('Changes tab diff and commit form', () => {
   it('presses Commit with Cmd or Ctrl+Enter, and Commit and Push with Shift', () => {
     const { posted, view, q } = mount();
     view.applyHostMessage(snapshot(entries));
-    typeInto(q('.changes-subject'), 'Ship it');
+    typeInto(q('.changes-message'), 'Ship it');
     const press = (target: Element, init: KeyboardEventInit = {}) =>
       target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, ...init }));
-    press(q('.changes-description'));
+    press(q('.changes-message'));
     assert.notEqual(posted.at(-1)?.type, 'changesCommit');
-    press(q('.changes-subject'), { metaKey: true });
+    press(q('.changes-message'), { metaKey: true });
     assert.deepEqual(plain(posted.at(-1)), {
       type: 'changesCommit', subject: 'Ship it', description: '', amend: false,
     });
-    press(q('.changes-description'), { ctrlKey: true, shiftKey: true });
+    press(q('.changes-message'), { ctrlKey: true, shiftKey: true });
     assert.equal((posted.at(-1) as { push?: boolean }).push, true);
-    press(q('.changes-subject'), { metaKey: true, altKey: true });
+    press(q('.changes-message'), { metaKey: true, altKey: true });
     assert.equal((posted.at(-1) as { push?: boolean }).push, true);
   });
 
   it('leaves Cmd+Enter alone while Commit is disabled', () => {
     const { posted, q } = mount();
-    typeInto(q('.changes-subject'), 'Nothing staged');
-    q('.changes-subject').dispatchEvent(new KeyboardEvent('keydown', {
+    typeInto(q('.changes-message'), 'Nothing staged');
+    q('.changes-message').dispatchEvent(new KeyboardEvent('keydown', {
       key: 'Enter', bubbles: true, cancelable: true, metaKey: true,
     }));
     assert.equal(posted.some((message) => message.type === 'changesCommit'), false);
@@ -138,13 +145,13 @@ describe('Changes tab diff and commit form', () => {
   it('commits and pushes from the keyboard shortcut, and focuses the subject from the other', () => {
     const { posted, view, q } = mount();
     view.applyHostMessage(snapshot(entries));
-    typeInto(q('.changes-subject'), 'Ship it');
+    typeInto(q('.changes-message'), 'Ship it');
     view.applyHostMessage({ type: 'changesShortcut', action: 'commitAndPush' });
     assert.deepEqual(plain(posted.at(-1)), {
       type: 'changesCommit', subject: 'Ship it', description: '', amend: false, push: true,
     });
     view.applyHostMessage({ type: 'changesShortcut', action: 'focusCommit' });
-    assert.equal(document.activeElement, q('.changes-subject'));
+    assert.equal(document.activeElement, q('.changes-message'));
   });
 
   it('fills the form from the last commit when amending', () => {
@@ -154,8 +161,7 @@ describe('Changes tab diff and commit form', () => {
     amend.dispatchEvent(new Event('change', { bubbles: true }));
     assert.equal(posted.at(-1)?.type, 'changesAmend');
     view.applyHostMessage({ type: 'changesAmendMessage', subject: 'Old subject', description: 'Old body' });
-    assert.equal(q('.changes-subject').value, 'Old subject');
-    assert.equal(q('.changes-description').value, 'Old body');
+    assert.equal(q('.changes-message').value, 'Old subject\n\nOld body');
   });
 
   it('puts Stage and Discard over each hunk of an unstaged change, and Unstage over a staged one', () => {
@@ -340,8 +346,7 @@ describe('Changes tab diff and commit form', () => {
     assert.equal(generate().hasAttribute('disabled'), true);
     view.applyHostMessage({ type: 'changesGeneratedMessage', subject: 'feat: add it', description: 'Because.' });
     view.applyHostMessage({ type: 'changesGenerating', busy: false });
-    assert.equal(q('.changes-subject').value, 'feat: add it');
-    assert.equal(q('.changes-description').value, 'Because.');
+    assert.equal(q('.changes-message').value, 'feat: add it\n\nBecause.');
     assert.equal(generate().hasAttribute('disabled'), false);
     assert.equal(q('.changes-commit').hasAttribute('disabled'), false);
   });

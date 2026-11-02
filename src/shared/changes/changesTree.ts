@@ -33,6 +33,8 @@ export interface ChangeDirNode {
   children: ChangeNode[];
   /** Every change below, so a command on the folder covers them. */
   files: ChangeTarget[];
+  /** The row is a group of the list (Staged, Unstaged), not a folder of the repository. */
+  group?: true;
 }
 
 export type ChangeNode = ChangeFileNode | ChangeDirNode;
@@ -101,6 +103,26 @@ export function buildChangeNodes(entries: readonly WorkingCopyEntryDto[], tree: 
   };
   sort(roots);
   return roots;
+}
+
+/** The rows of a group: Staged, or Unstaged. Its command covers every change in it. */
+export function buildChangeGroup(
+  side: WorkingCopyDiffSide,
+  label: string,
+  entries: readonly WorkingCopyEntryDto[],
+  tree: boolean,
+): ChangeDirNode {
+  const children = buildChangeNodes(entries, tree);
+  return {
+    kind: 'dir',
+    group: true,
+    key: `group\0${side}`,
+    path: '',
+    label,
+    side,
+    children,
+    files: changeFiles(children).map(({ path, side: fileSide, untracked }) => ({ path, side: fileSide, untracked })),
+  };
 }
 
 /** Every file in `nodes` with its folder, for finding a change by key. */

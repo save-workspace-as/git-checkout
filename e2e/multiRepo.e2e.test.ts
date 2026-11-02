@@ -15,42 +15,78 @@ async function viewRows(provider: vscode.TreeDataProvider<SidebarNode>): Promise
   return (await provider.getChildren()) ?? [];
 }
 
+/** The repositories the Repositories view lists, as folder names. */
+async function listed(api: { repositories: vscode.TreeDataProvider<SidebarNode> }): Promise<string[]> {
+  return (await viewRows(api.repositories)).map((row) => row.label);
+}
+
 /** What the removed repository menu did: pick the repository, then open its graph window. */
 async function openWindowOf(api: { selectRepository(root: string): Promise<void> }, root: string): Promise<void> {
   await api.selectRepository(root);
   await vscode.commands.executeCommand('gitCheckout.open');
 }
 
-describe('One sidebar view per repository', () => {
+describe('Repositories view', () => {
   const ctx = bindExtension();
 
-  it('declares view slots, fills the first with the repository sections, and has no LFS or reflog view', async () => {
+  /** Removes the second repository's folder and waits until the views no longer list it. */
+  async function closeSecond(second: string): Promise<void> {
+    const target = vscode.Uri.file(second).fsPath;
+    const index = (vscode.workspace.workspaceFolders ?? []).findIndex((folder) => folder.uri.fsPath === target);
+    if (index >= 0) {
+      vscode.workspace.updateWorkspaceFolders(index, 1);
+    }
+    await waitFor('second repository closed', async () => ((await listed(ctx.api)).length === 1 ? true : undefined));
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    await ctx.api.selectRepository(repoRoot());
+    rmSync(second, { recursive: true, force: true });
+  }
+
+  it('declares the Repositories view and a view for each section, and has no LFS or reflog view', async () => {
     await readyTree(ctx.api);
     const rows = await loadTree(ctx.api);
     assert.ok(rows.some((node) => node.id === 'section:branches'));
     assert.ok(rows.every((node) => node.kind !== 'message' || node.label.length > 0));
-    assert.deepEqual(await viewRows(ctx.api.sidebars[1]), []);
+    assert.deepEqual(await listed(ctx.api), [basename(repoRoot())]);
 
     const views = Object.values(
       (ctx.extension.packageJSON.contributes.views ?? {}) as Record<string, { id: string }[]>,
     ).flat().map((view) => view.id);
-    assert.equal(views.filter((id) => /\.sidebar(\.\d+)?$/.test(id)).length, ctx.api.sidebars.length);
+    for (const id of ['gitCheckout.repositories', 'gitCheckout.commitForm', 'gitCheckout.changes', 'gitCheckout.sidebar', 'gitCheckout.sidebar.pullRequests']) {
+      assert.ok(views.includes(id), id);
+    }
     assert.deepEqual(views.filter((id) => /lfs|reflog/i.test(id)), []);
   });
 
-  it('fills a second view with the second repository and acts on the repository a row belongs to', async () => {
+  it('shows the graph of a repository when its row is clicked', async () => {
+    await readyTree(ctx.api);
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+    const [row] = await viewRows(ctx.api.repositories);
+    const item = await ctx.api.repositories.getTreeItem(row);
+    assert.equal(item.command?.command, 'gitCheckout.sidebar.showAllCommits');
+    await vscode.commands.executeCommand(item.command.command, ...(item.command.arguments ?? []));
+    const open = await waitFor('the graph window', async () => vscode.window.tabGroups.all
+      .flatMap((group) => group.tabs)
+      .some((tab) => (tab.input as { viewType?: string } | undefined)?.viewType?.includes(PANEL_VIEW_TYPE)) || undefined);
+    assert.ok(open);
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+  });
+
+  it('lists every repository, and shows the one that is picked in the other views', async () => {
     await readyTree(ctx.api);
     const second = createFixtureRepo();
     gitIn(second, 'branch', 'topic-b');
     const folders = vscode.workspace.workspaceFolders ?? [];
     await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     try {
-      const rows = await waitFor('second repository view', async () => {
-        const found = await viewRows(ctx.api.sidebars[1]);
-        return found.length > 0 ? found : undefined;
+      await waitFor('both repositories listed', async () => ((await listed(ctx.api)).length === 2 ? true : undefined));
+      assert.equal(findByRef(await loadTree(ctx.api), 'topic-b'), undefined, 'the first repository is shown');
+
+      await ctx.api.selectRepository(second);
+      const rows = await waitFor('the second repository in the views', async () => {
+        const found = await loadTree(ctx.api);
+        return findByRef(found, 'topic-b') ? found : undefined;
       });
-      assert.ok(findByRef(rows, 'topic-b'), 'second view lists its own branch');
-      assert.equal(findByRef(await loadTree(ctx.api), 'topic-b'), undefined);
       assert.ok(rows.every((row) => row.repoRoot !== undefined));
 
       const branch = findByRef(rows, 'topic-b');
@@ -59,28 +95,22 @@ describe('One sidebar view per repository', () => {
       assert.equal(gitIn(second, 'branch', '--show-current'), 'topic-b');
       assert.equal(git('branch', '--show-current'), 'main');
     } finally {
-      const target = vscode.Uri.file(second).fsPath;
-      const index = (vscode.workspace.workspaceFolders ?? []).findIndex((folder) => folder.uri.fsPath === target);
-      if (index >= 0) {
-        vscode.workspace.updateWorkspaceFolders(index, 1);
-      }
-      await waitFor('second repository closed', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length === 0 ? true : undefined,
-      );
-      rmSync(second, { recursive: true, force: true });
+      await closeSecond(second);
     }
   });
 
-  it('runs a repository dropdown command on the repository of its own view', async () => {
+  it('runs a repository menu command on the repository whose row it came from', async () => {
     await readyTree(ctx.api);
+    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
     const second = createFixtureRepo();
     const folders = vscode.workspace.workspaceFolders ?? [];
     await updateWorkspaceFolders(folders.length, 0, { uri: vscode.Uri.file(second) });
     try {
-      await waitFor('second repository view', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length > 0 ? true : undefined,
-      );
-      const pending = vscode.commands.executeCommand('gitCheckout.repo.1.newTag');
+      await waitFor('both repositories listed', async () => ((await listed(ctx.api)).length === 2 ? true : undefined));
+      // Right-clicking the second repository's row runs the command on it, whichever repository is selected.
+      const row = (await viewRows(ctx.api.repositories)).find((entry) => entry.repoRoot !== undefined && entry.label === basename(second));
+      assert.ok(row);
+      const pending = vscode.commands.executeCommand('gitCheckout.repo.newTag', row);
       const state = await waitFor('new tag form', async () => ctx.api.operationFormState());
       await ctx.api.sendPanelMessage({
         type: 'operationFormMessage', sessionId: state.sessionId,
@@ -96,15 +126,7 @@ describe('One sidebar view per repository', () => {
           type: 'operationFormMessage', sessionId: active.sessionId, message: { type: 'formCancel' },
         });
       }
-      const target = vscode.Uri.file(second).fsPath;
-      const index = (vscode.workspace.workspaceFolders ?? []).findIndex((folder) => folder.uri.fsPath === target);
-      if (index >= 0) {
-        vscode.workspace.updateWorkspaceFolders(index, 1);
-      }
-      await waitFor('second repository closed', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length === 0 ? true : undefined,
-      );
-      rmSync(second, { recursive: true, force: true });
+      await closeSecond(second);
     }
   });
 
@@ -119,9 +141,7 @@ describe('One sidebar view per repository', () => {
       .filter((tab) => (tab.input as { viewType?: string } | undefined)?.viewType?.includes(PANEL_VIEW_TYPE))
       .map((tab) => tab.label);
     try {
-      await waitFor('second repository view', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length > 0 ? true : undefined,
-      );
+      await waitFor('both repositories listed', async () => ((await listed(ctx.api)).length === 2 ? true : undefined));
       await openWindowOf(ctx.api, repoRoot());
       await openWindowOf(ctx.api, second);
       const titles = await waitFor('two graph windows', async () => {
@@ -135,15 +155,7 @@ describe('One sidebar view per repository', () => {
       assert.equal(windowTitles().length, 2);
     } finally {
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-      const target = vscode.Uri.file(second).fsPath;
-      const index = (vscode.workspace.workspaceFolders ?? []).findIndex((folder) => folder.uri.fsPath === target);
-      if (index >= 0) {
-        vscode.workspace.updateWorkspaceFolders(index, 1);
-      }
-      await waitFor('second repository closed', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length === 0 ? true : undefined,
-      );
-      rmSync(second, { recursive: true, force: true });
+      await closeSecond(second);
     }
   });
 
@@ -165,12 +177,12 @@ describe('One sidebar view per repository', () => {
       }
     };
     try {
-      await waitFor('second repository view', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length > 0 ? true : undefined,
-      );
-      const first = vscode.commands.executeCommand('gitCheckout.repo.0.newTag');
+      await waitFor('both repositories listed', async () => ((await listed(ctx.api)).length === 2 ? true : undefined));
+      await ctx.api.selectRepository(repoRoot());
+      const first = vscode.commands.executeCommand('gitCheckout.repo.newTag');
       await waitFor('first tag form', async () => ctx.api.operationFormState());
-      const other = vscode.commands.executeCommand('gitCheckout.repo.1.newTag');
+      await ctx.api.selectRepository(second);
+      const other = vscode.commands.executeCommand('gitCheckout.repo.newTag');
       // Opening the other repository's form must not replace or refuse because the first is still open.
       await waitFor('second repository window', async () => (windowCount() === 2 ? true : undefined));
       await openWindowOf(ctx.api, repoRoot());
@@ -182,15 +194,7 @@ describe('One sidebar view per repository', () => {
       await Promise.all([first, other]);
     } finally {
       await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-      const target = vscode.Uri.file(second).fsPath;
-      const index = (vscode.workspace.workspaceFolders ?? []).findIndex((folder) => folder.uri.fsPath === target);
-      if (index >= 0) {
-        vscode.workspace.updateWorkspaceFolders(index, 1);
-      }
-      await waitFor('second repository closed', async () =>
-        (await viewRows(ctx.api.sidebars[1])).length === 0 ? true : undefined,
-      );
-      rmSync(second, { recursive: true, force: true });
+      await closeSecond(second);
     }
   });
 });

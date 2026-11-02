@@ -77,7 +77,7 @@ describe('Git-flow and signing', () => {
   });
 
   it('opens the same form from the repository dropdown', async () => {
-    const pending = vscode.commands.executeCommand('gitCheckout.repo.0.gitFlow');
+    const pending = vscode.commands.executeCommand('gitCheckout.repo.gitFlow');
     try {
       const state = await waitFor('Gitflow Init form', async () => ctx.api.operationFormState());
       assert.equal(state.form.title, 'Initialize Git Flow');

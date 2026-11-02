@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 
-import { bindExtension, git, repoRoot, waitFor, type ChangeRow } from './harness';
+import { bindExtension, changeGroupRows, git, repoRoot, waitFor, type ChangeRow } from './harness';
 
 describe('Changes tab', () => {
   const ctx = bindExtension();
@@ -58,8 +58,7 @@ describe('Changes tab', () => {
 
   /** The rows a Changes list shows, as `path` for files and `folder/` for folders with their children indented. */
   async function rows(which: 'unstaged' | 'staged', nodes?: ChangeRow[], depth = 0): Promise<string[]> {
-    const provider = ctx.api.changesLists[which];
-    const level = nodes ?? ((await provider.getChildren()) as ChangeRow[]);
+    const level = nodes ?? (await changeGroupRows(ctx.api, which));
     const out: string[] = [];
     for (const node of level) {
       out.push(`${'  '.repeat(depth)}${node.kind === 'dir' ? `${node.label}/` : node.path}`);
@@ -95,14 +94,19 @@ describe('Changes tab', () => {
       (await rows('staged')).join() === 'one.txt' && (await rows('unstaged')).join() === 'two.txt' ? true : undefined,
     );
 
-    const [item] = (await ctx.api.changesLists.unstaged.getChildren()) as ChangeRow[];
-    const treeItem = await ctx.api.changesLists.unstaged.getTreeItem(item);
+    const [item] = await changeGroupRows(ctx.api, 'unstaged');
+    const treeItem = await ctx.api.changesList.getTreeItem(item);
     assert.equal(treeItem.contextValue, 'change.file.unstaged');
     // A click runs the row's command, so a row that is already highlighted still shows its diff.
     assert.match(treeItem.command?.command ?? '', /\.internal\.pick\./);
     assert.equal(treeItem.command?.arguments?.[0], item);
     await vscode.commands.executeCommand(treeItem.command!.command, ...(treeItem.command!.arguments ?? []));
     assert.equal(treeItem.resourceUri?.path, '/two.txt');
+    // The change opens as a tab of the editor area, like a file.
+    const labels = (): string[] => vscode.window.tabGroups.all.flatMap((group) => group.tabs)
+      .filter((tab) => (tab.input as { viewType?: string } | undefined)?.viewType?.includes('gitCheckout.diff'))
+      .map((tab) => tab.label);
+    await waitFor('the diff tab', async () => (labels().includes('two.txt (Unstaged)') ? true : undefined));
   });
 
   it('shows folders in tree mode, and staging a folder stages everything in it', async () => {
@@ -117,7 +121,7 @@ describe('Changes tab', () => {
         await refresh();
         return (await rows('unstaged')).join('|') === expected.join('|') ? true : undefined;
       });
-      const [folder] = (await ctx.api.changesLists.unstaged.getChildren()) as ChangeRow[];
+      const [folder] = await changeGroupRows(ctx.api, 'unstaged');
       await vscode.commands.executeCommand('gitCheckout.changes.stage', folder);
       await waitFor('folder staged', async () =>
         git('diff', '--cached', '--name-only').split('\n').sort().join() === 'pkg/a.txt,pkg/inner/b.txt' ? true : undefined,

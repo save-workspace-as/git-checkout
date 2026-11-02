@@ -11,7 +11,8 @@ const vscode = acquireVsCodeApi();
 
 const root = document.getElementById('root')!;
 root.className = 'changes-panel';
-const view = mountChangesView(root, (message) => vscode.postMessage(message));
+const part = root.dataset.part === 'form' ? 'form' : root.dataset.part === 'diff' ? 'diff' : 'both';
+const view = mountChangesView(root, (message) => vscode.postMessage(message), part);
 
 window.addEventListener('message', (event) => {
   view.applyHostMessage(event.data as HostMessage);

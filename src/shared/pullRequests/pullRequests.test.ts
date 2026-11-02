@@ -6,7 +6,7 @@ import { isFromFork, parsePullRequestLists, pullRequestBranch, pullRequestsQuery
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
 const node = (over: Record<string, unknown> = {}) => ({
   number: 12, title: 'Fix it', url: 'https://github.com/octo/app/pull/12', isDraft: false, updatedAt: '2026-10-30T10:00:00Z',
-  headRefName: 'fix-it', baseRefName: 'main', reviewDecision: 'APPROVED', author: { login: 'ada' }, headRepository: { nameWithOwner: 'octo/app' }, ...over,
+  headRefName: 'fix-it', baseRefName: 'main', reviewDecision: 'APPROVED', commits: { nodes: [{ commit: { statusCheckRollup: { state: 'SUCCESS' } } }] }, author: { login: 'ada' }, headRepository: { nameWithOwner: 'octo/app' }, ...over,
 });
 
 describe('pullRequestsQuery', () => {
@@ -36,7 +36,7 @@ describe('parsePullRequestLists', () => {
     assert.deepEqual(lists?.allOpen.map((pull) => pull.number), [12, 13]);
     assert.deepEqual(lists?.createdByMe[0], {
       number: 12, title: 'Fix it', author: 'ada', isDraft: false, headRef: 'fix-it', headRepository: 'octo/app', baseRef: 'main',
-      reviewDecision: 'APPROVED', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/12',
+      reviewDecision: 'APPROVED', checks: 'success', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/12',
     });
   });
 

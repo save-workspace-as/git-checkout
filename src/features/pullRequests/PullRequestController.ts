@@ -6,12 +6,12 @@ import { canonicalGitHubIssueUrl } from '../../shared/history/githubReferences';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { SidebarNode } from '../../ui/sidebarTreeModel';
-import { preparePullRequestBranch, resetPullRequestBranch } from './pullRequestCheckout';
+import { fetchPullRequestBase, fetchPullRequestHead, preparePullRequestBranch, resetPullRequestBranch } from './pullRequestCheckout';
 import type { PullRequestStore } from './PullRequestStore';
 
 const log = createLogger('pull-requests');
 
-type Window = Pick<GitCheckoutPanelManager, 'selectRepository' | 'runCheckout' | 'runCheckoutAsWorktree' | 'sync'>;
+type Window = Pick<GitCheckoutPanelManager, 'selectRepository' | 'runCheckout' | 'runCheckoutAsWorktree' | 'showCommitRange' | 'sync'>;
 
 /** What the Pull Requests rows do: check a pull request out, in this folder or in a worktree, open it on GitHub, read the list again. */
 export class PullRequestController {
@@ -29,6 +29,7 @@ export class PullRequestController {
       vscode.commands.registerCommand(C.grantAccess, () => this.store.signIn(true)),
       vscode.commands.registerCommand(C.checkout, (node?: SidebarNode) => this.checkout(node, false)),
       vscode.commands.registerCommand(C.checkoutInWorktree, (node?: SidebarNode) => this.checkout(node, true)),
+      vscode.commands.registerCommand(C.review, (node?: SidebarNode) => this.review(node)),
       vscode.commands.registerCommand(C.openOnGitHub, (node?: SidebarNode) => this.openOnGitHub(node)),
       vscode.commands.registerCommand(C.copyLink, (node?: SidebarNode) => this.copyLink(node)),
     );
@@ -57,6 +58,27 @@ export class PullRequestController {
     if (url) {
       await vscode.env.clipboard.writeText(url);
       void vscode.window.setStatusBarMessage(l10n.t('Copied the GitHub link'), 3000);
+    }
+  }
+
+  /** Gets the pull request and its target branch, then shows what the pull request changes in the Commit tab, without touching any branch. */
+  private async review(node?: SidebarNode): Promise<void> {
+    const found = this.find(node);
+    if (!found) {
+      return;
+    }
+    const { pull, remote, repoRoot } = found;
+    await this.window.selectRepository(repoRoot);
+    let range: { base: string; head: string } | undefined;
+    await this.window.sync.runSyncOp(l10n.t('Getting pull request #{0}', pull.number), async (root) => {
+      const git = this.cliRegistry.getOrCreate(root);
+      const head = await fetchPullRequestHead(git, remote, pull.number);
+      const base = await fetchPullRequestBase(git, remote, pull.baseRef);
+      // What the pull request changes is measured from where it left the target branch, not from the target's tip.
+      range = { base: (await git.execRead(['merge-base', base, head])).stdout.trim(), head };
+    });
+    if (range) {
+      await this.window.showCommitRange(range.base, range.head);
     }
   }
 

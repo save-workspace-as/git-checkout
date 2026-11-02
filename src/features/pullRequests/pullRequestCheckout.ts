@@ -21,6 +21,13 @@ export async function fetchPullRequestHead(git: PullRequestGit, remote: string, 
   return (await git.execRead(['rev-parse', 'FETCH_HEAD^{commit}'])).stdout.trim();
 }
 
+/** Brings the pull request's target branch up to date as a remote-tracking branch, so the changes are measured from where it is now. */
+export async function fetchPullRequestBase(git: PullRequestGit, remote: string, baseRef: string): Promise<string> {
+  const tracking = `refs/remotes/${remote}/${baseRef}`;
+  await git.execWrite(['fetch', '--no-tags', remote, `+refs/heads/${baseRef}:${tracking}`], { network: true });
+  return `${remote}/${baseRef}`;
+}
+
 async function branchExists(git: PullRequestGit, branch: string): Promise<boolean> {
   return git.execRead(['rev-parse', '--verify', '-q', `refs/heads/${branch}`], { showErrorToast: false }).then(
     () => true,

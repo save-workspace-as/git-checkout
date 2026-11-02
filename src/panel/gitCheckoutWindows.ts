@@ -1,3 +1,4 @@
+import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { createLogger } from '../log';
 import type { GitCliRegistry } from '../core/gitCliRegistry';
@@ -7,9 +8,8 @@ import { sameWorktreePath } from '../features/worktrees/worktreeParser';
 import { restoreBuiltInScm } from '../ui/scmVisibility';
 import {
   COMMIT_FILE_LIST_VIEW_ID,
-  STAGED_VIEW_ID,
+  CHANGES_LIST_VIEW_ID,
   TREE_VIEW_ID,
-  UNSTAGED_VIEW_ID,
   createBottomViewSlots,
   registerBottomPanelViews,
   type BottomViewSlots,
@@ -17,6 +17,8 @@ import {
 import { ChangeDecorations, ChangesList, type PanelLists } from '../features/changes/changesList';
 import { RevisionList } from '../features/history/revisionLists';
 import { GitCheckoutPanelManager } from './gitCheckoutPanelManager';
+import { CHANGE_DIFF_TAB, COMMIT_DIFF_TAB, EditorTab, TREE_PREVIEW_TAB } from './editorTab';
+import * as path from 'node:path';
 import type { PanelWindowHost } from './panelWindowHost';
 
 const log = createLogger('windows');
@@ -29,30 +31,41 @@ const log = createLogger('windows');
 export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
   readonly slots: BottomViewSlots = createBottomViewSlots();
   private readonly decorations = new ChangeDecorations();
-  /** A pick in either list is a selection in the current window. */
+  /** A pick in the Changes list is a selection in the current window. */
   private readonly pick = (change: { path: string; side: 'staged' | 'unstaged' }): void => {
+    this.diffEditor.show(
+      change.side === 'staged'
+        ? l10n.t('{0} (Staged)', path.posix.basename(change.path))
+        : l10n.t('{0} (Unstaged)', path.posix.basename(change.path)),
+    );
     void this.current.handleBottomViewMessage({ type: 'changesSelect', ...change });
   };
+  /** The tabs of the editor area that show a diff or a preview. */
+  private readonly diffEditor: EditorTab;
+  private readonly commitDiffEditor: EditorTab;
+  private readonly treePreviewEditor: EditorTab;
   readonly lists: PanelLists = {
-    unstaged: new ChangesList(UNSTAGED_VIEW_ID, this.decorations, this.pick),
-    staged: new ChangesList(STAGED_VIEW_ID, this.decorations, this.pick),
+    changes: new ChangesList(CHANGES_LIST_VIEW_ID, this.decorations, this.pick),
     // Picking a commit's changed file shows its diff; picking a file of the tree previews it.
     commitFiles: new RevisionList(COMMIT_FILE_LIST_VIEW_ID, this.decorations, vscode.TreeItemCollapsibleState.Expanded, (node) => {
+      this.commitDiffEditor.show(l10n.t('{0} ({1})', path.posix.basename(node.path), (node.revision ?? '').slice(0, 7)));
       void this.current.handleBottomViewMessage({
         type: 'commitDetailsSelectFile',
         sha: node.revision ?? '',
         ...(node.baseRevision ? { baseSha: node.baseRevision } : {}),
         path: node.path,
       });
-    }),
+    }, l10n.t('Select a commit in the graph to see its changed files.')),
     tree: new RevisionList(TREE_VIEW_ID, this.decorations, vscode.TreeItemCollapsibleState.Collapsed, (node) => {
+      this.treePreviewEditor.show(l10n.t('{0} ({1})', path.posix.basename(node.path), (node.revision ?? 'HEAD').slice(0, 7)));
       void this.current.handleBottomViewMessage({ type: 'commitTreeOpen', revision: node.revision ?? 'HEAD', path: node.path });
-    }),
+    }, l10n.t('Select a commit in the graph to browse its files.')),
   };
   private readonly windows: GitCheckoutPanelManager[] = [];
   private current: GitCheckoutPanelManager;
   private readonly refsChanged = new vscode.EventEmitter<void>();
-  private readonly disposables: vscode.Disposable[] = [this.refsChanged, this.decorations, ...Object.values(this.lists)];
+  private readonly activeRepoChanged = new vscode.EventEmitter<void>();
+  private readonly disposables: vscode.Disposable[] = [this.refsChanged, this.activeRepoChanged, this.decorations, ...Object.values(this.lists)];
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -61,7 +74,16 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     private readonly cliRegistry: GitCliRegistry,
   ) {
     this.current = this.open(null);
+    const forward = (message: Parameters<GitCheckoutPanelManager['handleBottomViewMessage']>[0]): void => {
+      void this.current.handleBottomViewMessage(message);
+    };
+    this.diffEditor = new EditorTab(context, CHANGE_DIFF_TAB, this.slots.changes, forward);
+    this.commitDiffEditor = new EditorTab(context, COMMIT_DIFF_TAB, this.slots.commit, forward);
+    this.treePreviewEditor = new EditorTab(context, TREE_PREVIEW_TAB, this.slots.treePreview, forward);
     this.disposables.push(
+      this.diffEditor,
+      this.commitDiffEditor,
+      this.treePreviewEditor,
       registerBottomPanelViews(context, this.slots, (message) => {
         void this.current.handleBottomViewMessage(message);
       }),
@@ -76,6 +98,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     );
     this.windows.push(window);
     this.disposables.push(window.onDidChangeRefs(() => this.refsChanged.fire()));
+    this.disposables.push(window.onDidChangeActiveRepo(() => this.activeRepoChanged.fire()));
     return window;
   }
 
@@ -131,6 +154,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     }
     log.debug('current window changed');
     this.current = next;
+    this.activeRepoChanged.fire();
     for (const slot of Object.values(this.slots)) {
       slot.reload();
     }
@@ -159,6 +183,8 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
   }
 
   readonly onDidChangeRefs = this.refsChanged.event;
+  /** The repository the views show changed: another window became current, or this one switched. */
+  readonly onDidChangeActiveRepo = this.activeRepoChanged.event;
 
   dispose(): void {
     void vscode.commands.executeCommand('setContext', 'gitCheckout.panelOpen', false);
@@ -176,6 +202,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     const overrides: Record<PropertyKey, unknown> = {
       selectRepository: (root: string) => this.selectRepository(root),
       onDidChangeRefs: this.onDidChangeRefs,
+      onDidChangeActiveRepo: this.onDidChangeActiveRepo,
       dispose: () => this.dispose(),
     };
     return new Proxy({} as GitCheckoutPanelManager, {

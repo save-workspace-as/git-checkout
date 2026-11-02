@@ -114,14 +114,20 @@ describe('Workspace shapes', () => {
         return found.length === 2 ? found : undefined;
       });
       assert.deepEqual(roots.map((root) => root.split('/').pop()).sort(), names);
-      for (const [index, name] of names.entries()) {
-        const rows = await waitFor(`sidebar view ${index + 1}`, async () => {
-          const found = (await ctx.api.sidebars[index]?.getChildren()) ?? [];
-          return found.length > 0 ? found : undefined;
+      const listed = await waitFor('both repositories listed', async () => {
+        const rows = (await ctx.api.repositories.getChildren()) ?? [];
+        return rows.length === 2 ? rows : undefined;
+      });
+      assert.deepEqual(listed.map((row) => row.label).sort(), names);
+      for (const name of names) {
+        const root = roots.find((entry) => entry.endsWith(`/${name}`));
+        assert.ok(root, name);
+        await ctx.api.selectRepository(root);
+        const rows = await waitFor(`the views for ${name}`, async () => {
+          const found = (await ctx.api.sidebar.getChildren()) ?? [];
+          return found.length > 0 && found.every((row) => row.repoRoot === root) ? found : undefined;
         });
-        const labels = JSON.stringify(rows);
-        assert.ok(names.some((candidate) => labels.includes(`on-${candidate}`)), `view ${index + 1} lists a repository branch`);
-        assert.ok(rows.every((row) => row.repoRoot !== undefined && names.some((n) => row.repoRoot?.endsWith(`/${n}`))), name);
+        assert.ok(JSON.stringify(rows).includes(`on-${name}`), `the views list the branch of ${name}`);
       }
     });
   });

@@ -37,6 +37,8 @@ export const ACTION_ICONS = {
   newerCommit: 'chevron-right',
   search: 'search',
   refresh: 'refresh',
+  addRemote: 'globe',
+  worktree: 'worktree',
   branch: 'git-branch',
   remoteBranch: 'cloud',
   tag: 'tag',

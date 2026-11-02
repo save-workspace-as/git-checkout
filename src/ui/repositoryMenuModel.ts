@@ -1,9 +1,9 @@
-import { SIDEBAR_REPO_SLOTS, sidebarViewId } from './sidebarTreeModel';
+import { REPOSITORIES_VIEW_ID, SIDEBAR_VIEW_ID } from './sidebarTreeModel';
 
-/** One entry of the Repository dropdown in a repository view's title bar. */
+/** One entry of the Repository dropdown in the Repositories view's title bar. */
 export interface RepositoryAction {
   id: string;
-  /** Existing command that does the work. It acts on the repository the view shows. */
+  /** Existing command that does the work. It acts on the selected repository. */
   command: string;
   /** Menu group; entries sort within it by order and groups are separated by a line. */
   group: string;
@@ -35,14 +35,13 @@ export const REPOSITORY_ACTIONS: readonly RepositoryAction[] = [
   { id: 'terminal', command: 'gitCheckout.openRepoTerminal', group: '9_open' },
 ];
 
-/** Command that runs `actionId` on the repository shown in view slot `slot`. */
-export function repositoryActionCommand(slot: number, actionId: string): string {
-  return `gitCheckout.repo.${slot}.${actionId}`;
+/** Command that runs `actionId` on the selected repository. */
+export function repositoryActionCommand(actionId: string): string {
+  return `gitCheckout.repo.${actionId}`;
 }
 
-export function repositoryMenuId(slot: number): string {
-  return `gitCheckout.repoMenu.${slot}`;
-}
+/** The prefix of the submenus that each repository view used to have; none is left. */
+export const REPOSITORY_MENU_ID = 'gitCheckout.repoMenu';
 
 interface Manifest {
   contributes: {
@@ -54,12 +53,11 @@ interface Manifest {
 
 const isRepositoryCommand = (command: unknown): boolean =>
   typeof command === 'string' && command.startsWith('gitCheckout.repo.');
-const isRepositoryMenu = (id: unknown): boolean =>
-  typeof id === 'string' && id.startsWith('gitCheckout.repoMenu.');
+const isRepositoryMenu = (id: unknown): boolean => typeof id === 'string' && id.startsWith(REPOSITORY_MENU_ID);
 
 /**
- * VS Code gives a view's title action no way to tell which view it was clicked in, so every
- * repository view gets its own commands and dropdown. Rewrites those entries; idempotent.
+ * The actions on a repository, as the right-click menu of its row in the Repositories view and as the "…" menu of the
+ * Repository view, with a hidden command for each. Rewrites those entries; idempotent.
  */
 export function applyRepositoryMenu<T extends Manifest>(manifest: T): T {
   const { contributes } = manifest;
@@ -71,38 +69,26 @@ export function applyRepositoryMenu<T extends Manifest>(manifest: T): T {
       delete menus[key];
     }
   }
-  for (const key of ['commandPalette', 'view/title']) {
+  for (const key of ['commandPalette', 'view/title', 'view/item/context']) {
     menus[key] = (menus[key] ?? []).filter(
       (entry) => !isRepositoryCommand(entry.command) && !isRepositoryMenu(entry.submenu),
     );
   }
 
-  for (let slot = 0; slot < SIDEBAR_REPO_SLOTS; slot += 1) {
-    const menu = repositoryMenuId(slot);
-    contributes.submenus.push({
-      id: menu,
-      label: '%submenu.gitCheckout.repository.label%',
-      icon: '$(ellipsis)',
+  const when = (view: string, action: RepositoryAction, row = ''): string =>
+    [`view == ${view}`, row, action.when].filter(Boolean).join(' && ');
+  REPOSITORY_ACTIONS.forEach((action, order) => {
+    const command = repositoryActionCommand(action.id);
+    const group = `${action.group}@${order}`;
+    contributes.commands.push({
+      command,
+      ...(action.enablement ? { enablement: action.enablement } : {}),
+      title: `%command.gitCheckout.repo.${action.id}.title%`,
     });
-    menus['view/title'].push({
-      submenu: menu,
-      group: 'navigation@9',
-      when: `view == ${sidebarViewId(slot)}`,
-    });
-    menus[menu] = REPOSITORY_ACTIONS.map((action, order) => ({
-      command: repositoryActionCommand(slot, action.id),
-      group: `${action.group}@${order}`,
-      ...(action.when ? { when: action.when } : {}),
-    }));
-    for (const action of REPOSITORY_ACTIONS) {
-      const command = repositoryActionCommand(slot, action.id);
-      contributes.commands.push({
-        command,
-        ...(action.enablement ? { enablement: action.enablement } : {}),
-        title: `%command.gitCheckout.repo.${action.id}.title%`,
-      });
-      menus.commandPalette.push({ command, when: 'false' });
-    }
-  }
+    menus.commandPalette.push({ command, when: 'false' });
+    // Right-click on a repository, and the "…" of the Repository view, which is the same repository when there is only one.
+    menus['view/item/context'].push({ command, group, when: when(REPOSITORIES_VIEW_ID, action, 'viewItem == repository') });
+    menus['view/title'].push({ command, group, when: when(SIDEBAR_VIEW_ID, action) });
+  });
   return manifest;
 }

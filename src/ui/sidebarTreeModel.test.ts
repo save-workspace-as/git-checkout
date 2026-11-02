@@ -15,9 +15,9 @@ import {
     repositoryBranchLabel,
     SIDEBAR_COMMANDS,
     SIDEBAR_CONTEXT,
-    SIDEBAR_REPO_SLOTS,
-    SIDEBAR_VIEW_ID,
-    sidebarViewId,
+    sectionsViewRows,
+    sectionRows,
+    repositoryNode,
     type SidebarNode,
     treeItemSpec,
     withSidebarSearch,
@@ -86,11 +86,14 @@ describe('repository views', () => {
     sections.forEach(visit);
   });
 
-  it('gives the first view the base id and each later slot its own id', () => {
-    assert.equal(sidebarViewId(0), SIDEBAR_VIEW_ID);
-    const ids = Array.from({ length: SIDEBAR_REPO_SLOTS }, (_, slot) => sidebarViewId(slot));
-    assert.equal(new Set(ids).size, SIDEBAR_REPO_SLOTS);
-    assert.equal(sidebarViewId(3), `${SIDEBAR_VIEW_ID}.3`);
+  it('lists every section but Pull Requests in the sections view, without the Changes and History rows', () => {
+    const tree = buildSidebarTree(snapshot(), CLEAN);
+    assert.deepEqual(
+      sectionsViewRows(tree).map((node) => node.id),
+      ['section:branches', 'section:remotes', 'section:tags', 'section:stashes', 'section:worktrees', 'section:submodules'],
+    );
+    assert.deepEqual(sectionRows(tree, 'section:tags'), tree.find((node) => node.id === 'section:tags')?.children);
+    assert.deepEqual(sectionRows(tree, 'section:nope'), []);
   });
 });
 
@@ -624,5 +627,15 @@ describe('withSidebarSearch', () => {
     const tree = withSidebarSearch(source, 'zzzz');
     assert.deepEqual(labels(tree), ['Changes', 'History', 'No matches']);
     assert.equal(tree[2].kind, 'message');
+  });
+});
+
+describe('repositoryNode', () => {
+  it('shows the branch, how far it is from its upstream and the pending changes, and opens the graph when clicked', () => {
+    const node = repositoryNode('/work/app', 'app', 'refs/heads/main', '[ahead 1, behind 2]', 3);
+    assert.equal(node.label, 'app');
+    assert.equal(node.description, 'main 2↓ 1↑ 3+');
+    assert.equal(treeItemSpec(node).command?.id, SIDEBAR_COMMANDS.showAllCommits);
+    assert.equal(repositoryNode('/work/app', 'app', null, null, 0).description, '');
   });
 });

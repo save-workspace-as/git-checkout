@@ -116,7 +116,7 @@ describe('Apply Patch', () => {
 
   it('is in the Repository dropdown', async () => {
     await readyTree(ctx.api);
-    assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.0.applyPatch'));
+    assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.applyPatch'));
   });
 
   it('still applies the patch on the clipboard', async () => {
@@ -228,7 +228,7 @@ describe('Apply Patch', () => {
 
     it('is in the Repository dropdown', async () => {
       await readyTree(ctx.api);
-      assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.0.createPatch'));
+      assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.createPatch'));
     });
   });
 });

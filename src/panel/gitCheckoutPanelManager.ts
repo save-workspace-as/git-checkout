@@ -76,7 +76,8 @@ import { readActiveEditorTokenColors } from './activeEditorTheme';
 import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
 import { ignoreRevsEnabled } from '../features/blame/blameSettings';
 import { autolinksBodyAttribute } from '../shared/history/autolinks';
-import { ScopedBottomViewSlot, type BottomSlot } from './bottomPanelViews';
+import { commitSummaryText, compareSummaryText } from '../features/history/commitSummaryText';
+import { FanOutSlot, ScopedBottomViewSlot, type BottomSlot } from './bottomPanelViews';
 import { webviewImgSrc } from './webviewImgSrc';
 import { ScopedChangesList } from '../features/changes/changesList';
 import { ScopedRevisionList } from '../features/history/revisionLists';
@@ -181,20 +182,21 @@ import { SubmoduleController } from '../features/submodules/SubmoduleController'
 
 import { RefsController } from '../features/branches/RefsController';
 
-const COMMIT_TAB_FOCUS_COMMAND = 'gitCheckout.commit.focus';
-
 export class GitCheckoutPanelManager implements vscode.Disposable {
   panel: vscode.WebviewPanel | undefined;
   readonly commitSlot: BottomSlot;
   readonly treeList: ScopedRevisionList;
   readonly commitFilesList: ScopedRevisionList;
   private readonly treePreviewSlot: BottomSlot;
-  /** The view to focus when the bottom panel opens: the Commit tab unless something asked for another. */
-  bottomFocusCommand = COMMIT_TAB_FOCUS_COMMAND;
+  /** The view to focus when the window opens; none unless something asked for one. */
+  bottomFocusCommand: string | undefined;
   private webviewReady = false;
   private readonly pendingMessages: HostMessage[] = [];
   readonly _onDidChangeRefs = new vscode.EventEmitter<void>();
   readonly onDidChangeRefs = this._onDidChangeRefs.event;
+  private readonly _onDidChangeActiveRepo = new vscode.EventEmitter<void>();
+  /** The repository every view shows changed. */
+  readonly onDidChangeActiveRepo = this._onDidChangeActiveRepo.event;
   private readonly headShortByRepo = new Map<string, string | null>();
   private readonly disposables: vscode.Disposable[] = [];
   readonly graphService: CommitGraphService;
@@ -226,10 +228,8 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   readonly pathHistory: PathHistoryPanel;
   readonly interactiveRebase: InteractiveRebaseController;
   readonly operation = new OperationController(this);
-  private readonly filesSlot: BottomSlot;
   readonly changesSlot: BottomSlot;
-  readonly unstagedList: ScopedChangesList;
-  readonly stagedList: ScopedChangesList;
+  readonly changesList: ScopedChangesList;
   changesView: ChangesViewOptions;
 
   /** Fetch, pull and push. */
@@ -293,13 +293,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     this.selectedRepoRoot = pinnedRepoRoot;
     const owns = (): boolean => host.owns(this);
     this.commitSlot = new ScopedBottomViewSlot(host.slots.commit, owns);
-    this.filesSlot = new ScopedBottomViewSlot(host.slots.files, owns);
     this.treeList = new ScopedRevisionList(host.lists.tree, owns);
     this.commitFilesList = new ScopedRevisionList(host.lists.commitFiles, owns);
     this.treePreviewSlot = new ScopedBottomViewSlot(host.slots.treePreview, owns);
-    this.changesSlot = new ScopedBottomViewSlot(host.slots.changes, owns);
-    this.unstagedList = new ScopedChangesList(host.lists.unstaged, owns);
-    this.stagedList = new ScopedChangesList(host.lists.staged, owns);
+    this.changesSlot = new FanOutSlot([
+      new ScopedBottomViewSlot(host.slots.changes, owns),
+      new ScopedBottomViewSlot(host.slots.changesForm, owns),
+    ]);
+    this.changesList = new ScopedChangesList(host.lists.changes, owns);
     this.operationForm = new OperationFormController(
       () => this.createOrReveal(),
       (message) => this.postWhenReady(message),
@@ -352,6 +353,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     this.disposables.push(
       this.operationForm,
       this._onDidChangeRefs,
+      this._onDidChangeActiveRepo,
       gitService.onDidChangeDiagnostics(() => {
         if (this.panel) {
           this.panel.title = this.panelTitle();
@@ -664,6 +666,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     }
     log.info('repository selected');
     this.selectedRepoRoot = target;
+    this._onDidChangeActiveRepo.fire();
     if (this.panel) {
       await this.graph.sendGraphInitial();
       await this.changes.sendWorkingCopySnapshot();
@@ -741,18 +744,6 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
         await this.postEditorTokenColors();
         this.details.postCommitDiffView();
         break;
-      case 'commitFilesReady':
-        this.filesSlot.markReady();
-        if (this.graph.lastGraphMeta) {
-          this.filesSlot.post(this.graph.lastGraphMeta);
-        }
-        if (this.details.lastCommitPreview) {
-          this.filesSlot.post(this.details.lastCommitPreview);
-        }
-        if (this.details.lastCommitSha) {
-          await this.details.sendCommitDetails(this.details.lastCommitSha, this.details.lastCommitBase);
-        }
-        break;
       case 'pathHistoryLoadMore':
       case 'pathHistorySelect':
       case 'pathHistoryClose':
@@ -776,8 +767,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'changesSelect': {
         const selection = message.path ? { path: message.path, side: message.side } : null;
         this.changesSlot.post({ type: 'changesSelection', selection });
-        this.unstagedList.select(selection);
-        this.stagedList.select(selection);
+        this.changesList.select(selection);
         if (selection) {
           await this.changes.sendChangesDiff(selection.path, selection.side);
         } else {
@@ -840,12 +830,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
         this.details.lastCommitPreview = message;
         this.details.lastCommitSha = message.commit.sha;
         this.details.lastCommitBase = undefined;
+        this.commitFilesList.setSummary(commitSummaryText(message.commit));
         this.postMessage(message);
         break;
       case 'commitComparePreview':
         this.details.lastCommitPreview = message;
         this.details.lastCommitSha = message.commit.sha;
         this.details.lastCommitBase = message.base.sha;
+        this.commitFilesList.setSummary(compareSummaryText(message.base, message.commit));
         this.postMessage(message);
         break;
       case 'ready':
@@ -1296,8 +1288,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   private async openBottomPanel(): Promise<void> {
     await vscode.commands.executeCommand('setContext', 'gitCheckout.panelOpen', true);
     const focus = this.bottomFocusCommand;
-    this.bottomFocusCommand = COMMIT_TAB_FOCUS_COMMAND;
-    await vscode.commands.executeCommand(focus);
+    this.bottomFocusCommand = undefined;
+    if (focus) {
+      await vscode.commands.executeCommand(focus);
+    }
   }
 
   /** Messages sent before the webview script loads are dropped, so queue until 'ready'. */
@@ -1375,7 +1369,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   }
 
   runChangesFileCommand(
-    command: 'stage' | 'unstage' | 'discard' | 'open' | 'reveal' | 'copyPath' | 'history' | 'blame' | 'externalDiff',
+    command: 'stage' | 'unstage' | 'toggle' | 'discard' | 'open' | 'reveal' | 'copyPath' | 'history' | 'blame' | 'externalDiff',
     arg: unknown,
     selected?: unknown,
   ): Promise<void> {
@@ -1499,6 +1493,38 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
     await this.details.showChangedFile(sha, undefined, path);
+  }
+
+  /** Shows what changed from one commit to another in the Commit tab, as if the two had been picked in the graph. */
+  async showCommitRange(baseSha: string, headSha: string): Promise<void> {
+    const root = this.activeRepoRoot();
+    if (!root || !this.graphReady()) {
+      return;
+    }
+    const opening = !this.hasPanel();
+    this.createOrReveal();
+    // A new window picks the commit at HEAD once its graph has loaded; wait for that, or it would replace the range.
+    for (let attempt = 0; opening && attempt < 50 && !this.details.commitFilesSnapshot(); attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    const [base, head] = await Promise.all([this.graphService.loadCommit(root, baseSha), this.graphService.loadCommit(root, headSha)]);
+    if (!base || !head) {
+      return;
+    }
+    const preview = { type: 'commitComparePreview', base, commit: head } as const;
+    this.details.lastCommitPreview = preview;
+    this.details.lastCommitSha = head.sha;
+    this.details.lastCommitBase = base.sha;
+    this.postWhenReady(preview);
+    await this.details.sendCommitTreePage(head.sha);
+    await this.details.sendCommitDetails(head.sha, base.sha);
+    // The new window's own pick of HEAD can still arrive after this; put the range back when it does.
+    for (let attempt = 0; opening && attempt < 20; attempt++) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      if (this.details.commitFilesSnapshot()?.baseSha !== base.sha) {
+        await this.details.sendCommitDetails(head.sha, base.sha);
+      }
+    }
   }
 
   /** Scrolls the graph to the checked-out commit. */

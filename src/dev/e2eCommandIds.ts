@@ -1,7 +1,16 @@
 const QUOTED_ID = /['"](gitCheckout\.[A-Za-z0-9.]+)['"]/g;
 
-/** Panel viewType and context keys referenced by e2e tests. They are not contributed commands. */
-export const E2E_VIEW_TYPES = new Set(['gitCheckout.main', 'gitCheckout.panelOpen']);
+/** Panel viewType, view ids and context keys referenced by e2e tests. They are not contributed commands. */
+export const E2E_VIEW_TYPES = new Set([
+  'gitCheckout.main',
+  'gitCheckout.panelOpen',
+  'gitCheckout.diff',
+  'gitCheckout.repositories',
+  'gitCheckout.commitForm',
+  'gitCheckout.changes',
+  'gitCheckout.sidebar',
+  'gitCheckout.sidebar.pullRequests',
+]);
 
 /** VS Code makes a `<viewId>.focus` command for every view; it is not declared in the manifest. */
 const VIEW_FOCUS_COMMAND = /\.focus$/;

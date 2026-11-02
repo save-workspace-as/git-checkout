@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { buildChangeNodes, changeFiles, changeTargets, commandChangeTargets } from './changesTree';
+import { buildChangeGroup, buildChangeNodes, changeFiles, changeTargets, commandChangeTargets } from './changesTree';
 import type { WorkingCopyEntryDto } from './workingCopyProtocol';
 
 const entry = (path: string, group: WorkingCopyEntryDto['group'] = 'unstaged'): WorkingCopyEntryDto => ({
@@ -71,5 +71,16 @@ describe('commandChangeTargets', () => {
   it('has nothing to act on without a row or a selection', () => {
     assert.deepEqual(commandChangeTargets(undefined, undefined, []), []);
     assert.deepEqual(commandChangeTargets(undefined, undefined, undefined), []);
+  });
+});
+
+describe('buildChangeGroup', () => {
+  it('holds the rows of one side, and a command on it covers every change in it', () => {
+    const group = buildChangeGroup('staged', 'Staged', [entry('a/one.txt', 'staged'), entry('two.txt', 'staged')], true);
+    assert.equal(group.group, true);
+    assert.equal(group.label, 'Staged');
+    assert.deepEqual(group.children.map((child) => child.label), ['a', 'two.txt']);
+    assert.deepEqual(changeTargets([group]).map((target) => target.path).sort(), ['a/one.txt', 'two.txt']);
+    assert.equal(buildChangeGroup('unstaged', 'Unstaged', [], false).files.length, 0);
   });
 });

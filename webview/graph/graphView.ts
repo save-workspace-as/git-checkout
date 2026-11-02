@@ -787,6 +787,9 @@ export function mountGraphView(
     return true;
   }
 
+
+
+  
   function applyPage(page: GraphPageDto, append: boolean, keepView = false): void {
     loadingMore = false;
     const filterChanged = !append && filterRef !== '' && page.filterRef !== filterRef;

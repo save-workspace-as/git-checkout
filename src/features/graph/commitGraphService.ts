@@ -353,6 +353,14 @@ export class CommitGraphService {
     return this.withAvatars(parseGitLog(result.stdout), display.gravatar);
   }
 
+  /** One commit, as a graph row shows it, wherever it is in the history. Undefined when the repository does not have it. */
+  async loadCommit(repoRoot: string, sha: string): Promise<GraphCommitDto | undefined> {
+    const cli = this.cliForRoot(repoRoot);
+    const display = await this.graphDisplayFor(repoRoot, cli);
+    const result = await cli.execRead(['log', '-n', '1', '--decorate=full', '--date=unix', `--pretty=format:${GRAPH_LOG_FORMAT}`, sha, '--']);
+    return this.withAvatars(parseGitLog(result.stdout), display.gravatar)[0];
+  }
+
   /** Every match for `query`, in graph order. */
   async findCommits(repoRoot: string, query: string): Promise<string[]> {
     const found: string[] = [];

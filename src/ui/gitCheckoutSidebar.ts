@@ -18,12 +18,15 @@ import {
     pickCompareBranches,
     pickStashSelectors,
     pickSubmodulePaths,
-    repositoryBranchLabel,
+    repositoryNode,
+    REPOSITORIES_VIEW_ID,
+    sectionRows,
     SIDEBAR_COMMANDS,
     SIDEBAR_CONTEXT,
     SIDEBAR_DRAG_MIME,
-    SIDEBAR_REPO_SLOTS,
-    sidebarViewId,
+    PULL_REQUESTS_VIEW_ID,
+    SIDEBAR_VIEW_ID,
+    sectionsViewRows,
     sidebarMessageNode,
     treeItemSpec,
     withSidebarSearch,
@@ -32,6 +35,7 @@ import {
 } from './sidebarTreeModel';
 import { registerRepositoryMenuCommands } from './repositoryMenuCommands';
 import { pullRequestSection } from './pullRequestNodes';
+import { checksUri, registerChecksDecorations } from './pullRequestChecksDecoration';
 import type { PullRequestStore } from '../features/pullRequests/PullRequestStore';
 
 const log = createLogger('sidebar');
@@ -42,6 +46,57 @@ const COLLAPSIBLE: Record<SidebarCollapsible, vscode.TreeItemCollapsibleState> =
   expanded: vscode.TreeItemCollapsibleState.Expanded,
 };
 
+/** What the section views of the selected repository read: one build of its tree, until something changes. */
+class SidebarSource {
+  private tree: Promise<{ root: string; nodes: SidebarNode[] } | undefined> | undefined;
+
+  constructor(
+    private readonly panel: GitCheckoutPanelManager,
+    private readonly search: { query: string },
+    private readonly pullRequests?: PullRequestStore,
+  ) {}
+
+  invalidate(): void {
+    this.tree = undefined;
+  }
+
+  read(): Promise<{ root: string; nodes: SidebarNode[] } | undefined> {
+    this.tree ??= this.build();
+    return this.tree;
+  }
+
+  private async build(): Promise<{ root: string; nodes: SidebarNode[] } | undefined> {
+    const root = this.panel.activeRepoRoot();
+    if (!root) {
+      return undefined;
+    }
+    try {
+      const data = await this.panel.loadSidebarData(root);
+      if (!data) {
+        return undefined;
+      }
+      const pullRequests = this.pullRequests && pullRequestSection(this.pullRequests.peek(root));
+      // The Pull Requests view is there only while the repository is on GitHub and the setting is on.
+      void vscode.commands.executeCommand('setContext', 'gitCheckout.pullRequestsAvailable', pullRequests !== undefined);
+      const sections = buildSidebarTree(data.snapshot, data.worktree, data.stashes, data.worktrees, data.submodules, pullRequests);
+      const nodes = withSidebarSearch(sections, this.search.query);
+      for (const node of nodes) {
+        assignRepoRoot(node, root);
+      }
+      return { root, nodes };
+    } catch (error) {
+      log.error('loading refs failed', error);
+      const message = error instanceof Error ? error.message : String(error);
+      const failed = sidebarMessageNode(l10n.t('Could not load refs: {0}', message));
+      assignRepoRoot(failed, root);
+      return { root, nodes: [failed] };
+    }
+  }
+}
+
+/** Which rows of the selected repository's tree a view lists: all of them, every section but Pull Requests, or one section's. */
+type SidebarScope = { kind: 'all' } | { kind: 'sections' } | { kind: 'section'; id: string };
+
 class SidebarProvider
   implements vscode.TreeDataProvider<SidebarNode>, vscode.TreeDragAndDropController<SidebarNode>
 {
@@ -50,14 +105,10 @@ class SidebarProvider
   private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
   readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
 
-  /** Shows the repository at `slot` of the open repositories; the view is empty without one. */
   constructor(
     private readonly panel: GitCheckoutPanelManager,
-    private readonly slot: number,
-    private readonly repos: { roots: readonly string[] },
-    private readonly search: { query: string },
-    private readonly onRepository: (slot: number, root: string | null, headRef: string | null) => void,
-    private readonly pullRequests?: PullRequestStore,
+    private readonly source: SidebarSource,
+    private readonly scope: SidebarScope,
   ) {}
 
   refresh(): void {
@@ -69,60 +120,24 @@ class SidebarProvider
   }
 
   getTreeItem(node: SidebarNode): vscode.TreeItem {
-    const spec = treeItemSpec(node);
-    const item = new vscode.TreeItem(spec.label, COLLAPSIBLE[spec.collapsible]);
-    // Every repository repeats the same section ids, so scope them to the repository.
-    item.id = node.repoRoot ? `${node.repoRoot}::${node.id}` : node.id;
-    item.description = spec.description;
-    item.tooltip = spec.tooltip;
-    item.contextValue = spec.contextValue;
-    if (spec.icon) {
-      item.iconPath = spec.iconColor
-        ? new vscode.ThemeIcon(spec.icon, new vscode.ThemeColor(spec.iconColor))
-        : new vscode.ThemeIcon(spec.icon);
-    }
-    if (spec.command) {
-      item.command = { command: spec.command.id, title: spec.label, arguments: spec.command.args };
-    }
-    return item;
+    return sidebarTreeItem(node);
   }
 
   async getChildren(node?: SidebarNode): Promise<SidebarNode[]> {
     if (node) {
       return node.children;
     }
-    // Every view reads the same snapshot, so the repositories cannot shift between slots mid-refresh.
-    const root = this.repos.roots[this.slot];
-    if (!root) {
-      this.onRepository(this.slot, null, null);
+    const tree = await this.source.read();
+    if (!tree) {
       return [];
     }
-    try {
-      const data = await this.panel.loadSidebarData(root);
-      if (!data) {
-        this.onRepository(this.slot, null, null);
-        return [];
-      }
-      const sections = buildSidebarTree(
-        data.snapshot,
-        data.worktree,
-        data.stashes,
-        data.worktrees,
-        data.submodules,
-        this.pullRequests && pullRequestSection(this.pullRequests.peek(root)),
-      );
-      this.onRepository(this.slot, root, data.snapshot.headRef);
-      const tree = withSidebarSearch(sections, this.search.query);
-      for (const node of tree) {
-        assignRepoRoot(node, root);
-      }
-      return tree;
-    } catch (error) {
-      log.error('loading refs failed', error);
-      const message = error instanceof Error ? error.message : String(error);
-      const failed = sidebarMessageNode(l10n.t("Could not load refs: {0}", message));
-      assignRepoRoot(failed, root);
-      return [failed];
+    switch (this.scope.kind) {
+      case 'all':
+        return tree.nodes;
+      case 'sections':
+        return sectionsViewRows(tree.nodes);
+      case 'section':
+        return sectionRows(tree.nodes, this.scope.id);
     }
   }
 
@@ -142,63 +157,169 @@ class SidebarProvider
   }
 }
 
+function sidebarTreeItem(node: SidebarNode): vscode.TreeItem {
+  const spec = treeItemSpec(node);
+  const item = new vscode.TreeItem(spec.label, COLLAPSIBLE[spec.collapsible]);
+  // Every repository repeats the same row ids, so scope them to the repository.
+  item.id = node.repoRoot ? `${node.repoRoot}::${node.id}` : node.id;
+  item.description = spec.description;
+  item.tooltip = spec.tooltip;
+  item.contextValue = spec.contextValue;
+  if (spec.icon) {
+    item.iconPath = spec.iconColor
+      ? new vscode.ThemeIcon(spec.icon, new vscode.ThemeColor(spec.iconColor))
+      : new vscode.ThemeIcon(spec.icon);
+  }
+  if (spec.checks) {
+    item.resourceUri = checksUri(item.id, spec.checks);
+  }
+  if (spec.command) {
+    item.command = { command: spec.command.id, title: spec.label, arguments: spec.command.args };
+  }
+  return item;
+}
+
+/** The Repositories view: every repository, with its branch; the one picked is the one the other views show. */
+class RepositoriesProvider implements vscode.TreeDataProvider<SidebarNode> {
+  private readonly _onDidChangeTreeData = new vscode.EventEmitter<void>();
+  readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+  private nodes: Promise<SidebarNode[]> | undefined;
+
+  constructor(private readonly panel: GitCheckoutPanelManager) {}
+
+  refresh(): void {
+    this.nodes = undefined;
+    this._onDidChangeTreeData.fire();
+  }
+
+  dispose(): void {
+    this._onDidChangeTreeData.dispose();
+  }
+
+  getTreeItem(node: SidebarNode): vscode.TreeItem {
+    return sidebarTreeItem(node);
+  }
+
+  getParent(): undefined {
+    return undefined;
+  }
+
+  getChildren(node?: SidebarNode): Promise<SidebarNode[]> {
+    if (node) {
+      return Promise.resolve([]);
+    }
+    this.nodes ??= this.load();
+    return this.nodes;
+  }
+
+  /** The row of a repository, for selecting it in the view. */
+  async rowFor(root: string): Promise<SidebarNode | undefined> {
+    return (await this.getChildren()).find((node) => node.repoRoot === root);
+  }
+
+  private load(): Promise<SidebarNode[]> {
+    return Promise.all(
+      this.panel.repositoryRoots().map(async (root) => {
+        try {
+          const data = await this.panel.loadSidebarData(root);
+          const head = data?.snapshot.branches.find((branch) => branch.isHead);
+          return repositoryNode(root, basename(root), data?.snapshot.headRef ?? null, head?.upstreamTrack ?? null, data ? data.worktree.stagedCount + data.worktree.unstagedCount : 0);
+        } catch (error) {
+          log.warn(`could not read ${root}`, error);
+          return repositoryNode(root, basename(root), null, null, 0);
+        }
+      }),
+    );
+  }
+}
+
 export function registerGitCheckoutSidebar(
   context: vscode.ExtensionContext,
   panel: GitCheckoutPanelManager,
   gitService: GitExtensionService,
   watchService: GitWatchService,
   pullRequests?: PullRequestStore,
-): { providers: vscode.TreeDataProvider<SidebarNode>[]; badge(): number | undefined } {
+): { providers: vscode.TreeDataProvider<SidebarNode>[]; repositories: vscode.TreeDataProvider<SidebarNode>; badge(): number | undefined } {
   const search = { query: '' };
-  const repos: { roots: readonly string[] } = { roots: panel.repositoryRoots() };
-  const views: vscode.TreeView<SidebarNode>[] = [];
-  const onRepository = (slot: number, root: string | null, headRef: string | null): void => {
-    const view = views[slot];
-    if (view) {
-      view.title = root ? basename(root) : undefined;
-      view.description = root ? repositoryBranchLabel(headRef) : undefined;
-    }
-  };
-  const providers = Array.from(
-    { length: SIDEBAR_REPO_SLOTS },
-    (_, slot) => new SidebarProvider(panel, slot, repos, search, onRepository, pullRequests),
-  );
-  const syncRepositoryCount = (): void => {
-    const count = Math.min(Math.max(repos.roots.length, 1), SIDEBAR_REPO_SLOTS);
-    void vscode.commands.executeCommand('setContext', 'gitCheckout.sidebarRepoCount', count);
-  };
+  const source = new SidebarSource(panel, search, pullRequests);
+  // The sections of the repository in one view, and the pull requests in another.
+  const scoped = [
+    { view: SIDEBAR_VIEW_ID, scope: { kind: 'sections' } as SidebarScope },
+    { view: PULL_REQUESTS_VIEW_ID, scope: { kind: 'section', id: 'section:pullRequests' } as SidebarScope },
+  ].map((entry) => ({ ...entry, provider: new SidebarProvider(panel, source, entry.scope) }));
+  // The whole tree in one provider, which the tests read; no view shows it.
+  const everything = new SidebarProvider(panel, source, { kind: 'all' });
+  const repositories = new RepositoriesProvider(panel);
+  const repositoriesView = vscode.window.createTreeView(REPOSITORIES_VIEW_ID, { treeDataProvider: repositories });
+  /** The Repositories view shows only when there is not exactly one repository: nothing to pick between otherwise. */
+  function publishRepositoryCount(): void {
+    void vscode.commands.executeCommand('setContext', 'gitCheckout.repositoryCount', panel.repositoryRoots().length);
+  }
+  publishRepositoryCount();
+  /** True while the view's selection is being set by us rather than by a click. */
+  let highlighting = false;
   const refreshAll = (): void => {
-    repos.roots = panel.repositoryRoots();
-    syncRepositoryCount();
-    providers.forEach((entry) => entry.refresh());
+    source.invalidate();
+    publishRepositoryCount();
+    repositories.refresh();
+    scoped.forEach((entry) => entry.provider.refresh());
+    everything.refresh();
+    void showActive();
     updateBadge();
   };
+  /** Highlights the selected repository in the Repositories view. */
+  async function showActive(): Promise<void> {
+    const root = panel.activeRepoRoot();
+    const row = root ? await repositories.rowFor(root) : undefined;
+    // The choice may have moved on while the rows loaded; never select a row that is not the active one anymore.
+    if (!row || panel.activeRepoRoot() !== row.repoRoot || repositoriesView.selection[0]?.repoRoot === row.repoRoot) {
+      return;
+    }
+    highlighting = true;
+    try {
+      await repositoriesView.reveal(row, { select: true, focus: false });
+    } catch (error) {
+      // The view is not shown yet, so there is nothing to highlight; it highlights the row when it is.
+      log.debug('could not select the repository row', error);
+    } finally {
+      // The selection event of our own highlight comes after the call returns.
+      setTimeout(() => { highlighting = false; }, 100);
+    }
+  }
   const setSearchQuery = (query: string): void => {
     search.query = query.trim();
     void vscode.commands.executeCommand('setContext', 'gitCheckout.sidebarSearching', search.query.length > 0);
     refreshAll();
   };
-  syncRepositoryCount();
-  registerRepositoryMenuCommands(context, panel, repos);
-  providers.forEach((entry, slot) => {
-    const view = vscode.window.createTreeView(sidebarViewId(slot), {
-      treeDataProvider: entry,
-      dragAndDropController: entry,
+  registerRepositoryMenuCommands(context, panel);
+  const views = scoped.map((entry) =>
+    vscode.window.createTreeView(entry.view, {
+      treeDataProvider: entry.provider,
+      dragAndDropController: entry.provider,
       canSelectMany: true,
-    });
-    views.push(view);
-    context.subscriptions.push(
-      entry,
-      view,
-      // Working in a repository's view makes it the one the graph shows.
-      view.onDidChangeSelection(() => {
-        const root = repos.roots[slot];
-        if (root) {
-          void panel.selectRepository(root);
-        }
-      }),
-    );
-  });
+    }),
+  );
+  context.subscriptions.push(
+    repositories,
+    repositoriesView,
+    everything,
+    ...scoped.map((entry) => entry.provider),
+    ...views,
+    // Picking a repository makes it the one the graph and every view show.
+    repositoriesView.onDidChangeSelection((event) => {
+      const root = event.selection[0]?.repoRoot;
+      if (root && !highlighting) {
+        void panel.selectRepository(root);
+      }
+    }),
+    repositoriesView.onDidChangeVisibility((event) => {
+      if (event.visible) {
+        void showActive();
+      }
+    }),
+    registerChecksDecorations(),
+    panel.onDidChangeActiveRepo(refreshAll),
+  );
   // The number on the Git Checkout icon, like the Source Control icon's. Activity Bar icons show one badge
   // for their whole container, so the first view carries the total. It reads VS Code's Git state: no git call.
   function updateBadge(): void {
@@ -210,12 +331,9 @@ export function registerGitCheckoutSidebar(
       parseCountBadgeMode(vscode.workspace.getConfiguration('scm').get('countBadge')),
       panel.activeRepoRoot(),
     );
-    const view = views[0];
-    if (view) {
-      view.badge = count > 0
-        ? { value: count, tooltip: count === 1 ? l10n.t('1 pending change') : l10n.t('{0} pending changes', count) }
-        : undefined;
-    }
+    repositoriesView.badge = count > 0
+      ? { value: count, tooltip: count === 1 ? l10n.t('1 pending change') : l10n.t('{0} pending changes', count) }
+      : undefined;
   }
   updateBadge();
   context.subscriptions.push(
@@ -414,7 +532,7 @@ export function registerGitCheckoutSidebar(
       context.subscriptions.push(vscode.commands.registerCommand(commandId, run));
     }
   }
-  return { providers, badge: () => views[0]?.badge?.value };
+  return { providers: [everything], repositories, badge: () => repositoriesView.badge?.value };
 }
 
 async function promptSidebarSearch(

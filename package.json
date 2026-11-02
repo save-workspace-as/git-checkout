@@ -630,7 +630,8 @@
         "category": "%command.gitCheckout.sidebar.createTag.category%",
         "command": "gitCheckout.sidebar.createTag",
         "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.sidebar.createTag.title%"
+        "title": "%command.gitCheckout.sidebar.createTag.title%",
+        "icon": "$(tag)"
       },
       {
         "category": "%command.gitCheckout.sidebar.createTagLight.category%",
@@ -650,7 +651,8 @@
       {
         "category": "%command.gitCheckout.sidebar.addRemote.category%",
         "command": "gitCheckout.sidebar.addRemote",
-        "title": "%command.gitCheckout.sidebar.addRemote.title%"
+        "title": "%command.gitCheckout.sidebar.addRemote.title%",
+        "icon": "$(globe)"
       },
       {
         "category": "%command.gitCheckout.sidebar.editRemote.category%",
@@ -703,7 +705,8 @@
       {
         "command": "gitCheckout.sidebar.createWorktree",
         "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.sidebar.createWorktree.title%"
+        "title": "%command.gitCheckout.sidebar.createWorktree.title%",
+        "icon": "$(worktree)"
       },
       {
         "command": "gitCheckout.sidebar.openWorktree",
@@ -1307,6 +1310,11 @@
         "title": "%command.gitCheckout.pullRequests.checkoutInWorktree.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.review.category%",
+        "command": "gitCheckout.pullRequests.review",
+        "title": "%command.gitCheckout.pullRequests.review.title%"
+      },
+      {
         "category": "%command.gitCheckout.pullRequests.openOnGitHub.category%",
         "command": "gitCheckout.pullRequests.openOnGitHub",
         "title": "%command.gitCheckout.pullRequests.openOnGitHub.title%"
@@ -1317,603 +1325,83 @@
         "title": "%command.gitCheckout.pullRequests.copyLink.title%"
       },
       {
-        "command": "gitCheckout.repo.0.fetch",
+        "category": "%command.gitCheckout.changes.toggle.category%",
+        "command": "gitCheckout.changes.toggle",
+        "title": "%command.gitCheckout.changes.toggle.title%"
+      },
+      {
+        "command": "gitCheckout.repo.fetch",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.fetch.title%"
       },
       {
-        "command": "gitCheckout.repo.0.pull",
+        "command": "gitCheckout.repo.pull",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.pull.title%"
       },
       {
-        "command": "gitCheckout.repo.0.push",
+        "command": "gitCheckout.repo.push",
         "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.push.title%"
       },
       {
-        "command": "gitCheckout.repo.0.saveStash",
+        "command": "gitCheckout.repo.saveStash",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.saveStash.title%"
       },
       {
-        "command": "gitCheckout.repo.0.undo",
+        "command": "gitCheckout.repo.undo",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.undo.title%"
       },
       {
-        "command": "gitCheckout.repo.0.newBranch",
+        "command": "gitCheckout.repo.newBranch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.newBranch.title%"
       },
       {
-        "command": "gitCheckout.repo.0.newTag",
+        "command": "gitCheckout.repo.newTag",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.newTag.title%"
       },
       {
-        "command": "gitCheckout.repo.0.newWorktree",
+        "command": "gitCheckout.repo.newWorktree",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.newWorktree.title%"
       },
       {
-        "command": "gitCheckout.repo.0.gitFlow",
+        "command": "gitCheckout.repo.gitFlow",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.gitFlow.title%"
       },
       {
-        "command": "gitCheckout.repo.0.createPatch",
+        "command": "gitCheckout.repo.createPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.createPatch.title%"
       },
       {
-        "command": "gitCheckout.repo.0.applyPatch",
+        "command": "gitCheckout.repo.applyPatch",
         "enablement": "!gitCheckout.repoOperationActive",
         "title": "%command.gitCheckout.repo.applyPatch.title%"
       },
       {
-        "command": "gitCheckout.repo.0.settings",
+        "command": "gitCheckout.repo.settings",
         "title": "%command.gitCheckout.repo.settings.title%"
       },
       {
-        "command": "gitCheckout.repo.0.reveal",
+        "command": "gitCheckout.repo.reveal",
         "title": "%command.gitCheckout.repo.reveal.title%"
       },
       {
-        "command": "gitCheckout.repo.0.revealWindows",
+        "command": "gitCheckout.repo.revealWindows",
         "title": "%command.gitCheckout.repo.revealWindows.title%"
       },
       {
-        "command": "gitCheckout.repo.0.revealLinux",
+        "command": "gitCheckout.repo.revealLinux",
         "title": "%command.gitCheckout.repo.revealLinux.title%"
       },
       {
-        "command": "gitCheckout.repo.0.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.1.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.2.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.3.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.4.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.5.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.6.terminal",
-        "title": "%command.gitCheckout.repo.terminal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.fetch",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.fetch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.pull",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.pull.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.push",
-        "enablement": "!gitCheckout.syncBusy && !gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.push.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.saveStash",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.saveStash.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.undo",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.undo.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.newBranch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newBranch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.newTag",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newTag.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.newWorktree",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.newWorktree.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.gitFlow",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.gitFlow.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.createPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.createPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.applyPatch",
-        "enablement": "!gitCheckout.repoOperationActive",
-        "title": "%command.gitCheckout.repo.applyPatch.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.settings",
-        "title": "%command.gitCheckout.repo.settings.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.reveal",
-        "title": "%command.gitCheckout.repo.reveal.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.revealWindows",
-        "title": "%command.gitCheckout.repo.revealWindows.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.revealLinux",
-        "title": "%command.gitCheckout.repo.revealLinux.title%"
-      },
-      {
-        "command": "gitCheckout.repo.7.terminal",
+        "command": "gitCheckout.repo.terminal",
         "title": "%command.gitCheckout.repo.terminal.title%"
       }
     ],
@@ -2209,14 +1697,9 @@
     },
     "keybindings": [
       {
-        "command": "gitCheckout.changes.stage",
+        "command": "gitCheckout.changes.toggle",
         "key": "enter",
-        "when": "(focusedView == gitCheckout.unstaged && !inputFocus) && config.gitCheckout.shortcuts.enabled"
-      },
-      {
-        "command": "gitCheckout.changes.unstage",
-        "key": "enter",
-        "when": "(focusedView == gitCheckout.staged && !inputFocus) && config.gitCheckout.shortcuts.enabled"
+        "when": "(focusedView == gitCheckout.changes && !inputFocus) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickLaunch",
@@ -2232,25 +1715,25 @@
         "command": "gitCheckout.sidebar.copyBranchName",
         "key": "ctrl+c",
         "mac": "cmd+c",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/) && config.gitCheckout.shortcuts.enabled"
+        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createBranch",
         "key": "shift+ctrl+b",
         "mac": "shift+cmd+b",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.branches)/) && config.gitCheckout.shortcuts.enabled"
+        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.branches)/) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createTag",
         "key": "shift+ctrl+g",
         "mac": "shift+cmd+g",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.tags)/) && config.gitCheckout.shortcuts.enabled"
+        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.tags)/) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.showLocalChanges",
         "key": "ctrl+1",
         "mac": "cmd+1",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/) && !(focusedView =~ /^gitCheckout\\.(changedFiles|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/) && !(focusedView =~ /^gitCheckout\\.(changedFiles|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.changes.focusCommit",
@@ -2262,25 +1745,25 @@
         "command": "gitCheckout.sidebar.showAllCommits",
         "key": "ctrl+2",
         "mac": "cmd+2",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.graph.revealHead",
         "key": "ctrl+0",
         "mac": "cmd+0",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickLaunch",
         "key": "ctrl+p",
         "mac": "cmd+p",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.searchCommits",
         "key": "ctrl+f",
         "mac": "cmd+f",
-        "when": "(activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/) && config.gitCheckout.shortcuts.enabled"
+        "when": "(activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.searchNext",
@@ -2308,7 +1791,7 @@
         "command": "gitCheckout.graph.toggleActiveBranchOnly",
         "key": "ctrl+shift+a",
         "mac": "cmd+shift+a",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.changes.commit",
@@ -2323,207 +1806,174 @@
         "when": "(focusedView =~ /^gitCheckout\\.(changedFiles|unstaged|staged)$/) && config.gitCheckout.shortcuts.enabled"
       },
       {
-        "command": "gitCheckout.changes.stage",
+        "command": "gitCheckout.changes.toggle",
         "key": "ctrl+shift+s",
         "mac": "cmd+s",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled"
-      },
-      {
-        "command": "gitCheckout.changes.unstage",
-        "key": "ctrl+shift+s",
-        "mac": "cmd+s",
-        "when": "(focusedView == gitCheckout.staged) && config.gitCheckout.shortcuts.enabled"
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.changes.stageAll",
         "key": "ctrl+alt+shift+s",
         "mac": "cmd+alt+shift+s",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.changes.discard",
         "key": "backspace",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled",
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled",
         "args": {
-          "list": "unstaged"
+          "list": "changes"
         }
       },
       {
         "command": "gitCheckout.changes.discard",
         "key": "ctrl+shift+d",
         "mac": "cmd+shift+d",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled",
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled",
         "args": {
-          "list": "unstaged"
+          "list": "changes"
         }
       },
       {
         "command": "gitCheckout.changes.open",
         "key": "ctrl+o",
         "mac": "cmd+alt+shift+o",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled",
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled",
         "args": {
-          "list": "unstaged"
+          "list": "changes"
         }
       },
       {
         "command": "gitCheckout.changes.externalDiff",
         "key": "ctrl+d",
         "mac": "cmd+d",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled",
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled",
         "args": {
-          "list": "unstaged"
+          "list": "changes"
         }
       },
       {
         "command": "gitCheckout.changes.copyPath",
         "key": "ctrl+c",
         "mac": "cmd+c",
-        "when": "(focusedView == gitCheckout.unstaged) && config.gitCheckout.shortcuts.enabled",
+        "when": "(focusedView == gitCheckout.changes) && config.gitCheckout.shortcuts.enabled",
         "args": {
-          "list": "unstaged"
-        }
-      },
-      {
-        "command": "gitCheckout.changes.open",
-        "key": "ctrl+o",
-        "mac": "cmd+alt+shift+o",
-        "when": "(focusedView == gitCheckout.staged) && config.gitCheckout.shortcuts.enabled",
-        "args": {
-          "list": "staged"
-        }
-      },
-      {
-        "command": "gitCheckout.changes.externalDiff",
-        "key": "ctrl+d",
-        "mac": "cmd+d",
-        "when": "(focusedView == gitCheckout.staged) && config.gitCheckout.shortcuts.enabled",
-        "args": {
-          "list": "staged"
-        }
-      },
-      {
-        "command": "gitCheckout.changes.copyPath",
-        "key": "ctrl+c",
-        "mac": "cmd+c",
-        "when": "(focusedView == gitCheckout.staged) && config.gitCheckout.shortcuts.enabled",
-        "args": {
-          "list": "staged"
+          "list": "changes"
         }
       },
       {
         "command": "gitCheckout.refresh",
         "key": "f5",
         "mac": "cmd+r",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "git.init",
         "key": "ctrl+shift+n",
         "mac": "ctrl+shift+n",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.clone",
         "key": "ctrl+n",
         "mac": "cmd+shift+n",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "git.openRepository",
         "key": "ctrl+o",
         "mac": "cmd+o",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/) && !(focusedView =~ /^gitCheckout\\.(unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/) && !(focusedView =~ /^gitCheckout\\.(unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.checkout",
         "key": "ctrl+b",
         "mac": "cmd+b",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.fetch",
         "key": "ctrl+shift+f",
         "mac": "cmd+shift+f",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickFetch",
         "key": "ctrl+alt+shift+f",
         "mac": "cmd+alt+shift+f",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.pull",
         "key": "ctrl+shift+l",
         "mac": "cmd+shift+l",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickPull",
         "key": "ctrl+alt+shift+l",
         "mac": "cmd+alt+shift+l",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.push",
         "key": "ctrl+shift+p",
         "mac": "cmd+shift+p",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickPush",
         "key": "ctrl+alt+shift+p",
         "mac": "cmd+alt+shift+p",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createBranch",
         "key": "ctrl+shift+b",
         "mac": "cmd+shift+b",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createTag",
         "key": "ctrl+shift+t",
         "mac": "cmd+shift+t",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createStash",
         "key": "ctrl+shift+h",
         "mac": "cmd+shift+h",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.quickStash",
         "key": "ctrl+alt+shift+h",
         "mac": "cmd+alt+shift+h",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.revealRepository",
         "key": "ctrl+alt+o",
         "mac": "cmd+ctrl+o",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.openRepoTerminal",
         "key": "ctrl+alt+t",
         "mac": "cmd+ctrl+t",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.dropStash",
         "key": "delete",
         "mac": "backspace",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash) && config.gitCheckout.shortcuts.enabled"
+        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.deleteBranch",
         "key": "delete",
         "mac": "backspace",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/) && config.gitCheckout.shortcuts.enabled"
+        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/) && config.gitCheckout.shortcuts.enabled"
       }
     ],
     "menus": {
@@ -3453,6 +2903,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.pullRequests.review",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.pullRequests.openOnGitHub",
           "when": "false"
         },
@@ -3461,515 +2915,71 @@
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.fetch",
+          "command": "gitCheckout.changes.toggle",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.pull",
+          "command": "gitCheckout.repo.fetch",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.push",
+          "command": "gitCheckout.repo.pull",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.saveStash",
+          "command": "gitCheckout.repo.push",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.undo",
+          "command": "gitCheckout.repo.saveStash",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.newBranch",
+          "command": "gitCheckout.repo.undo",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.newTag",
+          "command": "gitCheckout.repo.newBranch",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.newWorktree",
+          "command": "gitCheckout.repo.newTag",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.gitFlow",
+          "command": "gitCheckout.repo.newWorktree",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.createPatch",
+          "command": "gitCheckout.repo.gitFlow",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.applyPatch",
+          "command": "gitCheckout.repo.createPatch",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.settings",
+          "command": "gitCheckout.repo.applyPatch",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.reveal",
+          "command": "gitCheckout.repo.settings",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.revealWindows",
+          "command": "gitCheckout.repo.reveal",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.revealLinux",
+          "command": "gitCheckout.repo.revealWindows",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.0.terminal",
+          "command": "gitCheckout.repo.revealLinux",
           "when": "false"
         },
         {
-          "command": "gitCheckout.repo.1.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.1.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.2.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.3.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.4.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.5.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.6.terminal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.fetch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.pull",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.push",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.saveStash",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.undo",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.newBranch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.newTag",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.newWorktree",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.gitFlow",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.createPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.applyPatch",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.settings",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.reveal",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.revealWindows",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.revealLinux",
-          "when": "false"
-        },
-        {
-          "command": "gitCheckout.repo.7.terminal",
+          "command": "gitCheckout.repo.terminal",
           "when": "false"
         }
       ],
@@ -4083,6 +3093,96 @@
           "command": "gitCheckout.copyActiveRepoPath",
           "group": "2_panel@4",
           "when": "activeWebviewPanelId == 'gitCheckout.main'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
+          "group": "navigation@1",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleInvisibles",
+          "group": "navigation@2",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleWrap",
+          "group": "navigation@3",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.moreContext",
+          "group": "navigation@4",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.lessContext",
+          "group": "navigation@5",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleFullFile",
+          "group": "navigation@6",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleSideBySide",
+          "group": "navigation@7",
+          "when": "activeWebviewPanelId == 'gitCheckout.diff'"
+        },
+        {
+          "command": "gitCheckout.diff.swapSides",
+          "group": "navigation@1",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff' && gitCheckout.diffSideBySide"
+        },
+        {
+          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
+          "group": "navigation@2",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleInvisibles",
+          "group": "navigation@3",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleWrap",
+          "group": "navigation@4",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.moreContext",
+          "group": "navigation@5",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.lessContext",
+          "group": "navigation@6",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleFullFile",
+          "group": "navigation@7",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleSideBySide",
+          "group": "navigation@8",
+          "when": "activeWebviewPanelId == 'gitCheckout.commitDiff'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
+          "group": "navigation@1",
+          "when": "activeWebviewPanelId == 'gitCheckout.treePreview'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleInvisibles",
+          "group": "navigation@2",
+          "when": "activeWebviewPanelId == 'gitCheckout.treePreview'"
+        },
+        {
+          "command": "gitCheckout.diff.toggleWrap",
+          "group": "navigation@3",
+          "when": "activeWebviewPanelId == 'gitCheckout.treePreview'"
         }
       ],
       "view/item/context": [
@@ -4154,525 +3254,515 @@
         {
           "command": "gitCheckout.changes.stage",
           "group": "1_stage@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
         },
         {
           "command": "gitCheckout.changes.stage",
           "group": "inline@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
         },
         {
           "command": "gitCheckout.changes.unstage",
           "group": "1_stage@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.(file|dir)\\.staged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged$/"
         },
         {
           "command": "gitCheckout.changes.unstage",
           "group": "inline@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.(file|dir)\\.staged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged$/"
         },
         {
           "command": "gitCheckout.changes.discard",
           "group": "1_stage@3",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
         },
         {
           "command": "gitCheckout.changes.open",
           "group": "2_open@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/"
         },
         {
           "command": "gitCheckout.changes.open",
           "group": "inline@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/"
         },
         {
           "command": "gitCheckout.changes.reveal",
           "group": "2_open@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection && isMac"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/ && !listMultiSelection && isMac"
         },
         {
           "command": "gitCheckout.changes.reveal.windows",
           "group": "2_open@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection && isWindows"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/ && !listMultiSelection && isWindows"
         },
         {
           "command": "gitCheckout.changes.reveal.linux",
           "group": "2_open@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection && isLinux"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/ && !listMultiSelection && isLinux"
         },
         {
           "command": "gitCheckout.changes.history",
           "group": "3_history@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/ && !listMultiSelection"
         },
         {
           "command": "gitCheckout.changes.blame",
           "group": "3_history@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/ && !listMultiSelection"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/ && !listMultiSelection"
         },
         {
           "command": "gitCheckout.changes.resolve.current",
           "group": "3_resolve@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
         },
         {
           "command": "gitCheckout.changes.resolve.incoming",
           "group": "3_resolve@2",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
         },
         {
           "command": "gitCheckout.changes.copyPath",
           "group": "4_copy@1",
-          "when": "(view == gitCheckout.unstaged || view == gitCheckout.staged) && viewItem =~ /^change\\.file/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file/"
         },
         {
           "command": "gitCheckout.sidebar.checkout",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
         },
         {
           "command": "gitCheckout.sidebar.checkoutTag",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.checkoutAsWorktree",
           "group": "1_navigation@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/"
         },
         {
           "command": "gitCheckout.sidebar.fastForward",
           "group": "2_sync@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.pushTag",
           "group": "2_sync@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.showTagDetails",
           "group": "1_navigation@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.pullBranch",
           "group": "2_sync@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local\\.head(\\.tracked)?$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local\\.head(\\.tracked)?$/"
         },
         {
           "command": "gitCheckout.sidebar.pullBranch",
           "group": "2_sync@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == branch.remote"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == branch.remote"
         },
         {
           "command": "gitCheckout.sidebar.pushBranch",
           "group": "2_sync@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.openPullRequest",
           "group": "2_sync@4",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.fetchRemote",
           "group": "1_sync@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
         },
         {
           "command": "gitCheckout.sidebar.merge",
           "group": "3_integrate@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
         },
         {
           "command": "gitCheckout.sidebar.rebase",
           "group": "3_integrate@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
         },
         {
           "command": "gitCheckout.sidebar.merge",
           "group": "3_integrate@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.rebase",
           "group": "3_integrate@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.interactiveRebaseTag",
           "group": "3_integrate@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.compareBranches",
           "group": "3_integrate@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/ && listMultiSelection"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/ && listMultiSelection"
         },
         {
           "command": "gitCheckout.sidebar.setUpstream",
           "group": "5_branch@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.unsetUpstream",
           "group": "5_branch@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.renameBranch",
           "group": "5_branch@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
         },
         {
           "command": "gitCheckout.sidebar.deleteBranch",
           "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local(\\.tracked)?|branch\\.remote)$/"
         },
         {
           "command": "gitCheckout.sidebar.deleteTag",
           "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.removeRemote",
           "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
         },
         {
           "command": "gitCheckout.sidebar.editRemote",
           "group": "8_remote@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
         },
         {
           "command": "gitCheckout.sidebar.createBranch",
           "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.branches"
-        },
-        {
-          "command": "gitCheckout.sidebar.createBranch",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)|^tag$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)|^tag$/"
         },
         {
           "command": "gitCheckout.sidebar.createTag",
           "group": "4_create@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)|^tag$/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)|^tag$/"
         },
         {
           "command": "gitCheckout.sidebar.copyBranchName",
           "group": "9_copy@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote)/"
         },
         {
           "command": "gitCheckout.sidebar.copyTagName",
           "group": "9_copy@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == tag"
-        },
-        {
-          "command": "gitCheckout.sidebar.addRemote",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.remotes"
-        },
-        {
-          "command": "gitCheckout.sidebar.createTag",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.tags"
-        },
-        {
-          "command": "gitCheckout.sidebar.createStash",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.stashes"
-        },
-        {
-          "command": "gitCheckout.sidebar.clearStashes",
-          "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.stashes"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == tag"
         },
         {
           "command": "gitCheckout.sidebar.applyStash",
           "group": "1_stash@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash"
         },
         {
           "command": "gitCheckout.sidebar.popStash",
           "group": "1_stash@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash"
         },
         {
           "command": "gitCheckout.sidebar.dropStash",
           "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash"
         },
         {
           "command": "gitCheckout.sidebar.renameStash",
           "group": "5_stash@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash"
         },
         {
           "command": "gitCheckout.sidebar.saveStashPatch",
           "group": "5_stash@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == stash"
-        },
-        {
-          "command": "gitCheckout.sidebar.createWorktree",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.worktrees"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == stash"
         },
         {
           "command": "gitCheckout.sidebar.openWorktree",
           "group": "1_navigation@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^worktree/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^worktree/"
         },
         {
           "command": "gitCheckout.sidebar.revealWorktree",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^worktree/ && isMac"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^worktree/ && isMac"
         },
         {
           "command": "gitCheckout.sidebar.revealWorktree.windows",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^worktree/ && isWindows"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^worktree/ && isWindows"
         },
         {
           "command": "gitCheckout.sidebar.revealWorktree.linux",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^worktree/ && isLinux"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^worktree/ && isLinux"
         },
         {
           "command": "gitCheckout.sidebar.copyWorktreePath",
           "group": "9_copy@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^worktree/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^worktree/"
         },
         {
           "command": "gitCheckout.sidebar.deleteWorktree",
           "group": "9_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == worktree"
-        },
-        {
-          "command": "gitCheckout.sidebar.addSubmodule",
-          "group": "4_create@0",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.submodules"
-        },
-        {
-          "command": "gitCheckout.sidebar.initSubmodules",
-          "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.submodules"
-        },
-        {
-          "command": "gitCheckout.sidebar.syncSubmodules",
-          "group": "4_create@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.submodules"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == worktree"
         },
         {
           "command": "gitCheckout.sidebar.openSubmodule",
           "group": "1_navigation@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.showSubmoduleDiff",
           "group": "1_navigation@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.syncSubmodule",
           "group": "4_create@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.initSubmodule",
           "group": "4_create@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == submodule.uninitialized"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == submodule.uninitialized"
         },
         {
           "command": "gitCheckout.sidebar.openSubmoduleInTerminal",
           "group": "2_open@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.revealSubmodule",
           "group": "2_open@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/ && isMac"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/ && isMac"
         },
         {
           "command": "gitCheckout.sidebar.revealSubmodule.windows",
           "group": "2_open@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/ && isWindows"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/ && isWindows"
         },
         {
           "command": "gitCheckout.sidebar.revealSubmodule.linux",
           "group": "2_open@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/ && isLinux"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/ && isLinux"
         },
         {
           "command": "gitCheckout.sidebar.updateSubmodule",
           "group": "3_update@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
-        },
-        {
-          "command": "gitCheckout.sidebar.updateSubmodules",
-          "group": "3_update@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.submodules"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.addSubmodule",
           "group": "4_create@0",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.deleteSubmodule",
           "group": "7_delete@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.copySubmodulePath",
           "group": "9_copy@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem =~ /^submodule/"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^submodule/"
         },
         {
           "command": "gitCheckout.sidebar.openRemote",
           "group": "8_remote@0",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == remote"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
         },
         {
           "command": "gitCheckout.pullRequests.checkout",
           "group": "1_checkout@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
         },
         {
           "command": "gitCheckout.pullRequests.checkoutInWorktree",
           "group": "1_checkout@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+        },
+        {
+          "command": "gitCheckout.pullRequests.review",
+          "group": "1_checkout@3",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
         },
         {
           "command": "gitCheckout.pullRequests.openOnGitHub",
           "group": "2_open@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
         },
         {
           "command": "gitCheckout.pullRequests.copyLink",
           "group": "2_open@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
         },
         {
           "command": "gitCheckout.pullRequests.refresh",
           "group": "3_refresh@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
         },
         {
           "command": "gitCheckout.pullRequests.refresh",
           "group": "1_refresh@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == section.pullRequests"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.category"
         },
         {
-          "command": "gitCheckout.pullRequests.refresh",
-          "group": "1_refresh@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\d+)?$/ && viewItem == pullRequests.category"
+          "command": "gitCheckout.sidebar.createBranch",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.branches"
+        },
+        {
+          "command": "gitCheckout.sidebar.addRemote",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.remotes"
+        },
+        {
+          "command": "gitCheckout.sidebar.createTag",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.tags"
+        },
+        {
+          "command": "gitCheckout.sidebar.createStash",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.stashes"
+        },
+        {
+          "command": "gitCheckout.sidebar.clearStashes",
+          "group": "9_delete@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.stashes"
+        },
+        {
+          "command": "gitCheckout.sidebar.createWorktree",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.worktrees"
+        },
+        {
+          "command": "gitCheckout.sidebar.addSubmodule",
+          "group": "4_create@0",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.submodules"
+        },
+        {
+          "command": "gitCheckout.sidebar.initSubmodules",
+          "group": "4_create@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.submodules"
+        },
+        {
+          "command": "gitCheckout.sidebar.syncSubmodules",
+          "group": "4_create@2",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.submodules"
+        },
+        {
+          "command": "gitCheckout.sidebar.updateSubmodules",
+          "group": "3_update@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.submodules"
+        },
+        {
+          "command": "gitCheckout.changes.stageAll",
+          "group": "inline@1",
+          "when": "view == gitCheckout.changes && viewItem == change.group.unstaged"
+        },
+        {
+          "command": "gitCheckout.changes.unstageAll",
+          "group": "inline@1",
+          "when": "view == gitCheckout.changes && viewItem == change.group.staged"
+        },
+        {
+          "command": "gitCheckout.repo.fetch",
+          "group": "2_sync@0",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.pull",
+          "group": "2_sync@1",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.push",
+          "group": "2_sync@2",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.saveStash",
+          "group": "3_stash@3",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.undo",
+          "group": "4_undo@4",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.newBranch",
+          "group": "5_create@5",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.newTag",
+          "group": "5_create@6",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.newWorktree",
+          "group": "5_create@7",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.gitFlow",
+          "group": "6_tools@8",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.createPatch",
+          "group": "7_patch@9",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.applyPatch",
+          "group": "7_patch@10",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.settings",
+          "group": "8_settings@11",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
+        },
+        {
+          "command": "gitCheckout.repo.reveal",
+          "group": "9_open@12",
+          "when": "view == gitCheckout.repositories && viewItem == repository && isMac"
+        },
+        {
+          "command": "gitCheckout.repo.revealWindows",
+          "group": "9_open@13",
+          "when": "view == gitCheckout.repositories && viewItem == repository && isWindows"
+        },
+        {
+          "command": "gitCheckout.repo.revealLinux",
+          "group": "9_open@14",
+          "when": "view == gitCheckout.repositories && viewItem == repository && isLinux"
+        },
+        {
+          "command": "gitCheckout.repo.terminal",
+          "group": "9_open@15",
+          "when": "view == gitCheckout.repositories && viewItem == repository"
         }
       ],
       "view/title": [
-        {
-          "command": "gitCheckout.diff.swapSides",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.commit && gitCheckout.diffSideBySide"
-        },
-        {
-          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
-          "group": "navigation@2",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.toggleInvisibles",
-          "group": "navigation@3",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.toggleWrap",
-          "group": "navigation@4",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.moreContext",
-          "group": "navigation@5",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.lessContext",
-          "group": "navigation@6",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.toggleFullFile",
-          "group": "navigation@7",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.toggleSideBySide",
-          "group": "navigation@8",
-          "when": "view == gitCheckout.commit"
-        },
-        {
-          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.toggleInvisibles",
-          "group": "navigation@2",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.toggleWrap",
-          "group": "navigation@3",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.moreContext",
-          "group": "navigation@4",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.lessContext",
-          "group": "navigation@5",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.toggleFullFile",
-          "group": "navigation@6",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.toggleSideBySide",
-          "group": "navigation@7",
-          "when": "view == gitCheckout.workingCopy"
-        },
-        {
-          "command": "gitCheckout.diff.toggleIgnoreWhitespace",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.treePreview"
-        },
-        {
-          "command": "gitCheckout.diff.toggleInvisibles",
-          "group": "navigation@2",
-          "when": "view == gitCheckout.treePreview"
-        },
-        {
-          "command": "gitCheckout.diff.toggleWrap",
-          "group": "navigation@3",
-          "when": "view == gitCheckout.treePreview"
-        },
-        {
-          "command": "gitCheckout.sidebar.search",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.sidebar"
-        },
-        {
-          "command": "gitCheckout.sidebar.clearSearch",
-          "group": "navigation@2",
-          "when": "view == gitCheckout.sidebar && gitCheckout.sidebarSearching"
-        },
         {
           "command": "gitCheckout.diff.fileTree",
           "group": "navigation@7",
@@ -4685,73 +3775,118 @@
         },
         {
           "command": "gitCheckout.changes.viewAs.tree",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.unstaged && !gitCheckout.changesView.tree"
+          "group": "1_view@1",
+          "when": "view == gitCheckout.changes && !gitCheckout.changesView.tree"
         },
         {
           "command": "gitCheckout.changes.viewAs.list",
-          "group": "navigation@1",
-          "when": "view == gitCheckout.unstaged && gitCheckout.changesView.tree"
+          "group": "1_view@1",
+          "when": "view == gitCheckout.changes && gitCheckout.changesView.tree"
         },
         {
           "command": "gitCheckout.changes.toggleHideUntracked",
-          "group": "navigation@2",
-          "when": "view == gitCheckout.unstaged"
+          "group": "1_view@2",
+          "when": "view == gitCheckout.changes"
         },
         {
           "command": "gitCheckout.changes.toggleShowIgnored",
-          "group": "navigation@3",
-          "when": "view == gitCheckout.unstaged"
+          "group": "1_view@3",
+          "when": "view == gitCheckout.changes"
         },
         {
-          "command": "gitCheckout.changes.stageAll",
-          "group": "navigation@4",
-          "when": "view == gitCheckout.unstaged"
-        },
-        {
-          "command": "gitCheckout.changes.unstageAll",
+          "command": "gitCheckout.pullRequests.refresh",
           "group": "navigation@1",
-          "when": "view == gitCheckout.staged"
+          "when": "view == gitCheckout.sidebar.pullRequests"
         },
         {
-          "submenu": "gitCheckout.repoMenu.0",
-          "group": "navigation@9",
+          "command": "gitCheckout.sidebar.search",
+          "group": "navigation@1",
           "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.1",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.1"
+          "command": "gitCheckout.sidebar.clearSearch",
+          "group": "navigation@2",
+          "when": "view == gitCheckout.sidebar && gitCheckout.sidebarSearching"
         },
         {
-          "submenu": "gitCheckout.repoMenu.2",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.2"
+          "command": "gitCheckout.repo.fetch",
+          "group": "2_sync@0",
+          "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.3",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.3"
+          "command": "gitCheckout.repo.pull",
+          "group": "2_sync@1",
+          "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.4",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.4"
+          "command": "gitCheckout.repo.push",
+          "group": "2_sync@2",
+          "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.5",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.5"
+          "command": "gitCheckout.repo.saveStash",
+          "group": "3_stash@3",
+          "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.6",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.6"
+          "command": "gitCheckout.repo.undo",
+          "group": "4_undo@4",
+          "when": "view == gitCheckout.sidebar"
         },
         {
-          "submenu": "gitCheckout.repoMenu.7",
-          "group": "navigation@9",
-          "when": "view == gitCheckout.sidebar.7"
+          "command": "gitCheckout.repo.newBranch",
+          "group": "5_create@5",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.newTag",
+          "group": "5_create@6",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.newWorktree",
+          "group": "5_create@7",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.gitFlow",
+          "group": "6_tools@8",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.createPatch",
+          "group": "7_patch@9",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.applyPatch",
+          "group": "7_patch@10",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.settings",
+          "group": "8_settings@11",
+          "when": "view == gitCheckout.sidebar"
+        },
+        {
+          "command": "gitCheckout.repo.reveal",
+          "group": "9_open@12",
+          "when": "view == gitCheckout.sidebar && isMac"
+        },
+        {
+          "command": "gitCheckout.repo.revealWindows",
+          "group": "9_open@13",
+          "when": "view == gitCheckout.sidebar && isWindows"
+        },
+        {
+          "command": "gitCheckout.repo.revealLinux",
+          "group": "9_open@14",
+          "when": "view == gitCheckout.sidebar && isLinux"
+        },
+        {
+          "command": "gitCheckout.repo.terminal",
+          "group": "9_open@15",
+          "when": "view == gitCheckout.sidebar"
         }
       ],
       "webview/context": [
@@ -4873,7 +4008,7 @@
         {
           "command": "gitCheckout.workingCopy.showSubmoduleDiff",
           "group": "1_diff@1",
-          "when": "webviewId == 'gitCheckout.commit' && webviewSection == 'workingCopy' && submodule"
+          "when": "webviewId == 'gitCheckout.commitDiff' && webviewSection == 'workingCopy' && submodule"
         },
         {
           "command": "gitCheckout.graph.newBranch",
@@ -5021,702 +4156,73 @@
           "group": "3_copy@1",
           "when": "graphBranch"
         }
-      ],
-      "gitCheckout.repoMenu.0": [
-        {
-          "command": "gitCheckout.repo.0.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.0.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.0.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.0.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.0.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.0.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.0.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.0.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.0.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.0.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.0.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.0.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.0.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.0.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.0.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.0.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.1": [
-        {
-          "command": "gitCheckout.repo.1.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.1.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.1.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.1.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.1.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.1.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.1.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.1.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.1.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.1.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.1.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.1.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.1.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.1.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.1.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.1.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.2": [
-        {
-          "command": "gitCheckout.repo.2.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.2.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.2.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.2.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.2.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.2.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.2.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.2.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.2.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.2.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.2.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.2.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.2.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.2.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.2.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.2.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.3": [
-        {
-          "command": "gitCheckout.repo.3.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.3.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.3.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.3.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.3.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.3.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.3.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.3.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.3.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.3.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.3.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.3.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.3.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.3.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.3.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.3.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.4": [
-        {
-          "command": "gitCheckout.repo.4.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.4.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.4.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.4.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.4.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.4.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.4.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.4.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.4.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.4.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.4.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.4.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.4.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.4.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.4.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.4.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.5": [
-        {
-          "command": "gitCheckout.repo.5.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.5.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.5.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.5.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.5.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.5.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.5.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.5.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.5.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.5.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.5.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.5.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.5.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.5.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.5.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.5.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.6": [
-        {
-          "command": "gitCheckout.repo.6.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.6.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.6.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.6.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.6.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.6.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.6.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.6.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.6.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.6.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.6.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.6.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.6.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.6.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.6.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.6.terminal",
-          "group": "9_open@15"
-        }
-      ],
-      "gitCheckout.repoMenu.7": [
-        {
-          "command": "gitCheckout.repo.7.fetch",
-          "group": "2_sync@0"
-        },
-        {
-          "command": "gitCheckout.repo.7.pull",
-          "group": "2_sync@1"
-        },
-        {
-          "command": "gitCheckout.repo.7.push",
-          "group": "2_sync@2"
-        },
-        {
-          "command": "gitCheckout.repo.7.saveStash",
-          "group": "3_stash@3"
-        },
-        {
-          "command": "gitCheckout.repo.7.undo",
-          "group": "4_undo@4"
-        },
-        {
-          "command": "gitCheckout.repo.7.newBranch",
-          "group": "5_create@5"
-        },
-        {
-          "command": "gitCheckout.repo.7.newTag",
-          "group": "5_create@6"
-        },
-        {
-          "command": "gitCheckout.repo.7.newWorktree",
-          "group": "5_create@7"
-        },
-        {
-          "command": "gitCheckout.repo.7.gitFlow",
-          "group": "6_tools@8"
-        },
-        {
-          "command": "gitCheckout.repo.7.createPatch",
-          "group": "7_patch@9"
-        },
-        {
-          "command": "gitCheckout.repo.7.applyPatch",
-          "group": "7_patch@10"
-        },
-        {
-          "command": "gitCheckout.repo.7.settings",
-          "group": "8_settings@11"
-        },
-        {
-          "command": "gitCheckout.repo.7.reveal",
-          "group": "9_open@12",
-          "when": "isMac"
-        },
-        {
-          "command": "gitCheckout.repo.7.revealWindows",
-          "group": "9_open@13",
-          "when": "isWindows"
-        },
-        {
-          "command": "gitCheckout.repo.7.revealLinux",
-          "group": "9_open@14",
-          "when": "isLinux"
-        },
-        {
-          "command": "gitCheckout.repo.7.terminal",
-          "group": "9_open@15"
-        }
       ]
     },
     "views": {
       "git-checkout": [
         {
-          "contextualTitle": "%extension.displayName%",
+          "id": "gitCheckout.repositories",
+          "name": "%view.gitCheckout.repositories.name%",
+          "type": "tree",
           "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree"
+          "contextualTitle": "%extension.displayName%",
+          "when": "gitCheckout.repositoryCount != 1",
+          "initialSize": 2
         },
         {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.1",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 1"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.2",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 2"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.3",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 3"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.4",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 4"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.5",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 5"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.6",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 6"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.sidebar.7",
-          "name": "%view.gitCheckout.sidebar.name%",
-          "type": "tree",
-          "when": "gitCheckout.sidebarRepoCount > 7"
-        }
-      ],
-      "git-checkout-commit": [
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.changedFiles",
-          "initialSize": 2,
-          "name": "%view.gitCheckout.changedFiles.name%",
+          "id": "gitCheckout.commitForm",
+          "name": "%view.gitCheckout.commitForm.name%",
           "type": "webview",
-          "when": "gitCheckout.panelOpen"
+          "icon": "resources/git-checkout.svg",
+          "contextualTitle": "%extension.displayName%",
+          "initialSize": 2
+        },
+        {
+          "id": "gitCheckout.changes",
+          "name": "%view.gitCheckout.changes.name%",
+          "type": "tree",
+          "icon": "resources/git-checkout.svg",
+          "contextualTitle": "%extension.displayName%",
+          "initialSize": 6
         },
         {
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.commitFiles",
-          "initialSize": 2,
           "name": "%view.gitCheckout.commitFiles.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen"
+          "when": "gitCheckout.panelOpen",
+          "visibility": "collapsed",
+          "initialSize": 4
         },
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.commit",
-          "initialSize": 3,
-          "name": "%view.gitCheckout.commit.name%",
-          "type": "webview",
-          "when": "gitCheckout.panelOpen"
-        }
-      ],
-      "git-checkout-tree": [
         {
           "contextualTitle": "%extension.displayName%",
           "icon": "resources/git-checkout.svg",
           "id": "gitCheckout.tree",
-          "initialSize": 1,
           "name": "%view.gitCheckout.tree.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen"
+          "when": "gitCheckout.panelOpen",
+          "visibility": "collapsed",
+          "initialSize": 4
         },
         {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.treePreview",
-          "initialSize": 2,
-          "name": "%view.gitCheckout.treePreview.name%",
-          "type": "webview",
-          "when": "gitCheckout.panelOpen"
-        }
-      ],
-      "git-checkout-changes": [
-        {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.unstaged",
-          "initialSize": 2,
-          "name": "%view.gitCheckout.unstaged.name%",
+          "id": "gitCheckout.sidebar",
+          "name": "%view.gitCheckout.sidebar.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen"
+          "icon": "resources/git-checkout.svg",
+          "contextualTitle": "%extension.displayName%",
+          "visibility": "collapsed",
+          "initialSize": 4
         },
         {
-          "contextualTitle": "%extension.displayName%",
-          "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.staged",
-          "initialSize": 2,
-          "name": "%view.gitCheckout.staged.name%",
+          "id": "gitCheckout.sidebar.pullRequests",
+          "name": "%view.gitCheckout.sidebar.pullRequests.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen"
-        },
-        {
-          "contextualTitle": "%extension.displayName%",
+          "when": "gitCheckout.pullRequestsAvailable",
           "icon": "resources/git-checkout.svg",
-          "id": "gitCheckout.workingCopy",
-          "initialSize": 3,
-          "name": "%view.gitCheckout.workingCopy.name%",
-          "type": "webview",
-          "when": "gitCheckout.panelOpen"
+          "contextualTitle": "%extension.displayName%",
+          "visibility": "collapsed",
+          "initialSize": 3
         }
       ]
     },
@@ -5727,29 +4233,12 @@
           "id": "git-checkout",
           "title": "%viewContainer.git-checkout.title%"
         }
-      ],
-      "panel": [
-        {
-          "icon": "resources/git-checkout.svg",
-          "id": "git-checkout-changes",
-          "title": "%viewContainer.git-checkout-changes.title%"
-        },
-        {
-          "icon": "resources/git-checkout.svg",
-          "id": "git-checkout-commit",
-          "title": "%viewContainer.git-checkout-commit.title%"
-        },
-        {
-          "icon": "resources/git-checkout.svg",
-          "id": "git-checkout-tree",
-          "title": "%viewContainer.git-checkout-tree.title%"
-        }
       ]
     },
     "viewsWelcome": [
       {
         "contents": "%viewsWelcome.gitCheckout.sidebar.contents%",
-        "view": "gitCheckout.sidebar"
+        "view": "gitCheckout.repositories"
       }
     ],
     "submenus": [
@@ -5760,46 +4249,6 @@
       {
         "id": "gitCheckout.graph.branchMenu",
         "label": "%submenu.gitCheckout.graph.branchMenu.label%"
-      },
-      {
-        "id": "gitCheckout.repoMenu.0",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.1",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.2",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.3",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.4",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.5",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.6",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
-      },
-      {
-        "id": "gitCheckout.repoMenu.7",
-        "label": "%submenu.gitCheckout.repository.label%",
-        "icon": "$(ellipsis)"
       }
     ]
   },

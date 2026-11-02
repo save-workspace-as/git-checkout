@@ -5,13 +5,13 @@ import { bottomViewsFor, type BottomView } from './bottomViewTarget';
 import type { CommitTreeHostMessage } from '../shared/history/commitTreeProtocol';
 
 describe('bottomViewsFor', () => {
-  it('routes commit, working copy, and tree messages to the bottom panel', () => {
+  it('routes commit, working copy, and tree messages to the tabs that show them', () => {
     const cases: [string, BottomView[]][] = [
-      ['commitDetailsPreview', ['commit', 'files']],
-      ['commitComparePreview', ['commit', 'files']],
-      ['commitDetails', ['commit', 'files']],
-      ['graphMeta', ['files']],
-      ['graphAvatars', ['files']],
+      ['commitDetailsPreview', ['commit']],
+      ['commitComparePreview', ['commit']],
+      ['commitDetails', ['commit']],
+      ['graphMeta', []],
+      ['graphAvatars', []],
       ['commitDetailsFileDiff', ['commit']],
       ['workingCopySnapshot', ['commit', 'changes']],
       ['editorTokenColors', ['commit']],

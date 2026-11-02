@@ -17,14 +17,22 @@ export interface SidebarNode {
   children: SidebarNode[];
 }
 
-/** A row of the Unstaged or Staged list. */
+/** A row of the Changes list: a group, a folder or a file. */
 export interface ChangeRow {
   kind: 'file' | 'dir';
+  /** A group of the list: Staged, or Unstaged. */
+  group?: true;
   key: string;
   path: string;
   label: string;
   side: 'staged' | 'unstaged';
   children?: ChangeRow[];
+}
+
+/** The rows of one group of the Changes list: the staged changes, or the others. */
+export async function changeGroupRows(api: Pick<GitCheckoutApi, 'changesList'>, side: 'staged' | 'unstaged'): Promise<ChangeRow[]> {
+  const groups = (await api.changesList.getChildren()) as ChangeRow[];
+  return groups.find((row) => row.group && row.side === side)?.children ?? [];
 }
 
 /** A row of a commit's changed files or of the File Tree. */
@@ -42,10 +50,10 @@ export interface RevisionRow {
 
 export interface GitCheckoutApi {
   sidebar: vscode.TreeDataProvider<SidebarNode>;
-  sidebars: vscode.TreeDataProvider<SidebarNode>[];
+  repositories: vscode.TreeDataProvider<SidebarNode>;
   activityBadge(): number | undefined;
   sendPanelMessage(message: { type: string } & Record<string, unknown>): Promise<void>;
-  changesLists: Record<'unstaged' | 'staged', vscode.TreeDataProvider<ChangeRow>>;
+  changesList: vscode.TreeDataProvider<ChangeRow>;
   revisionLists: Record<'commitFiles' | 'tree', vscode.TreeDataProvider<RevisionRow>>;
   /** The files the Changes tab lists. */
   commitFiles(): { sha: string; baseSha?: string; files: { path: string; status: string }[]; shownPath?: string } | undefined;

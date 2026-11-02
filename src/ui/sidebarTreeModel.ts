@@ -10,16 +10,12 @@ import type { GitSubmoduleDto, SubmoduleCheckoutStatus } from '../shared/submodu
 import { stashDropOrder, type StashEntryDto } from '../shared/stash/stashProtocol';
 import { worktreeBranchLabel, type GitWorktreeDto } from '../shared/worktrees/worktreeProtocol';
 
+/** The view that lists the repositories; picking one makes every other view show it. */
+export const REPOSITORIES_VIEW_ID = 'gitCheckout.repositories';
+/** The view of the repository's branches, remotes, tags, stashes, worktrees and submodules, one collapsible section each. */
 export const SIDEBAR_VIEW_ID = 'gitCheckout.sidebar';
-/**
- * Each repository gets its own collapsible view. Extensions cannot add views at runtime, so this
- * many are declared in package.json and shown while `gitCheckout.sidebarRepoCount` exceeds the slot.
- */
-export const SIDEBAR_REPO_SLOTS = 8;
-
-export function sidebarViewId(slot: number): string {
-  return slot === 0 ? SIDEBAR_VIEW_ID : `${SIDEBAR_VIEW_ID}.${slot}`;
-}
+/** The pull requests have a view of their own, which shows only while the repository is on GitHub. */
+export const PULL_REQUESTS_VIEW_ID = 'gitCheckout.sidebar.pullRequests';
 export const SIDEBAR_DRAG_MIME = `application/vnd.code.tree.${SIDEBAR_VIEW_ID.toLowerCase()}`;
 
 export const SIDEBAR_COMMANDS = {
@@ -86,6 +82,7 @@ export const SIDEBAR_COMMANDS = {
 } as const;
 
 export const SIDEBAR_CONTEXT = {
+  repository: 'repository',
   localChanges: 'localChanges',
   allCommits: 'allCommits',
   branchesSection: 'section.branches',
@@ -119,6 +116,7 @@ export const SIDEBAR_CONTEXT = {
 export type SidebarNodeKind =
   | 'localChanges'
   | 'allCommits'
+  | 'repository'
   | 'section'
   | 'folder'
   | 'branch'
@@ -149,6 +147,8 @@ export interface SidebarNode {
   repoRoot?: string;
   /** A codicon for the row, instead of the one its kind has, with a theme color id for it. */
   icon?: { id: string; color?: string };
+  /** How a pull request's checks stand, shown as a badge at the end of the row. */
+  checks?: 'success' | 'failure' | 'pending';
   /** What a click on the row runs, instead of what its kind does. */
   command?: { id: string; args?: unknown[] };
   children: SidebarNode[];
@@ -164,6 +164,7 @@ export interface SidebarTreeItemSpec {
   icon?: string;
   /** VS Code theme color id for {@link icon}, when set. */
   iconColor?: string;
+  checks?: 'success' | 'failure' | 'pending';
   collapsible: SidebarCollapsible;
   command?: { id: string; args: unknown[] };
 }
@@ -289,6 +290,32 @@ export function buildSidebarTree(
   ];
 }
 
+/** A repository row of the Repositories view: its folder name, and the branch it is on with how far it is from its upstream. */
+export function repositoryNode(repoRoot: string, name: string, headRef: string | null, upstreamTrack: string | null, changedCount: number): SidebarNode {
+  const branch = repositoryBranchLabel(headRef);
+  const track = formatUpstreamTrack(upstreamTrack);
+  return {
+    id: `repository:${repoRoot}`,
+    kind: 'repository',
+    label: name,
+    description: [branch, track, changedCount > 0 ? `${changedCount}+` : ''].filter(Boolean).join(' '),
+    tooltip: repoRoot,
+    contextValue: SIDEBAR_CONTEXT.repository,
+    repoRoot,
+    children: [],
+  };
+}
+
+/** The rows of the sections view: every section but Pull Requests, whose view lists it. The Changes and History rows are not in it. */
+export function sectionsViewRows(tree: readonly SidebarNode[]): SidebarNode[] {
+  return tree.filter((node) => node.kind !== 'localChanges' && node.kind !== 'allCommits' && node.id !== 'section:pullRequests');
+}
+
+/** What a section's view lists: the rows of the section, without its header. */
+export function sectionRows(tree: readonly SidebarNode[], sectionId: string): SidebarNode[] {
+  return tree.find((node) => node.id === sectionId)?.children ?? [];
+}
+
 /** A query filters the sections below History. */
 export function withSidebarSearch(nodes: readonly SidebarNode[], query: string): SidebarNode[] {
   const needle = query.trim();
@@ -369,6 +396,7 @@ export function treeItemSpec(node: SidebarNode): SidebarTreeItemSpec {
     contextValue: node.contextValue,
     icon: nodeIcon(node),
     collapsible: nodeCollapsible(node),
+    checks: node.checks,
   };
   if (node.icon) {
     spec.icon = node.icon.id;
@@ -757,6 +785,8 @@ function nodeIcon(node: SidebarNode): string | undefined {
       return 'diff';
     case 'allCommits':
       return 'history';
+    case 'repository':
+      return 'repo';
     case 'folder':
       return 'folder';
     case 'branch':
@@ -818,6 +848,8 @@ function clickCommand(node: SidebarNode): string | undefined {
     case 'localChanges':
       return SIDEBAR_COMMANDS.showLocalChanges;
     case 'allCommits':
+    // Picking a repository shows its graph.
+    case 'repository':
       return SIDEBAR_COMMANDS.showAllCommits;
     case 'branch':
     case 'remoteBranch':

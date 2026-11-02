@@ -49,10 +49,10 @@ const log = createLogger('extension');
 
 /** Returned from activate(); used by the e2e tests. */
 export interface GitCheckoutApi {
-  /** The first repository's view. */
+  /** The selected repository's whole tree, every section in one. */
   sidebar: vscode.TreeDataProvider<SidebarNode>;
-  /** One view per repository slot, in repository order. */
-  sidebars: vscode.TreeDataProvider<SidebarNode>[];
+  /** The Repositories view's rows (e2e only). */
+  repositories: vscode.TreeDataProvider<SidebarNode>;
   /** The number on the Git Checkout icon in the Activity Bar (e2e only). */
   activityBadge(): number | undefined;
   /** Sends a message as if it came from the main panel webview (e2e only). */
@@ -76,7 +76,7 @@ export interface GitCheckoutApi {
   /** Runs one round of background fetching now (e2e only). */
   autoFetchNow(): Promise<void>;
   /** The Unstaged and Staged lists' contents (e2e only). */
-  changesLists: Record<'unstaged' | 'staged', vscode.TreeDataProvider<ChangeNode>>;
+  changesList: vscode.TreeDataProvider<ChangeNode>;
   /** A commit's changed files and the File Tree (e2e only). */
   revisionLists: Record<'commitFiles' | 'tree', vscode.TreeDataProvider<RevisionNode>>;
   /** The files the Changes tab lists. */
@@ -125,7 +125,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   const pullRequests = new PullRequestStore(cliRegistry);
   context.subscriptions.push(pullRequests);
   new PullRequestController(pullRequests, cliRegistry, panelManager).register(context);
-  const { providers: sidebars, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
+  const { providers: sidebars, repositories, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
 
   const statusBar = new DiagnosticsStatusBar(gitService);
   context.subscriptions.push(statusBar);
@@ -459,7 +459,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
           ),
         ),
     ),
-    ...(['stage', 'unstage', 'discard', 'open', 'reveal', 'copyPath', 'history', 'blame', 'externalDiff'] as const).flatMap((kind) =>
+    ...(['stage', 'unstage', 'toggle', 'discard', 'open', 'reveal', 'copyPath', 'history', 'blame', 'externalDiff'] as const).flatMap((kind) =>
       platformCommandIds(`gitCheckout.changes.${kind}`)
         .filter((commandId) => commandId === `gitCheckout.changes.${kind}` || kind === 'reveal')
         .map((commandId) =>
@@ -529,7 +529,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
 
   return {
     sidebar: sidebars[0],
-    sidebars,
+    repositories,
     activityBadge: () => sidebarBadge(),
     sendPanelMessage: (message) => panelManager.sendPanelMessage(message),
     selectRepository: (repoRoot) => panelManager.selectRepository(repoRoot),
@@ -542,7 +542,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),
     autoFetchNow: () => autoFetch.tick(true),
-    changesLists: { unstaged: windows.lists.unstaged.provider, staged: windows.lists.staged.provider },
+    changesList: windows.lists.changes.provider,
     revisionLists: { commitFiles: windows.lists.commitFiles.provider, tree: windows.lists.tree.provider },
     commitFiles: () => panelManager.commitFilesSnapshot(),
   };

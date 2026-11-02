@@ -1,6 +1,6 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
-import { buildChangeNodes, changeKey, type ChangeNode } from '../../shared/changes/changesTree';
+import { buildChangeGroup, changeKey, type ChangeNode } from '../../shared/changes/changesTree';
 import { gitNameStatusHighlight, workingCopyStatusHighlight, workingCopyStatusLetter } from '../../shared/changes/gitFileStatus';
 import type { WorkingCopyDiffSide, WorkingCopyEntryDto } from '../../shared/changes/workingCopyProtocol';
 import { NativeFileList, ScopedFileList } from '../../panel/nativeFileList';
@@ -71,12 +71,14 @@ export function commitUriStatus(status: string) {
 }
 
 export interface ChangesListContent {
-  entries: readonly WorkingCopyEntryDto[];
+  /** What is staged, and what is not. */
+  staged: readonly WorkingCopyEntryDto[];
+  unstaged: readonly WorkingCopyEntryDto[];
   /** Folders, rather than a flat list. */
   tree: boolean;
 }
 
-/** One of the Changes tab's lists (Unstaged or Staged). */
+/** The Changes list: a Staged group, when something is staged, and an Unstaged group, each collapsible. */
 export class ChangesList extends NativeFileList<ChangeNode> {
   constructor(
     viewId: string,
@@ -90,6 +92,12 @@ export class ChangesList extends NativeFileList<ChangeNode> {
           node.kind === 'dir' ? vscode.TreeItemCollapsibleState.Expanded : vscode.TreeItemCollapsibleState.None,
         );
         item.id = node.key;
+        if (node.kind === 'dir' && node.group) {
+          // The count, like the badge on a group of the Source Control view.
+          item.contextValue = `change.group.${node.side}`;
+          item.description = String(node.files.length);
+          return item;
+        }
         // A conflicted file also offers to be resolved by keeping one side.
         item.contextValue = `change.${node.kind}.${node.side}${node.kind === 'file' && node.status === 'conflict' ? '.conflict' : ''}`;
         if (node.kind === 'file') {
@@ -111,7 +119,11 @@ export class ChangesList extends NativeFileList<ChangeNode> {
 
   /** Replaces the changes the list shows. */
   showChanges(content: ChangesListContent): void {
-    this.show(buildChangeNodes(content.entries, content.tree), l10n.t('No changes.'));
+    const groups = [
+      ...(content.staged.length > 0 ? [buildChangeGroup('staged', l10n.t('Staged'), content.staged, content.tree)] : []),
+      buildChangeGroup('unstaged', l10n.t('Unstaged'), content.unstaged, content.tree),
+    ];
+    this.show(groups);
     this.decorations.refresh();
   }
 
@@ -122,8 +134,7 @@ export class ChangesList extends NativeFileList<ChangeNode> {
 
 /** The native lists of the bottom panels. */
 export interface PanelLists {
-  unstaged: ChangesList;
-  staged: ChangesList;
+  changes: ChangesList;
   commitFiles: RevisionList;
   tree: RevisionList;
 }

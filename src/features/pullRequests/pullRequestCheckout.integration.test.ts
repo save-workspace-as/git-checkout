@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import { initTempRepository, runGit, type TempGitRepository } from '../../core/testing/gitRepoHarness';
-import { checkoutPullRequestBranch, fetchPullRequestHead, preparePullRequestBranch, resetPullRequestBranch } from './pullRequestCheckout';
+import { checkoutPullRequestBranch, fetchPullRequestBase, fetchPullRequestHead, preparePullRequestBranch, resetPullRequestBranch } from './pullRequestCheckout';
 
 /** A repository whose remote has pull request 7 at `refs/pull/7/head`, as GitHub keeps them. */
 async function setUp() {
@@ -38,6 +38,18 @@ async function fromBranch(repo: TempGitRepository, branch: string, name: string)
 }
 
 describe('pull request checkout', () => {
+  it('brings the target branch up to date as a remote-tracking branch, and names it', async () => {
+    const t = await setUp();
+    try {
+      runGit(t.repo.repoRoot, ['push', '-q', 'origin', 'main']);
+      const tip = await t.read('rev-parse', 'HEAD');
+      assert.equal(await fetchPullRequestBase(t.repo.cli, 'origin', 'main'), 'origin/main');
+      assert.equal(await t.read('rev-parse', 'refs/remotes/origin/main'), tip);
+    } finally {
+      t.cleanup();
+    }
+  });
+
   it('fetches the head of a pull request by number', async () => {
     const t = await setUp();
     try {

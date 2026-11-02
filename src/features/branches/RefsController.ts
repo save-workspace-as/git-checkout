@@ -16,7 +16,7 @@ import { tagDetailsForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('branches');
-const CHANGES_TAB_FOCUS_COMMAND = 'gitCheckout.unstaged.focus';
+const CHANGES_TAB_FOCUS_COMMAND = 'gitCheckout.changes.focus';
 
 /** What RefsController needs from the window that owns it. */
 export type RefsContext = Pick<

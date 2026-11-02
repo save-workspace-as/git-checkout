@@ -1918,6 +1918,16 @@ vscode-button-group.hidden {
   overflow: hidden;
 }
 
+/* The commit form alone is only as tall as its fields. */
+.changes-panel[data-part="form"] {
+  height: auto;
+  overflow: visible;
+}
+
+.changes-panel[data-part="form"] .changes-form {
+  border-top: none;
+}
+
 .changes-diff {
   flex: 1;
   min-height: 0;
@@ -1944,17 +1954,25 @@ vscode-button-group.hidden {
 }
 
 /* The commit form uses VS Code Elements, which draw their own control geometry and theme colors. */
-.changes .changes-subject,
-.changes .changes-description {
+.changes .changes-message {
   display: block;
   width: 100%;
 }
+
+
 
 .changes .changes-subject-hint {
   color: var(--vscode-descriptionForeground);
 }
 
 .changes .changes-form-footer {
+  gap: 6px 8px;
+  flex-wrap: wrap;
+}
+
+.changes-form-options {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
