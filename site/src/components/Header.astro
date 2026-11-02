@@ -1,0 +1,16 @@
+---
+import { GITHUB, MARKETPLACE, href } from '../site';
+---
+<header class="header">
+  <a class="brand" href={href('/')}>
+    <img src={href('/favicon.svg')} alt="" width="26" height="26" />
+    <span>Git Checkout</span>
+  </a>
+  <nav aria-label="Main">
+    <a href={href('/')}>Home</a>
+    <a href={href('/docs/getting-started/')}>Docs</a>
+    <a href={href('/changelog/')}>Changelog</a>
+    <a href={GITHUB}>GitHub</a>
+    <a class="install" href={MARKETPLACE}>Install</a>
+  </nav>
+</header>
