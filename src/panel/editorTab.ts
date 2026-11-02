@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { WebviewMessage } from '../shared/protocol';
-import { viewHtml, type BottomViewSlot } from './bottomPanelViews';
+import { viewHtml, type WebviewSlot } from './webviewSlots';
 
 /** What a tab of the editor area shows: the page it runs, and the id VS Code knows it by. */
 export interface EditorTabKind {
@@ -19,7 +19,7 @@ export const TREE_PREVIEW_TAB: EditorTabKind = { viewType: 'gitCheckout.treePrev
 
 /**
  * A diff or a preview in a tab of the editor area, like a file. One tab of each kind is shared by every window and
- * shows whichever file was picked last, in the page the bottom panel used to run.
+ * shows whichever file was picked last, in the page it runs.
  */
 export class EditorTab implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
@@ -27,7 +27,7 @@ export class EditorTab implements vscode.Disposable {
   constructor(
     private readonly context: vscode.ExtensionContext,
     private readonly kind: EditorTabKind,
-    private readonly slot: BottomViewSlot,
+    private readonly slot: WebviewSlot,
     private readonly onMessage: (message: WebviewMessage) => void,
   ) {}
 

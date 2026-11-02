@@ -1,5 +1,4 @@
 import * as l10n from '@vscode/l10n';
-import type { WorktreeStatusDto } from '../shared/changes/dailyGitProtocol';
 import type {
     RefBranchDto,
     RefRemoteBranchDto,
@@ -83,8 +82,6 @@ export const SIDEBAR_COMMANDS = {
 
 export const SIDEBAR_CONTEXT = {
   repository: 'repository',
-  localChanges: 'localChanges',
-  allCommits: 'allCommits',
   branchesSection: 'section.branches',
   remotesSection: 'section.remotes',
   tagsSection: 'section.tags',
@@ -114,8 +111,6 @@ export const SIDEBAR_CONTEXT = {
 } as const;
 
 export type SidebarNodeKind =
-  | 'localChanges'
-  | 'allCommits'
   | 'repository'
   | 'section'
   | 'folder'
@@ -199,31 +194,14 @@ export function formatUpstreamTrack(track: string | null): string {
 
 export function buildSidebarTree(
   snapshot: RefsSnapshotDto,
-  worktree: WorktreeStatusDto,
   stashes: readonly StashEntryDto[] = [],
   gitWorktrees: readonly GitWorktreeDto[] = [],
   submodules: readonly GitSubmoduleDto[] = [],
   /** The Pull Requests section, when there is one to show. */
   pullRequests?: SidebarNode,
 ): SidebarNode[] {
-  const changedCount = worktree.stagedCount + worktree.unstagedCount;
   const elsewhere = elsewhereByBranch(gitWorktrees);
   return [
-    {
-      id: 'localChanges',
-      kind: 'localChanges',
-      label: l10n.t('Changes'),
-      contextValue: SIDEBAR_CONTEXT.localChanges,
-      description: changedCount > 0 ? String(changedCount) : undefined,
-      children: [],
-    },
-    {
-      id: 'allCommits',
-      kind: 'allCommits',
-      label: l10n.t('History'),
-      contextValue: SIDEBAR_CONTEXT.allCommits,
-      children: [],
-    },
     {
       id: 'section:branches',
       kind: 'section',
@@ -306,9 +284,9 @@ export function repositoryNode(repoRoot: string, name: string, headRef: string |
   };
 }
 
-/** The rows of the sections view: every section but Pull Requests, whose view lists it. The Changes and History rows are not in it. */
+/** The rows of the sections view: every section but Pull Requests, whose view lists it. */
 export function sectionsViewRows(tree: readonly SidebarNode[]): SidebarNode[] {
-  return tree.filter((node) => node.kind !== 'localChanges' && node.kind !== 'allCommits' && node.id !== 'section:pullRequests');
+  return tree.filter((node) => node.id !== 'section:pullRequests');
 }
 
 /** What a section's view lists: the rows of the section, without its header. */
@@ -316,19 +294,15 @@ export function sectionRows(tree: readonly SidebarNode[], sectionId: string): Si
   return tree.find((node) => node.id === sectionId)?.children ?? [];
 }
 
-/** A query filters the sections below History. */
+/** A query filters the sections. */
 export function withSidebarSearch(nodes: readonly SidebarNode[], query: string): SidebarNode[] {
   const needle = query.trim();
   if (!needle) {
     return [...nodes];
   }
-  const allIndex = nodes.findIndex((node) => node.kind === 'allCommits');
-  const splitAt = allIndex >= 0 ? allIndex + 1 : 0;
-  const head = nodes.slice(0, splitAt);
-  const tail = nodes.slice(splitAt);
   const tokens = needle.toLowerCase().split(/\s+/);
-  const filteredTail = filterNodes(tail, tokens);
-  return [...head, ...(filteredTail.length > 0 ? [] : [noMatchesNode(needle)]), ...filteredTail];
+  const filtered = filterNodes(nodes, tokens);
+  return filtered.length > 0 ? filtered : [noMatchesNode(needle)];
 }
 
 function noMatchesNode(query: string): SidebarNode {
@@ -781,10 +755,6 @@ function leafName(name: string): string {
 
 function nodeIcon(node: SidebarNode): string | undefined {
   switch (node.kind) {
-    case 'localChanges':
-      return 'diff';
-    case 'allCommits':
-      return 'history';
     case 'repository':
       return 'repo';
     case 'folder':
@@ -845,9 +815,6 @@ function nodeCollapsible(node: SidebarNode): SidebarCollapsible {
 
 function clickCommand(node: SidebarNode): string | undefined {
   switch (node.kind) {
-    case 'localChanges':
-      return SIDEBAR_COMMANDS.showLocalChanges;
-    case 'allCommits':
     // Picking a repository shows its graph.
     case 'repository':
       return SIDEBAR_COMMANDS.showAllCommits;

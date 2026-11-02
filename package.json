@@ -4166,7 +4166,6 @@
           "type": "tree",
           "icon": "resources/git-checkout.svg",
           "contextualTitle": "%extension.displayName%",
-          "when": "gitCheckout.repositoryCount != 1",
           "initialSize": 2
         },
         {
@@ -4191,7 +4190,7 @@
           "id": "gitCheckout.commitFiles",
           "name": "%view.gitCheckout.commitFiles.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen",
+          "when": "gitCheckout.graphOpen",
           "visibility": "collapsed",
           "initialSize": 4
         },
@@ -4201,7 +4200,7 @@
           "id": "gitCheckout.tree",
           "name": "%view.gitCheckout.tree.name%",
           "type": "tree",
-          "when": "gitCheckout.panelOpen",
+          "when": "gitCheckout.graphOpen",
           "visibility": "collapsed",
           "initialSize": 4
         },

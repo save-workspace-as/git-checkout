@@ -86,7 +86,7 @@ export function applyRepositoryMenu<T extends Manifest>(manifest: T): T {
       title: `%command.gitCheckout.repo.${action.id}.title%`,
     });
     menus.commandPalette.push({ command, when: 'false' });
-    // Right-click on a repository, and the "…" of the Repository view, which is the same repository when there is only one.
+    // Right-click on a repository, and the "…" of the Repository view, which acts on the selected repository.
     menus['view/item/context'].push({ command, group, when: when(REPOSITORIES_VIEW_ID, action, 'viewItem == repository') });
     menus['view/title'].push({ command, group, when: when(SIDEBAR_VIEW_ID, action) });
   });

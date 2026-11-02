@@ -74,7 +74,6 @@ describe('worktree integration', () => {
           filterRef: 'HEAD',
           headRef: 'main',
         },
-        { dirty: false, stagedCount: 0, unstagedCount: 0 },
         [],
         listed,
       );

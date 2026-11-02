@@ -83,16 +83,15 @@ describe('pullRequestNode', () => {
 
 describe('the sidebar with pull requests', () => {
   const snapshot = { branches: [], remotes: [], remoteBranches: [], tags: [], headRef: null } as never;
-  const worktree = { stagedCount: 0, unstagedCount: 0 } as never;
 
   it('puts the section after Remotes, and leaves it out when there is none', () => {
-    const labels = (section?: ReturnType<typeof pullRequestSection>) => buildSidebarTree(snapshot, worktree, [], [], [], section).map((node) => node.label);
-    assert.deepEqual(labels(undefined), ['Changes', 'History', 'Branches', 'Remotes', 'Tags', 'Stashes', 'Worktrees', 'Submodules']);
-    assert.deepEqual(labels(pullRequestSection(ready({}))), ['Changes', 'History', 'Branches', 'Remotes', 'Pull Requests', 'Tags', 'Stashes', 'Worktrees', 'Submodules']);
+    const labels = (section?: ReturnType<typeof pullRequestSection>) => buildSidebarTree(snapshot, [], [], [], section).map((node) => node.label);
+    assert.deepEqual(labels(undefined), ['Branches', 'Remotes', 'Tags', 'Stashes', 'Worktrees', 'Submodules']);
+    assert.deepEqual(labels(pullRequestSection(ready({}))), ['Branches', 'Remotes', 'Pull Requests', 'Tags', 'Stashes', 'Worktrees', 'Submodules']);
   });
 
   it('finds a pull request by its title, number or author in the sidebar search', () => {
-    const tree = buildSidebarTree(snapshot, worktree, [], [], [], pullRequestSection(ready({ allOpen: [pull(5, { title: 'Speed up blame' }), pull(6, { author: 'grace' })] })));
+    const tree = buildSidebarTree(snapshot, [], [], [], pullRequestSection(ready({ allOpen: [pull(5, { title: 'Speed up blame' }), pull(6, { author: 'grace' })] })));
     const found = (query: string) => withSidebarSearch(tree, query).filter((node) => node.label === 'Pull Requests').flatMap((node) => node.children.flatMap((category) => category.children.map((child) => child.ref)));
     assert.deepEqual(found('blame'), ['5']);
     assert.deepEqual(found('#6'), ['6']);

@@ -10,10 +10,10 @@ import {
   COMMIT_FILE_LIST_VIEW_ID,
   CHANGES_LIST_VIEW_ID,
   TREE_VIEW_ID,
-  createBottomViewSlots,
-  registerBottomPanelViews,
-  type BottomViewSlots,
-} from './bottomPanelViews';
+  createWebviewSlots,
+  registerSidebarWebviews,
+  type WebviewSlots,
+} from './webviewSlots';
 import { ChangeDecorations, ChangesList, type PanelLists } from '../features/changes/changesList';
 import { RevisionList } from '../features/history/revisionLists';
 import { GitCheckoutPanelManager } from './gitCheckoutPanelManager';
@@ -25,11 +25,11 @@ const log = createLogger('windows');
 
 /**
  * One Git Checkout window per repository, each with its own graph, selection, filters and form
- * state. The bottom views, sidebar and commands are shared and follow the current window: the one
+ * state. The views, sidebar and commands are shared and follow the current window: the one
  * last brought to the front, or the repository last picked in the sidebar.
  */
 export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
-  readonly slots: BottomViewSlots = createBottomViewSlots();
+  readonly slots: WebviewSlots = createWebviewSlots();
   private readonly decorations = new ChangeDecorations();
   /** A pick in the Changes list is a selection in the current window. */
   private readonly pick = (change: { path: string; side: 'staged' | 'unstaged' }): void => {
@@ -38,7 +38,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
         ? l10n.t('{0} (Staged)', path.posix.basename(change.path))
         : l10n.t('{0} (Unstaged)', path.posix.basename(change.path)),
     );
-    void this.current.handleBottomViewMessage({ type: 'changesSelect', ...change });
+    void this.current.handleViewMessage({ type: 'changesSelect', ...change });
   };
   /** The tabs of the editor area that show a diff or a preview. */
   private readonly diffEditor: EditorTab;
@@ -49,7 +49,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     // Picking a commit's changed file shows its diff; picking a file of the tree previews it.
     commitFiles: new RevisionList(COMMIT_FILE_LIST_VIEW_ID, this.decorations, vscode.TreeItemCollapsibleState.Expanded, (node) => {
       this.commitDiffEditor.show(l10n.t('{0} ({1})', path.posix.basename(node.path), (node.revision ?? '').slice(0, 7)));
-      void this.current.handleBottomViewMessage({
+      void this.current.handleViewMessage({
         type: 'commitDetailsSelectFile',
         sha: node.revision ?? '',
         ...(node.baseRevision ? { baseSha: node.baseRevision } : {}),
@@ -58,7 +58,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     }, l10n.t('Select a commit in the graph to see its changed files.')),
     tree: new RevisionList(TREE_VIEW_ID, this.decorations, vscode.TreeItemCollapsibleState.Collapsed, (node) => {
       this.treePreviewEditor.show(l10n.t('{0} ({1})', path.posix.basename(node.path), (node.revision ?? 'HEAD').slice(0, 7)));
-      void this.current.handleBottomViewMessage({ type: 'commitTreeOpen', revision: node.revision ?? 'HEAD', path: node.path });
+      void this.current.handleViewMessage({ type: 'commitTreeOpen', revision: node.revision ?? 'HEAD', path: node.path });
     }, l10n.t('Select a commit in the graph to browse its files.')),
   };
   private readonly windows: GitCheckoutPanelManager[] = [];
@@ -74,8 +74,8 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     private readonly cliRegistry: GitCliRegistry,
   ) {
     this.current = this.open(null);
-    const forward = (message: Parameters<GitCheckoutPanelManager['handleBottomViewMessage']>[0]): void => {
-      void this.current.handleBottomViewMessage(message);
+    const forward = (message: Parameters<GitCheckoutPanelManager['handleViewMessage']>[0]): void => {
+      void this.current.handleViewMessage(message);
     };
     this.diffEditor = new EditorTab(context, CHANGE_DIFF_TAB, this.slots.changes, forward);
     this.commitDiffEditor = new EditorTab(context, COMMIT_DIFF_TAB, this.slots.commit, forward);
@@ -84,8 +84,8 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
       this.diffEditor,
       this.commitDiffEditor,
       this.treePreviewEditor,
-      registerBottomPanelViews(context, this.slots, (message) => {
-        void this.current.handleBottomViewMessage(message);
+      registerSidebarWebviews(context, this.slots, (message) => {
+        void this.current.handleViewMessage(message);
       }),
     );
     this.current.activate();
@@ -116,7 +116,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
   panelClosed(window: object): void {
     const open = this.windows.filter((candidate) => candidate.hasPanel());
     if (open.length === 0) {
-      void vscode.commands.executeCommand('setContext', 'gitCheckout.panelOpen', false);
+      void vscode.commands.executeCommand('setContext', 'gitCheckout.graphOpen', false);
       void restoreBuiltInScm();
     }
     // A window without a panel for a repository other than the first has nothing left to show.
@@ -173,7 +173,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     return known ?? this.open(repoRoot);
   }
 
-  /** Makes `repoRoot` the repository commands, the sidebar and the bottom views work on. */
+  /** Makes `repoRoot` the repository commands, the sidebar and the other views work on. */
   async selectRepository(repoRoot: string): Promise<void> {
     const target = this.current.repositoryRoots().find((root) => sameWorktreePath(root, repoRoot));
     if (!target) {
@@ -187,7 +187,7 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
   readonly onDidChangeActiveRepo = this.activeRepoChanged.event;
 
   dispose(): void {
-    void vscode.commands.executeCommand('setContext', 'gitCheckout.panelOpen', false);
+    void vscode.commands.executeCommand('setContext', 'gitCheckout.graphOpen', false);
     void restoreBuiltInScm();
     for (const window of this.windows.splice(0)) {
       window.dispose();

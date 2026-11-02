@@ -299,6 +299,15 @@ export async function loadTree(api: GitCheckoutApi): Promise<SidebarNode[]> {
   return (await api.sidebar.getChildren()) ?? [];
 }
 
+/**
+ * Starts a test from a known place: no editor tabs left open by an earlier test, and `repoRoot` the repository the views show.
+ * An earlier suite can leave another repository's window as the current one, which tests that act on "the" repository trip over.
+ */
+export async function resetToRepository(api: Pick<GitCheckoutApi, 'selectRepository'>, repoRootPath: string): Promise<void> {
+  await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+  await api.selectRepository(repoRootPath);
+}
+
 export async function readyTree(api: GitCheckoutApi): Promise<SidebarNode[]> {
   return waitFor('sidebar with main checked out', async () => {
     const nodes = await loadTree(api);

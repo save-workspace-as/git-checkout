@@ -24,7 +24,7 @@ export type RefsContext = Pick<
   | '_onDidChangeRefs'
   | 'activeBranchCompare'
   | 'activeRepoRoot'
-  | 'bottomFocusCommand'
+  | 'focusCommand'
   | 'cliRegistry'
   | 'commitDetailsService'
   | 'createOrReveal'
@@ -129,9 +129,9 @@ export class RefsController {
     return this.ctx.showRefInGraph(ALL_COMMITS_FILTER);
   }
 
-  /** Shows the Changes tab of the bottom panel, opening the window first when there is none. */
+  /** Focuses the Changes list, opening the window first when there is none. */
   showLocalChanges(): void {
-    this.ctx.bottomFocusCommand = CHANGES_TAB_FOCUS_COMMAND;
+    this.ctx.focusCommand = CHANGES_TAB_FOCUS_COMMAND;
     this.ctx.createOrReveal();
     void vscode.commands.executeCommand(CHANGES_TAB_FOCUS_COMMAND);
     this.ctx.postWhenReady({ type: 'workingCopyFocus' });

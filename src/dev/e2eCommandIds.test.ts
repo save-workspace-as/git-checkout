@@ -22,7 +22,7 @@ describe('commandIdsInE2eSource', () => {
 
   it('skips context keys and the focus command VS Code makes for every view', () => {
     const source = [
-      "executeCommand('setContext', 'gitCheckout.panelOpen', true);",
+      "executeCommand('setContext', 'gitCheckout.graphOpen', true);",
       "executeCommand('gitCheckout.changes.focus');",
       "executeCommand('gitCheckout.changes.stage');",
     ].join('\n');

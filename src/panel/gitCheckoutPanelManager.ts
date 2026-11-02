@@ -77,12 +77,12 @@ import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
 import { ignoreRevsEnabled } from '../features/blame/blameSettings';
 import { autolinksBodyAttribute } from '../shared/history/autolinks';
 import { commitSummaryText, compareSummaryText } from '../features/history/commitSummaryText';
-import { FanOutSlot, ScopedBottomViewSlot, type BottomSlot } from './bottomPanelViews';
+import { ChangesSlot, ScopedWebviewSlot, type SlotPoster } from './webviewSlots';
 import { webviewImgSrc } from './webviewImgSrc';
 import { ScopedChangesList } from '../features/changes/changesList';
 import { ScopedRevisionList } from '../features/history/revisionLists';
 import type { PanelWindowHost } from './panelWindowHost';
-import { bottomViewsFor } from './bottomViewTarget';
+import { slotsFor } from './slotTargets';
 import { describeOperation, type OperationBannerModel } from '../shared/history/operationBanner';
 import { OperationController } from '../features/operations/OperationController';
 import { InteractiveRebaseController } from '../features/rebase/interactiveRebaseController';
@@ -184,12 +184,12 @@ import { RefsController } from '../features/branches/RefsController';
 
 export class GitCheckoutPanelManager implements vscode.Disposable {
   panel: vscode.WebviewPanel | undefined;
-  readonly commitSlot: BottomSlot;
+  readonly commitSlot: SlotPoster;
   readonly treeList: ScopedRevisionList;
   readonly commitFilesList: ScopedRevisionList;
-  private readonly treePreviewSlot: BottomSlot;
+  private readonly treePreviewSlot: SlotPoster;
   /** The view to focus when the window opens; none unless something asked for one. */
-  bottomFocusCommand: string | undefined;
+  focusCommand: string | undefined;
   private webviewReady = false;
   private readonly pendingMessages: HostMessage[] = [];
   readonly _onDidChangeRefs = new vscode.EventEmitter<void>();
@@ -228,7 +228,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   readonly pathHistory: PathHistoryPanel;
   readonly interactiveRebase: InteractiveRebaseController;
   readonly operation = new OperationController(this);
-  readonly changesSlot: BottomSlot;
+  readonly changesSlot: SlotPoster;
   readonly changesList: ScopedChangesList;
   changesView: ChangesViewOptions;
 
@@ -292,14 +292,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     this.disposables.push(this.interactiveRebase, this.pathHistory);
     this.selectedRepoRoot = pinnedRepoRoot;
     const owns = (): boolean => host.owns(this);
-    this.commitSlot = new ScopedBottomViewSlot(host.slots.commit, owns);
+    this.commitSlot = new ScopedWebviewSlot(host.slots.commit, owns);
     this.treeList = new ScopedRevisionList(host.lists.tree, owns);
     this.commitFilesList = new ScopedRevisionList(host.lists.commitFiles, owns);
-    this.treePreviewSlot = new ScopedBottomViewSlot(host.slots.treePreview, owns);
-    this.changesSlot = new FanOutSlot([
-      new ScopedBottomViewSlot(host.slots.changes, owns),
-      new ScopedBottomViewSlot(host.slots.changesForm, owns),
-    ]);
+    this.treePreviewSlot = new ScopedWebviewSlot(host.slots.treePreview, owns);
+    this.changesSlot = new ChangesSlot(
+      new ScopedWebviewSlot(host.slots.changesForm, owns),
+      new ScopedWebviewSlot(host.slots.changes, owns),
+    );
     this.changesList = new ScopedChangesList(host.lists.changes, owns);
     this.operationForm = new OperationFormController(
       () => this.createOrReveal(),
@@ -472,7 +472,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
     this.host.focused(this);
     void hideBuiltInScm();
-    void this.openBottomPanel();
+    void this.showSidebarViews();
   }
 
   /** The tab's title names the repository, so several windows can be told apart. */
@@ -493,7 +493,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   }
 
   /**
-   * This window became the current one: the shared bottom views start over and ask it for their
+   * This window became the current one: the shared views start over and ask it for their
    * content, and the controllers and context keys that serve one window at a time point at it.
    */
   activate(): void {
@@ -514,8 +514,8 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       : Promise.resolve();
   }
 
-  /** Handles a message from one of the shared bottom views. */
-  handleBottomViewMessage(message: WebviewMessage): Promise<void> {
+  /** Handles a message from one of the shared views and tabs. */
+  handleViewMessage(message: WebviewMessage): Promise<void> {
     return this.onWebviewMessage(message);
   }
 
@@ -1280,15 +1280,15 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     if (this.panel) {
       void this.panel.webview.postMessage(message);
     }
-    for (const pane of bottomViewsFor(message.type)) {
+    for (const pane of slotsFor(message.type)) {
       this[`${pane}Slot`].post(message);
     }
   }
 
-  private async openBottomPanel(): Promise<void> {
-    await vscode.commands.executeCommand('setContext', 'gitCheckout.panelOpen', true);
-    const focus = this.bottomFocusCommand;
-    this.bottomFocusCommand = undefined;
+  private async showSidebarViews(): Promise<void> {
+    await vscode.commands.executeCommand('setContext', 'gitCheckout.graphOpen', true);
+    const focus = this.focusCommand;
+    this.focusCommand = undefined;
     if (focus) {
       await vscode.commands.executeCommand(focus);
     }

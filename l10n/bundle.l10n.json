@@ -143,7 +143,6 @@
   "Cannot delete the current branch ({0}).": "Cannot delete the current branch ({0}).",
   "Cannot restore binary file {0} from the stash while it has other changes.": "Cannot restore binary file {0} from the stash while it has other changes.",
   "Change the URL of this remote.": "Change the URL of this remote.",
-  "Changes": "Changes",
   "Changes from {0} to {1}": "Changes from {0} to {1}",
   "Changes requested": "Changes requested",
   "Check Out Everything": "Check Out Everything",

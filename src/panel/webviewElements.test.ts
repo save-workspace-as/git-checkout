@@ -57,7 +57,7 @@ describe('VS Code Elements in the webviews', () => {
   });
 
   it('gives every page that shows elements the codicon stylesheet their icons load', () => {
-    for (const file of ['panel/gitCheckoutPanelManager.ts', 'panel/bottomPanelViews.ts']) {
+    for (const file of ['panel/gitCheckoutPanelManager.ts', 'panel/webviewSlots.ts']) {
       assert.match(readFileSync(join(__dirname, '..', file), 'utf8'), /id="vscode-codicon-stylesheet"/, file);
     }
   });

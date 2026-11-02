@@ -3,7 +3,7 @@ const QUOTED_ID = /['"](gitCheckout\.[A-Za-z0-9.]+)['"]/g;
 /** Panel viewType, view ids and context keys referenced by e2e tests. They are not contributed commands. */
 export const E2E_VIEW_TYPES = new Set([
   'gitCheckout.main',
-  'gitCheckout.panelOpen',
+  'gitCheckout.graphOpen',
   'gitCheckout.diff',
   'gitCheckout.repositories',
   'gitCheckout.commitForm',

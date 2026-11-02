@@ -57,7 +57,7 @@ export interface GitCheckoutApi {
   activityBadge(): number | undefined;
   /** Sends a message as if it came from the main panel webview (e2e only). */
   sendPanelMessage(message: WebviewMessage): Promise<void>;
-  /** Makes the repository at `repoRoot` the one commands and the bottom views act on (e2e only). */
+  /** Makes the repository at `repoRoot` the one commands and the views act on (e2e only). */
   selectRepository(repoRoot: string): Promise<void>;
   /** What the Merge Conflicts window last showed (e2e only). */
   operationFormState(): ReturnType<GitCheckoutPanelManager['operationFormState']>;

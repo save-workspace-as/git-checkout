@@ -132,7 +132,7 @@ export class ChangesList extends NativeFileList<ChangeNode> {
   }
 }
 
-/** The native lists of the bottom panels. */
+/** The native lists of the sidebar. */
 export interface PanelLists {
   changes: ChangesList;
   commitFiles: RevisionList;
