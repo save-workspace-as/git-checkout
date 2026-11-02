@@ -22,25 +22,25 @@ Flags:
 - `--author "Name|email"` makes the demo commits by that person. The default is the latest author in the history who is not a bot, so the graph shows their real GitHub picture.
 - `--keep-open` leaves the VS Code windows up, for looking at them.
 
-Requirements: macOS with the screen unlocked and awake (a locked screen cannot be captured, and the script stops with a message), `swiftc`, Node 20+, and network for the avatars and the first VS Code download. It opens its own VS Code windows and drives them over DevTools, so no browser is needed; do not touch the keyboard or mouse while it runs, and it takes a few minutes.
+Requirements: macOS with the screen unlocked and awake (a locked screen cannot be captured, and the script stops with a message; `caffeinate -dimsu -t 1800` in another terminal keeps it from sleeping, though not from locking), `swiftc`, Node 20+, and network for the avatars and the first VS Code download. It opens its own VS Code windows, opens and folds the sidebar sections by name, and drives them over DevTools, so no browser is needed; do not touch the keyboard or mouse while it runs, and it takes a few minutes.
 
 ## The shots
 
 | id | file | shows |
 | --- | --- | --- |
-| 01 | `01-commit-graph.png` | The graph with a commit selected, bottom panel drawn down to its tab bar |
+| 01 | `01-commit-graph.png` | The graph with a commit selected, and the Repositories and Commit sections of the sidebar open |
 | 02 | `02-graph-search.png` | The graph search with a `path:` filter and its matches |
-| 03 | `03-stage-and-unstage.png` | The Changes tab, panel maximized |
-| 04 | `04-commit-details.png` | A commit's details and files, panel maximized |
-| 05 | `05-file-tree.png` | The File Tree tab |
-| 06 | `06-image-preview.png` | A picture previewed in the File Tree |
+| 03 | `03-stage-and-unstage.png` | The Commit Message and Changes sections, and the diff of a change open as a tab beside the graph |
+| 04 | `04-commit-details.png` | A commit's changed files in the sidebar, and the diff of the first one as a tab |
+| 05 | `05-file-tree.png` | The File Tree section of the sidebar |
+| 06 | `06-image-preview.png` | A picture previewed as a tab, picked in the File Tree |
 | 07 | `07-image-diff.png` | The old and new icon in a commit's diff |
 | 08 | `08-file-history.png` | The History modal of a file with 3 to 4 commits |
 | 09 | `09-blame.png` | The Blame modal |
 | 10 | `10-quick-launch.png` | Quick Launch over the graph |
 | 11 | `11-interactive-rebase.png` | The Interactive Rebase modal, onto `HEAD~4` |
-| 12 | `12-merge-conflict.png` | The Merge modal on a conflict, panel hidden |
-| 13 | `13-stage-lines.png` | Two selected lines with the Stage and Discard Changes buttons |
+| 12 | `12-merge-conflict.png` | The Merge modal on a conflict |
+| 13 | `13-stage-lines.png` | Two selected lines in the diff tab, with the Stage and Discard Changes buttons |
 | 14 | `14-line-blame.png` | A file with blame at the end of the cursor line and its hover (avatar, message, actions) |
 | 15 | `15-file-blame.png` | The same file with blame for every line in the gutter, tinted by age, and the CodeLens above its functions |
 
@@ -51,7 +51,7 @@ A new feature that deserves a picture: add a block to `scripts/run.mjs` after th
 Open each picture before you hand it over. Look for:
 
 - the title is "Git Checkout — git-checkout" (not "[Extension Development Host]"), and the traffic lights are there;
-- no modal is cut off by the bottom panel, and none has an outline around the whole dialog;
+- no modal is cut off, and none has an outline around the whole dialog;
 - no error toast, no leftover search text, no folder path from `/tmp` in the sidebar (the Worktrees section is folded for that);
 - avatars are real GitHub pictures, not initials, and round without a colored edge;
 - the shot shows what its row says, and nothing from your own work (the demo repository is a copy, never this one).

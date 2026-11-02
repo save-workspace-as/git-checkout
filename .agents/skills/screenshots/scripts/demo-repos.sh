@@ -12,9 +12,12 @@ mkdir -p "$WORK/stage" "$WORK/merge"
 git clone -q --no-hardlinks "$SOURCE" "$WORK/stage/git-checkout"
 cd "$WORK/stage/git-checkout"
 git config user.name "$NAME"; git config user.email "$EMAIL"
-git checkout -q -B main origin/main 2>/dev/null || git checkout -q main
+# The history of the demo ends at the newest commit of the source's own remote that is not a work in progress, so no unpushed work is in the pictures.
+BASE=$(git -C "$SOURCE" log -1 --format=%H --invert-grep --grep='^wip' refs/remotes/origin/main 2>/dev/null || true)
+if [ -n "$BASE" ] && git cat-file -e "$BASE" 2>/dev/null; then git checkout -q -B main "$BASE"; else git checkout -q -B main origin/main 2>/dev/null || git checkout -q main; fi
+[ -n "$BASE" ] && git update-ref refs/remotes/origin/main "$BASE" 2>/dev/null || true
 # Only `main` is remote: no local-only or foreign branches show in the graph.
-for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v 'refs/remotes/origin/main$\|refs/remotes/origin/HEAD$'); do git update-ref -d "$ref"; done
+for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -Ev 'refs/remotes/origin/(main|HEAD)$'); do git update-ref -d "$ref"; done
 git config remote.origin.fetch '+refs/heads/main:refs/remotes/origin/main'
 git branch feat/merge-modal HEAD~2 2>/dev/null || true
 git branch feat/line-staging HEAD~5 2>/dev/null || true
@@ -33,14 +36,26 @@ printf '\nRun `npm run test:unit` before you push.\n' >> CONTRIBUTING.md
 git add CONTRIBUTING.md
 printf '# Notes\n\nIdeas for the next release.\n' > docs-notes.md
 FILE=$(git ls-files 'src/shared/changes/*.ts' | grep -v test | head -1)
+# A change worth a diff: a new documented helper, and a few lines touched.
 python3 - "$FILE" <<'PY'
 import sys
 p = sys.argv[1]
 lines = open(p).read().split('\n')
-for i in range(len(lines) // 2, len(lines)):
-    if lines[i].strip() and not lines[i].strip().startswith(('/', '*')):
+helper = [
+    '',
+    '/** How many of the entries are staged, and how many are not. */',
+    'export function countChanges(entries: readonly { group: string }[]): { staged: number; unstaged: number } {',
+    "  const staged = entries.filter((entry) => entry.group === 'staged').length;",
+    '  return { staged, unstaged: entries.length - staged };',
+    '}',
+]
+at = next((i for i in range(len(lines) * 2 // 3, len(lines)) if lines[i] == '}'), len(lines) - 1)
+lines[at + 1:at + 1] = helper
+touched = 0
+for i in range(len(lines) // 4, at):
+    if touched < 2 and lines[i].strip() and not lines[i].strip().startswith(('/', '*', 'import')) and lines[i].rstrip().endswith(';'):
         lines[i] = lines[i] + ' // reviewed'
-        break
+        touched += 1
 open(p, 'w').write('\n'.join(lines))
 PY
 
@@ -55,7 +70,7 @@ git config user.name "$NAME"; git config user.email "$EMAIL"
 git checkout -q main
 git reset -q --hard HEAD~1
 git remote set-url origin "https://github.com/save-workspace-as/git-checkout.git"
-for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v 'refs/remotes/origin/main$\|refs/remotes/origin/HEAD$'); do git update-ref -d "$ref"; done
+for ref in $(git for-each-ref --format='%(refname)' refs/remotes/origin | grep -Ev 'refs/remotes/origin/(main|HEAD)$'); do git update-ref -d "$ref"; done
 FILE=$(git ls-files 'src/shared/changes/*.ts' | grep -v test | head -1)
 edit() { python3 - "$FILE" "$1" <<'PY'
 import sys
