@@ -90,7 +90,7 @@ To clone, press **Ctrl+N** (**Cmd+Shift+N**), choose **Clone Repository…** in 
 
 ## Keyboard shortcuts
 
-While a Git Checkout window, its sidebar or its bottom views have focus, these shortcuts work. On macOS use the second column.
+While a Git Checkout window, its sidebar or one of its tabs has focus, these shortcuts work. On macOS use the second column.
 
 | Windows and Linux | macOS | Action |
 | --- | --- | --- |

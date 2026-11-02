@@ -4,6 +4,7 @@ import { autolinksBodyAttribute } from '../shared/history/autolinks';
 import { readAutolinks } from '../features/history/githubLinkHost';
 import type { HostMessage, WebviewMessage } from '../shared/protocol';
 import { webviewImgSrc } from './webviewImgSrc';
+import { changesPagesFor } from './slotTargets';
 
 export const COMMIT_FORM_VIEW_ID = 'gitCheckout.commitForm';
 export const CHANGES_LIST_VIEW_ID = 'gitCheckout.changes';
@@ -11,7 +12,7 @@ export const TREE_VIEW_ID = 'gitCheckout.tree';
 export const COMMIT_FILE_LIST_VIEW_ID = 'gitCheckout.commitFiles';
 
 /** Queues host messages until the panel webview script has loaded. */
-export class BottomViewSlot {
+export class WebviewSlot {
   private webview: vscode.Webview | undefined;
   private ready = false;
   private readonly pending: HostMessage[] = [];
@@ -69,12 +70,12 @@ export class BottomViewSlot {
   }
 }
 
-export type BottomSlot = Pick<BottomViewSlot, 'post' | 'markReady' | 'view'>;
+export type SlotPoster = Pick<WebviewSlot, 'post' | 'markReady' | 'view'>;
 
-/** A window's handle on a shared bottom view: it can only post to the view while the window owns it. */
-export class ScopedBottomViewSlot implements BottomSlot {
+/** A window's handle on a shared view: it can only post to the view while the window owns it. */
+export class ScopedWebviewSlot implements SlotPoster {
   constructor(
-    private readonly slot: BottomViewSlot,
+    private readonly slot: WebviewSlot,
     private readonly owns: () => boolean,
   ) {}
 
@@ -93,36 +94,42 @@ export class ScopedBottomViewSlot implements BottomSlot {
   }
 }
 
-/** Posts to every slot: the pages that make up one view each take the messages they need and ignore the rest. */
-export class FanOutSlot implements BottomSlot {
-  constructor(private readonly slots: readonly BottomSlot[]) {}
+/** The Changes slot: the commit form in the sidebar and the diff tab each get the messages that are theirs. */
+export class ChangesSlot implements SlotPoster {
+  constructor(
+    private readonly form: SlotPoster,
+    private readonly diff: SlotPoster,
+  ) {}
 
   post(message: HostMessage): void {
-    this.slots.forEach((slot) => slot.post(message));
+    for (const page of changesPagesFor(message.type)) {
+      (page === 'form' ? this.form : this.diff).post(message);
+    }
   }
 
   markReady(): void {
-    this.slots.forEach((slot) => slot.markReady());
+    this.form.markReady();
+    this.diff.markReady();
   }
 
   get view(): vscode.WebviewView | undefined {
-    return this.slots.find((slot) => slot.view)?.view;
+    return this.form.view ?? this.diff.view;
   }
 }
 
-export interface BottomViewSlots {
-  commit: BottomViewSlot;
-  treePreview: BottomViewSlot;
+export interface WebviewSlots {
+  commit: WebviewSlot;
+  treePreview: WebviewSlot;
   /** The diff of the selected change. */
-  changes: BottomViewSlot;
+  changes: WebviewSlot;
   /** The commit form of the Changes view. */
-  changesForm: BottomViewSlot;
+  changesForm: WebviewSlot;
 }
 
-export function createBottomViewSlots(): BottomViewSlots {
+export function createWebviewSlots(): WebviewSlots {
   return {
-    commit: new BottomViewSlot(), treePreview: new BottomViewSlot(),
-    changes: new BottomViewSlot(), changesForm: new BottomViewSlot(),
+    commit: new WebviewSlot(), treePreview: new WebviewSlot(),
+    changes: new WebviewSlot(), changesForm: new WebviewSlot(),
   };
 }
 
@@ -166,12 +173,12 @@ export function viewHtml(
 </html>`;
 }
 
-export function registerBottomPanelViews(
+export function registerSidebarWebviews(
   context: vscode.ExtensionContext,
-  slots: BottomViewSlots,
+  slots: WebviewSlots,
   onMessage: (message: WebviewMessage) => void,
 ): vscode.Disposable {
-  const provider = (script: string, slot: BottomViewSlot, rootAttributes = ''): vscode.WebviewViewProvider => ({
+  const provider = (script: string, slot: WebviewSlot, rootAttributes = ''): vscode.WebviewViewProvider => ({
     resolveWebviewView(view: vscode.WebviewView): void {
       view.webview.options = {
         enableScripts: true,

@@ -78,7 +78,7 @@ class SidebarSource {
       const pullRequests = this.pullRequests && pullRequestSection(this.pullRequests.peek(root));
       // The Pull Requests view is there only while the repository is on GitHub and the setting is on.
       void vscode.commands.executeCommand('setContext', 'gitCheckout.pullRequestsAvailable', pullRequests !== undefined);
-      const sections = buildSidebarTree(data.snapshot, data.worktree, data.stashes, data.worktrees, data.submodules, pullRequests);
+      const sections = buildSidebarTree(data.snapshot, data.stashes, data.worktrees, data.submodules, pullRequests);
       const nodes = withSidebarSearch(sections, this.search.query);
       for (const node of nodes) {
         assignRepoRoot(node, root);
@@ -251,16 +251,10 @@ export function registerGitCheckoutSidebar(
   const everything = new SidebarProvider(panel, source, { kind: 'all' });
   const repositories = new RepositoriesProvider(panel);
   const repositoriesView = vscode.window.createTreeView(REPOSITORIES_VIEW_ID, { treeDataProvider: repositories });
-  /** The Repositories view shows only when there is not exactly one repository: nothing to pick between otherwise. */
-  function publishRepositoryCount(): void {
-    void vscode.commands.executeCommand('setContext', 'gitCheckout.repositoryCount', panel.repositoryRoots().length);
-  }
-  publishRepositoryCount();
   /** True while the view's selection is being set by us rather than by a click. */
   let highlighting = false;
   const refreshAll = (): void => {
     source.invalidate();
-    publishRepositoryCount();
     repositories.refresh();
     scoped.forEach((entry) => entry.provider.refresh());
     everything.refresh();

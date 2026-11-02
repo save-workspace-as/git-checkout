@@ -28,7 +28,7 @@ describe('Git Checkout sidebar', () => {
 
     assert.deepEqual(
       tree.map((node) => node.label),
-      ['Changes', 'History', 'Branches', 'Remotes', 'Tags', 'Stashes', 'Worktrees', 'Submodules'],
+      ['Branches', 'Remotes', 'Tags', 'Stashes', 'Worktrees', 'Submodules'],
     );
     const branches = branchesOf(tree);
     assert.deepEqual(
@@ -100,18 +100,6 @@ describe('Git Checkout sidebar', () => {
     await waitFor('sidebar to mark agent/feature as HEAD', async () =>
       findByRef(await loadTree(ctx.api), 'agent/feature')?.isHead ? true : undefined,
     );
-  });
-
-  it('counts local changes without listing them: the Changes tab does that', async () => {
-    await readyTree(ctx.api);
-    writeFileSync(join(repoRoot(), 'notes.txt'), 'hello\n');
-
-    const local = await waitFor('Changes count', async () => {
-      const node = (await loadTree(ctx.api)).find((entry) => entry.id === 'localChanges');
-      return node?.description === '1' ? node : undefined;
-    });
-    assert.equal(local.children.length, 0);
-    assert.equal(findByRef(await loadTree(ctx.api), 'notes.txt'), undefined);
   });
 
   it('counts pending changes on the Git Checkout icon, and follows scm.countBadge', async () => {

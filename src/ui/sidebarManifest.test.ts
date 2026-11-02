@@ -82,9 +82,9 @@ describe('sidebar manifest contributions', () => {
     ]);
   });
 
-  it('hides the Repositories view while there is only one repository to pick', () => {
+  it('always shows the Repositories view, even with one repository', () => {
     const view = contributes.views['git-checkout'].find((entry) => entry.id === REPOSITORIES_VIEW_ID);
-    assert.equal(view?.when, 'gitCheckout.repositoryCount != 1');
+    assert.equal(view?.when, undefined);
   });
 
   it('puts search on a button of the Repository view, outside the three dots, where it filters', () => {
@@ -98,9 +98,9 @@ describe('sidebar manifest contributions', () => {
     assert.ok(contributes.viewsWelcome.some((w) => w.view === REPOSITORIES_VIEW_ID));
   });
 
-  it('hides the Repositories view while there is only one repository to pick', () => {
+  it('always shows the Repositories view, even with one repository', () => {
     const view = contributes.views['git-checkout'].find((entry) => entry.id === REPOSITORIES_VIEW_ID);
-    assert.equal(view?.when, 'gitCheckout.repositoryCount != 1');
+    assert.equal(view?.when, undefined);
   });
 
   it('puts search in the menu of the Repository view, where it filters', () => {
@@ -144,9 +144,7 @@ describe('sidebar manifest contributions', () => {
 
   it('gives every actionable node kind a context menu', () => {
     const withoutMenus = new Set<string>([
-      SIDEBAR_CONTEXT.localChanges,
-      SIDEBAR_CONTEXT.allCommits,
-      // Picking a repository selects it; the view's title has its actions.
+      // A repository's row opens its graph; its right-click menu has the actions.
       SIDEBAR_CONTEXT.repository,
       // The Pull Requests view has its Refresh in its title bar.
       SIDEBAR_CONTEXT.pullRequestsSection,

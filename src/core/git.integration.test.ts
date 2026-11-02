@@ -202,11 +202,7 @@ describe('git integration', () => {
         mockCliRegistry(repo.repoRoot, repo.cli),
         mockGraphService('main'),
       );
-      const tree = buildSidebarTree(await svc.loadSnapshot(repo.repoRoot), {
-        dirty: false,
-        stagedCount: 0,
-        unstagedCount: 0,
-      });
+      const tree = buildSidebarTree(await svc.loadSnapshot(repo.repoRoot));
 
       const branches = tree.find((n) => n.id === 'section:branches')?.children ?? [];
       assert.deepEqual(branches.map((n) => n.label), ['agent', 'main']);

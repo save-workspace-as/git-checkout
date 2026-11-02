@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import * as vscode from 'vscode';
 
 import { answer, cancelForm, commitFile } from './graphMenu';
-import { bindExtension, git, loadTree, readyTree, repoRoot, waitFor, type SidebarNode } from './harness';
+import { bindExtension, resetToRepository, git, loadTree, readyTree, repoRoot, waitFor, type SidebarNode } from './harness';
 
 const walk = (node: SidebarNode): SidebarNode[] => [node, ...(node.children ?? []).flatMap(walk)];
 
@@ -31,8 +31,7 @@ describe('Pull requests in the sidebar', () => {
 
   beforeEach(async () => {
     await readyTree(ctx.api);
-    // An earlier suite may have left another repository's window as the current one.
-    await ctx.api.selectRepository(repoRoot());
+    await resetToRepository(ctx.api, repoRoot());
     opened.length = 0;
     head = commitFile('base.txt', 'base\n', 'base');
     remote = mkdtempSync(join(tmpdir(), 'git-checkout-e2e-pr-'));

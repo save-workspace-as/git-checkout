@@ -23,7 +23,6 @@ import {
     withSidebarSearch,
 } from './sidebarTreeModel';
 
-const CLEAN = { dirty: false, stagedCount: 0, unstagedCount: 0 };
 
 function snapshot(partial: Partial<RefsSnapshotDto> = {}): RefsSnapshotDto {
   return {
@@ -75,7 +74,7 @@ describe('repository views', () => {
   });
 
   it('tags every row below a section with the repository root', () => {
-    const sections = buildSidebarTree(snapshot(), CLEAN);
+    const sections = buildSidebarTree(snapshot());
     for (const node of sections) {
       assignRepoRoot(node, '/work/demo');
     }
@@ -87,7 +86,7 @@ describe('repository views', () => {
   });
 
   it('lists every section but Pull Requests in the sections view, without the Changes and History rows', () => {
-    const tree = buildSidebarTree(snapshot(), CLEAN);
+    const tree = buildSidebarTree(snapshot());
     assert.deepEqual(
       sectionsViewRows(tree).map((node) => node.id),
       ['section:branches', 'section:remotes', 'section:tags', 'section:stashes', 'section:worktrees', 'section:submodules'],
@@ -99,10 +98,8 @@ describe('repository views', () => {
 
 describe('buildSidebarTree', () => {
   it('returns the fixed top-level entries in order', () => {
-    const tree = buildSidebarTree(snapshot(), CLEAN);
+    const tree = buildSidebarTree(snapshot());
     assert.deepEqual(labels(tree), [
-      'Changes',
-      'History',
       'Branches',
       'Remotes',
       'Tags',
@@ -110,19 +107,6 @@ describe('buildSidebarTree', () => {
       'Worktrees',
       'Submodules',
     ]);
-  });
-
-  it('shows the changed-file count on Changes only when dirty', () => {
-    assert.equal(buildSidebarTree(snapshot(), CLEAN)[0].description, undefined);
-    const dirty = { dirty: true, stagedCount: 2, unstagedCount: 1 };
-    assert.equal(buildSidebarTree(snapshot(), dirty)[0].description, '3');
-  });
-
-  it('has no file rows under Changes: the Changes tab lists them', () => {
-    const local = buildSidebarTree(snapshot(), { dirty: true, stagedCount: 1, unstagedCount: 2 })[0];
-    assert.equal(local.children.length, 0);
-    assert.equal(treeItemSpec(local).collapsible, 'none');
-    assert.equal(treeItemSpec(local).command?.id, SIDEBAR_COMMANDS.showLocalChanges);
   });
 
   it('nests branches into folders, folders first and sorted', () => {
@@ -136,7 +120,6 @@ describe('buildSidebarTree', () => {
           { name: 'cursor/y', shortSha: 'c1', upstream: null, upstreamTrack: null, isHead: false },
         ],
       }),
-      CLEAN,
     );
     const branches = section(tree, 'section:branches').children;
     assert.deepEqual(labels(branches), ['agent', 'cursor', 'main']);
@@ -161,7 +144,6 @@ describe('buildSidebarTree', () => {
           { name: 'tracked', shortSha: 'c1', upstream: 'origin/tracked', upstreamTrack: null, isHead: false },
         ],
       }),
-      CLEAN,
     );
     const branches = section(tree, 'section:branches').children;
     assert.equal(branches.find((branch) => branch.ref === 'main')?.contextValue, SIDEBAR_CONTEXT.trackedHeadBranch);
@@ -182,7 +164,6 @@ describe('buildSidebarTree', () => {
           },
         ],
       }),
-      CLEAN,
     );
     const main = section(tree, 'section:branches').children[0];
     assert.equal(main.description, '5↓ 1↑');
@@ -204,7 +185,6 @@ describe('buildSidebarTree', () => {
           { name: 'contrib/feature', shortSha: 'f1', remote: 'contrib' },
         ],
       }),
-      CLEAN,
     );
     const remotes = section(tree, 'section:remotes').children;
     assert.deepEqual(labels(remotes), ['contrib', 'origin', 'upstream']);
@@ -228,7 +208,6 @@ describe('buildSidebarTree', () => {
           { name: 'v1.0.0', shortSha: 't1', kind: 'lightweight' },
         ],
       }),
-      CLEAN,
     );
     const tags = section(tree, 'section:tags').children;
     assert.deepEqual(labels(tags), ['v2.0.0', 'v1.0.0']);
@@ -244,9 +223,9 @@ describe('buildSidebarTree', () => {
       remotes: [{ name: 'origin', urls: [] }],
       tags: [{ name: 'main', shortSha: 'c', kind: 'lightweight' }],
     });
-    const ids = allNodes(buildSidebarTree(snap, CLEAN)).map((n) => n.id);
+    const ids = allNodes(buildSidebarTree(snap)).map((n) => n.id);
     assert.equal(new Set(ids).size, ids.length);
-    assert.deepEqual(allNodes(buildSidebarTree(snap, CLEAN)).map((n) => n.id), ids);
+    assert.deepEqual(allNodes(buildSidebarTree(snap)).map((n) => n.id), ids);
   });
 });
 
@@ -259,13 +238,10 @@ describe('treeItemSpec', () => {
       ],
       tags: [{ name: 'v1', shortSha: 'c', kind: 'lightweight' }],
     }),
-    CLEAN,
   );
   const branches = section(tree, 'section:branches');
 
   it('maps clicks to the matching command with the node as argument', () => {
-    assert.equal(treeItemSpec(tree[0]).command?.id, SIDEBAR_COMMANDS.showLocalChanges);
-    assert.equal(treeItemSpec(tree[1]).command?.id, SIDEBAR_COMMANDS.showAllCommits);
     const main = branches.children[1];
     assert.deepEqual(treeItemSpec(main).command, { id: SIDEBAR_COMMANDS.revealInGraph, args: [main] });
     const tag = section(tree, 'section:tags').children[0];
@@ -297,7 +273,7 @@ function node(kind: SidebarNode['kind'], ref?: string): SidebarNode {
 
 describe('stash sidebar nodes', () => {
   const sha = 'a'.repeat(40);
-  const tree = buildSidebarTree(snapshot(), CLEAN, [
+  const tree = buildSidebarTree(snapshot(), [
     { index: 0, selector: 'stash@{0}', sha, message: 'On main: wip' },
     { index: 1, selector: 'stash@{1}', sha: 'b'.repeat(40), message: '' },
   ]);
@@ -366,7 +342,6 @@ describe('worktree sidebar nodes', () => {
         },
       ],
     }),
-    CLEAN,
     [],
     entries,
   );
@@ -403,7 +378,7 @@ describe('worktree sidebar nodes', () => {
   });
 
   it('collapses the section when there are no worktrees', () => {
-    const empty = section(buildSidebarTree(snapshot(), CLEAN), 'section:worktrees');
+    const empty = section(buildSidebarTree(snapshot()), 'section:worktrees');
     assert.equal(empty.children[0].label, 'No worktrees');
     assert.equal(treeItemSpec(empty).collapsible, 'collapsed');
   });
@@ -434,7 +409,7 @@ describe('submodule sidebar nodes', () => {
       absolutePath: '/repos/main/missing',
     },
   ];
-  const tree = buildSidebarTree(snapshot(), CLEAN, [], [], entries);
+  const tree = buildSidebarTree(snapshot(), [], [], entries);
 
   it('nests child submodules under their parent', () => {
     const sectionNode = section(tree, 'section:submodules');
@@ -473,7 +448,7 @@ describe('submodule sidebar nodes', () => {
   });
 
   it('collapses the section when there are no submodules', () => {
-    const empty = section(buildSidebarTree(snapshot(), CLEAN), 'section:submodules');
+    const empty = section(buildSidebarTree(snapshot()), 'section:submodules');
     assert.equal(empty.children[0].label, 'No submodules');
     assert.equal(treeItemSpec(empty).collapsible, 'collapsed');
   });
@@ -535,7 +510,6 @@ describe('withSidebarSearch', () => {
         remoteBranches: [{ name: 'origin/feature', shortSha: 'ccccccc', remote: 'origin' }],
         tags: [{ name: 'v1.0.0', shortSha: 'ddddddd', kind: 'lightweight' }],
       }),
-      { dirty: true, stagedCount: 0, unstagedCount: 1 },
       [{ index: 0, selector: 'stash@{0}', sha, message: 'wip feature' }],
       [
         {
@@ -571,8 +545,6 @@ describe('withSidebarSearch', () => {
   it('lists every section and no Search row without a query', () => {
     const tree = withSidebarSearch(source, '');
     assert.deepEqual(labels(tree), [
-      'Changes',
-      'History',
       'Branches',
       'Remotes',
       'Tags',
@@ -587,7 +559,7 @@ describe('withSidebarSearch', () => {
     const tree = withSidebarSearch(source, 'FEATURE');
     assert.deepEqual(
       labels(tree),
-      ['Changes', 'History', 'Branches', 'Remotes', 'Stashes', 'Worktrees'],
+      ['Branches', 'Remotes', 'Stashes', 'Worktrees'],
     );
 
     const branches = section(tree, 'section:branches');
@@ -623,10 +595,10 @@ describe('withSidebarSearch', () => {
     assert.equal(parent.children[0].contextValue, SIDEBAR_CONTEXT.submoduleModified);
   });
 
-  it('reports no matches without dropping the anchors', () => {
+  it('reports no matches', () => {
     const tree = withSidebarSearch(source, 'zzzz');
-    assert.deepEqual(labels(tree), ['Changes', 'History', 'No matches']);
-    assert.equal(tree[2].kind, 'message');
+    assert.deepEqual(labels(tree), ['No matches']);
+    assert.equal(tree[0].kind, 'message');
   });
 });
 

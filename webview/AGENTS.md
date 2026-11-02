@@ -27,7 +27,7 @@ References when something is not covered here: the VS Code Elements docs and exa
 
 ## 3. Page requirements
 
-Every webview page the extension builds (`getWebviewHtml` and the bottom views) carries:
+Every webview page the extension builds (`getWebviewHtml`, the sidebar webviews and the editor tabs) carries:
 
 - the CSP above, with `img-src` limited to the extension and the optional avatar origin;
 - `<link rel="stylesheet" href=…/styles.css>`;
@@ -131,7 +131,7 @@ Verify any modal change on **all three surfaces** (operation forms, interactive 
 
 ## 9. Diff options
 
-Every diff view in the bottom panel (Commit's Changes, Changes' Diff, Tree's Preview) has its options as buttons in the native view header, from the `gitCheckout.diff.*` commands in `view/title`; a button that switches something on uses `toggled`. The History modal has no native header, so it uses the shared toolbar in `webview/details/diffToolbar.ts` with the same icons, labels and order. Do not add another in-webview toolbar for a view that has a header.
+Every diff tab of the editor area (the Changes diff, the Commit diff, the File Tree preview) has its options as buttons in the native tab title bar, from the `gitCheckout.diff.*` commands in `editor/title`; a button that switches something on uses `toggled`. The History modal has no native header, so it uses the shared toolbar in `webview/details/diffToolbar.ts` with the same icons, labels and order. Do not add another in-webview toolbar for a tab or view that has a header.
 
 ## 10. Wording and localization
 

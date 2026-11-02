@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 
 import { createFixtureRepo } from './fixtureRepo';
 import { basename } from 'node:path';
-import { bindExtension, findByRef, git, loadTree, openTabSummary, PANEL_VIEW_TYPE, readyTree, repoRoot, updateWorkspaceFolders, waitFor, type SidebarNode } from './harness';
+import { bindExtension, resetToRepository, findByRef, git, loadTree, openTabSummary, PANEL_VIEW_TYPE, readyTree, repoRoot, updateWorkspaceFolders, waitFor, type SidebarNode } from './harness';
 
 function gitIn(cwd: string, ...args: string[]): string {
   return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
@@ -37,8 +37,7 @@ describe('Repositories view', () => {
       vscode.workspace.updateWorkspaceFolders(index, 1);
     }
     await waitFor('second repository closed', async () => ((await listed(ctx.api)).length === 1 ? true : undefined));
-    await vscode.commands.executeCommand('workbench.action.closeAllEditors');
-    await ctx.api.selectRepository(repoRoot());
+    await resetToRepository(ctx.api, repoRoot());
     rmSync(second, { recursive: true, force: true });
   }
 

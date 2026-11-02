@@ -1,13 +1,13 @@
-import type { BottomViewSlots } from './bottomPanelViews';
+import type { WebviewSlots } from './webviewSlots';
 import type { PanelLists } from '../features/changes/changesList';
 
 /**
- * What one repository window shares with the others: the bottom views, which show whichever window
+ * What one repository window shares with the others: the sidebar views, which show whichever window
  * is current, and the sidebar and commands, which act on it.
  */
 export interface PanelWindowHost {
-  readonly slots: BottomViewSlots;
-  /** The file lists of the bottom panels, which are native tree views. */
+  readonly slots: WebviewSlots;
+  /** The file lists of the sidebar, which are native tree views. */
   readonly lists: PanelLists;
   /** Whether `window` is the current one. */
   owns(window: object): boolean;

@@ -42,9 +42,6 @@ interface Selection {
 /** What a page shows: the commit form, the diff of the selected change, or both together. */
 export type ChangesPart = 'form' | 'diff' | 'both';
 
-const FORM_MESSAGES = new Set<string>(['changesSubjectLimits', 'changesShortcut', 'changesGenerating', 'changesGeneratedMessage', 'changesAmendMessage', 'changesCommitted']);
-const DIFF_MESSAGES = new Set<string>(['changesSelection', 'commitDiffView', 'editorTokenColors', 'changesDiff', 'changesConflict']);
-
 export function mountChangesView(
   container: HTMLElement,
   postMessage: (message: WebviewMessage) => void,
@@ -322,9 +319,6 @@ export function mountChangesView(
 
     return {
       applyHostMessage(message): void {
-        if ((part === 'form' && DIFF_MESSAGES.has(message.type)) || (part === 'diff' && FORM_MESSAGES.has(message.type))) {
-          return;
-        }
         switch (message.type) {
           case 'workingCopySnapshot':
             allEntries = message.snapshot.entries;
