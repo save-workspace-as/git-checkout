@@ -20,5 +20,6 @@ plan.md
 **/*.ts
 !dist/**
 docs/**
+site/**
 CONTRIBUTING.md
 dist/**/*.map

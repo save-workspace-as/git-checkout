@@ -24,6 +24,7 @@ Group code by what it is for, not by file type. A new file goes in the folder of
 | `src/ui/` | Native views: the sidebar, the repository menu, the status bar. |
 | `src/extensibility/` | Quick Launch, custom commands, external tools, `.gitignore` helpers. |
 | `src/shared/<group>/` | Types and pure code used by both the extension and the webviews: protocols, models, helpers. It must not import `vscode` or anything outside `src/shared/`. `protocol.ts` joins the groups. |
+| `site/` | The website (Astro and Starlight): the landing page, and the docs built from the README, `CHANGELOG.md` and `docs/screenshots`. It has its own `package.json`; the extension's checks do not build it, the Site workflow does. |
 | `webview/` | Code that runs in the browser. It imports only `webview/` and `src/shared/`. Its tests sit beside it (`webview/**/*.test.ts`) and run on a real DOM. |
 
 A feature controller takes its window as a typed `Pick<GitCheckoutPanelManager, ...>`, so what it needs from the window is explicit. `src/layering.test.ts` enforces the import rules above.

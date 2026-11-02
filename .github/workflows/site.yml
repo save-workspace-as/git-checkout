@@ -1,0 +1,56 @@
+name: Site
+
+on:
+  pull_request:
+    paths:
+      - README.md
+      - CHANGELOG.md
+      - docs/**
+      - resources/git-checkout.svg
+      - site/**
+      - .github/workflows/site.yml
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - CHANGELOG.md
+      - docs/**
+      - resources/git-checkout.svg
+      - site/**
+      - .github/workflows/site.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: withastro/action@v3
+        with:
+          path: site
+        env:
+          # Set these repository variables for a custom domain; the base is `/` there.
+          SITE_URL: ${{ vars.SITE_URL }}
+          SITE_BASE: ${{ vars.SITE_BASE }}
+
+  deploy:
+    # A pull request only checks that the site builds.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

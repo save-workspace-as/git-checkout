@@ -1,0 +1,12 @@
+/* The docs take the colors of the landing page, which come from VS Code. */
+:root {
+  --sl-color-accent-low: #0b2a4a;
+  --sl-color-accent: #1f6feb;
+  --sl-color-accent-high: #9ecbff;
+}
+
+:root[data-theme='light'] {
+  --sl-color-accent-low: #cfe4ff;
+  --sl-color-accent: #0b5fcc;
+  --sl-color-accent-high: #063a7d;
+}

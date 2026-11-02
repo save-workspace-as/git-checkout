@@ -1,0 +1,20 @@
+---
+import { GITHUB, MARKETPLACE, href } from '../site';
+const columns = [
+  { title: 'Learn', links: [['Getting started', href('/docs/getting-started/')], ['Features', href('/docs/features/')], ['Keyboard shortcuts', href('/docs/shortcuts/')], ['Settings', href('/docs/settings/')]] },
+  { title: 'Project', links: [['GitHub', GITHUB], ['Changelog', href('/changelog/')], ['Contributing', `${GITHUB}/blob/main/CONTRIBUTING.md`], ['License', `${GITHUB}/blob/main/LICENSE`]] },
+  { title: 'Support', links: [['Report a bug', `${GITHUB}/issues/new`], ['Open issues', `${GITHUB}/issues`], ['Remote workspaces', href('/docs/remote/')]] },
+  { title: 'Get it', links: [['VS Code Marketplace', MARKETPLACE], ['Extending', href('/docs/extending/')], ['Privacy', href('/docs/privacy/')]] },
+];
+---
+<footer class="footer">
+  <div class="columns">
+    {columns.map((column) => (
+      <div>
+        <h2>{column.title}</h2>
+        <ul>{column.links.map(([label, url]) => <li><a href={url}>{label}</a></li>)}</ul>
+      </div>
+    ))}
+  </div>
+  <p class="legal">© Git Checkout contributors. MIT licensed. Not affiliated with Microsoft; Visual Studio Code is a trademark of Microsoft.</p>
+</footer>

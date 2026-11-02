@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.astro/
+.DS_Store
+
+# Brought from the extension repository by `npm run sync`.
+src/content/docs/docs/
+src/content/docs/changelog.md
+src/assets/screenshots/
+public/favicon.svg
+public/og.png

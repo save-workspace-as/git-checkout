@@ -1,0 +1,17 @@
+{
+  "name": "git-checkout-site",
+  "type": "module",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "sync": "node scripts/sync-from-extension.mjs",
+    "dev": "npm run sync && astro dev",
+    "build": "npm run sync && astro build",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.35.2",
+    "astro": "^5.13.2",
+    "sharp": "^0.34.1"
+  }
+}

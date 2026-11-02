@@ -1,0 +1,170 @@
+---
+import Landing from '../layouts/Landing.astro';
+import Feature from '../components/Feature.astro';
+import Shot from '../components/Shot.astro';
+import { GITHUB, MARKETPLACE, href } from '../site';
+
+import type { ImageMetadata } from 'astro';
+
+// The screenshots come from the extension repository, so one that is not there yet is left out instead of breaking the build.
+const files = import.meta.glob<{ default: ImageMetadata }>('../assets/screenshots/*.png', { eager: true });
+const pick = (prefix: string): ImageMetadata | undefined =>
+  Object.entries(files).find(([path]) => path.split('/').pop()!.startsWith(`${prefix}-`))?.[1].default;
+const [graph, search, staging, details, tree, imagePreview, imageDiff, history, blame, quickLaunch, rebase, merge, stageLines, lineBlame, fileBlame] =
+  ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15'].map(pick);
+
+const principles = [
+  { title: 'Native to VS Code', text: 'It takes your theme, your fonts and your keys. Nothing in it looks or behaves like a guest.' },
+  { title: 'Where your code is', text: 'It runs next to your folder, so it works the same on your machine, over SSH, in WSL, in Dev Containers and in Codespaces.' },
+  { title: 'Quiet by default', text: 'No telemetry, and background fetch never asks for a password. It only talks to your own remotes.' },
+];
+
+const more = [
+  'Branches, tags and remotes', 'Fetch, pull and push', 'Stashes', 'Worktrees', 'Submodules', 'Cherry-pick and revert',
+  'Reset, patches and archives', 'Bisect', 'Git Flow', 'Commit signing', 'Clone with progress', 'Pull requests on GitHub',
+  'Edit any commit’s message', 'Open on GitHub', 'Issue tracker links',
+];
+
+const faq = [
+  { q: 'Does it replace the built-in Git extension?', a: 'No. It uses it for credentials and for the Git path, so what you set up for VS Code keeps working.' },
+  { q: 'Which versions of VS Code does it need?', a: 'VS Code 1.90 or newer, with the built-in Git extension turned on, and Git installed on the machine that holds your folder.' },
+  { q: 'Does it work over SSH, in WSL and in containers?', a: 'Yes. Git Checkout is a workspace extension, so Git runs on the same machine as your folder.' },
+  { q: 'Does it collect telemetry?', a: 'No. For a repository on GitHub it asks github.com which account made a commit, once per author, to show a picture. You can turn that off.' },
+  { q: 'Can I change the keyboard shortcuts?', a: 'Yes. Turn them all off with one setting, or rebind any of them in VS Code’s Keyboard Shortcuts editor.' },
+];
+---
+<Landing
+  title="Git Checkout: Git graph, blame, worktrees and merge conflicts for VS Code"
+  description="A graphical Git client for VS Code: commit graph, line staging, Git blame, interactive rebase, merge conflicts, worktrees, submodules and stashes. It uses VS Code’s own look and keys."
+>
+  <section class="hero">
+    <div class="glow" aria-hidden="true"></div>
+    <p class="pill">Now for VS Code 1.90 and newer</p>
+    <h1>The Git client<br />that lives in VS Code</h1>
+    <p class="sub">
+      See your history as a graph, stage the exact lines you mean, resolve merge conflicts side by side and rewrite history,
+      all in the editor you already use.
+    </p>
+    <p class="actions">
+      <a class="button primary" href={MARKETPLACE}>Install Git Checkout</a>
+      <a class="button" href={href('/docs/getting-started/')}>Read the docs</a>
+    </p>
+    <div class="stage">
+      {graph && <Shot src={graph} alt="The commit graph in the main area, with the files of the selected commit in the sidebar" eager />}
+    </div>
+  </section>
+
+  <section class="principles">
+    {principles.map((item) => (
+      <div>
+        <h2>{item.title}</h2>
+        <p>{item.text}</p>
+      </div>
+    ))}
+  </section>
+
+  <Feature id="sidebar" eyebrow="Layout" title="One sidebar, and tabs for the wide things">
+    <p slot="text">
+      Your repositories, your changes, the commit you selected, its files and your branches sit in one sidebar, and each part
+      folds away. A diff or a picture opens as a tab in the main area, like a file does.
+    </p>
+    {staging && <Shot src={staging} alt="The sidebar with the commit message box and the staged and unstaged changes, and a diff open as a tab" />}
+  </Feature>
+
+  <Feature id="graph" eyebrow="History" title="See every branch at once">
+    <p slot="text">
+      A commit graph with branches, tags and stashes. Search by author, path, date, or by the text a commit added or removed,
+      and a background fetch keeps it current.
+    </p>
+    {search && <Shot src={search} alt="Searching the graph for the commits that touch a path" />}
+    {details && <Shot src={details} alt="The files a commit changed in the sidebar, and the diff of one of them as a tab" />}
+  </Feature>
+
+  <Feature id="staging" eyebrow="Changes" title="Stage exactly what you mean">
+    <p slot="text">
+      Stage a file, a hunk, or only the lines you select, on either side of a side-by-side diff. Commit, amend, or commit and push
+      from the same place, and edit the message of an older commit when you need to.
+    </p>
+    {stageLines && <Shot src={stageLines} alt="Two selected lines of a diff with Stage and Discard Changes buttons beside them" />}
+  </Feature>
+
+  <Feature id="blame" eyebrow="Blame" title="Know who changed every line">
+    <p slot="text">
+      Who last changed the line you are on, at its end and in the status bar, with a hover that shows the author, the message
+      with its issues and pull requests linked, and quick actions. Turn on a column for the whole file, and CodeLens above its
+      functions.
+    </p>
+    {lineBlame && <Shot src={lineBlame} alt="Blame at the end of the cursor line, and its hover card with the author’s picture and actions" />}
+    {fileBlame && <Shot src={fileBlame} alt="Blame for every line of a file in the gutter, tinted by age, and CodeLens above the code" />}
+  </Feature>
+
+  <Feature id="pull-requests" eyebrow="GitHub" title="Pull requests, without leaving the editor">
+    <p slot="text">
+      For a repository on GitHub, the sidebar lists the open pull requests as the ones you made, the ones waiting for your
+      review and all the others, with how their checks stand. Check one out, or review what it changes, in a click.
+    </p>
+  </Feature>
+
+  <Feature id="merge" eyebrow="Merging" title="Resolve conflicts side by side">
+    <p slot="text">
+      Take the incoming side, the current side or both, for a conflict, a line or the whole file. The result below is an editor
+      you can type in, and everything scrolls together.
+    </p>
+    {merge && <Shot src={merge} alt="The Merge modal with the incoming side, the current side and the result below" />}
+  </Feature>
+
+  <Feature id="rebase" eyebrow="Rewriting history" title="Reorder, squash, reword and drop">
+    <p slot="text">
+      An interactive rebase you can see. Drag commits into order, preview each one and run it when the plan looks right.
+    </p>
+    {rebase && <Shot src={rebase} alt="The interactive rebase editor with the commits to rebase" />}
+  </Feature>
+
+  <Feature id="history" eyebrow="Archaeology" title="Who changed this, and why">
+    <p slot="text">
+      The history of a file, a folder or a single hunk, and a blame view that shows who last changed each line of a commit’s
+      change.
+    </p>
+    {history && <Shot src={history} alt="The history of one file with the diff of each commit" />}
+    {blame && <Shot src={blame} alt="A commit’s change with who last changed each line beside it" />}
+  </Feature>
+
+  <Feature id="quick-launch" eyebrow="Speed" title="Every action, one keystroke away">
+    <p slot="text">
+      Quick Launch lists every repository action and your own commands. Common actions have keys you can turn off or rebind.
+    </p>
+    {quickLaunch && <Shot src={quickLaunch} alt="Quick Launch listing repository actions" />}
+  </Feature>
+
+  <Feature id="files" eyebrow="Files" title="Browse and compare, pictures included">
+    <p slot="text">
+      Walk the tree of any commit, preview its pictures, and compare two versions of an image side by side.
+    </p>
+    {tree && <Shot src={tree} alt="The File Tree section of the sidebar, with the folders of a commit" />}
+    {imagePreview && <Shot src={imagePreview} alt="A picture picked in the File Tree, previewed as a tab" />}
+    {imageDiff && <Shot src={imageDiff} alt="Two versions of an image compared" />}
+  </Feature>
+
+  <section class="more">
+    <h2>And the rest of Git</h2>
+    <ul>{more.map((item) => <li>{item}</li>)}</ul>
+  </section>
+
+  <section class="faq">
+    <h2>Questions</h2>
+    {faq.map((item) => (
+      <details>
+        <summary>{item.q}</summary>
+        <p>{item.a}</p>
+      </details>
+    ))}
+  </section>
+
+  <section class="cta">
+    <h2>Open the graph in VS Code</h2>
+    <p class="actions">
+      <a class="button primary" href={MARKETPLACE}>Install Git Checkout</a>
+      <a class="button" href={GITHUB}>View on GitHub</a>
+    </p>
+  </section>
+</Landing>
