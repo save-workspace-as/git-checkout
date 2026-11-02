@@ -1,5 +1,7 @@
 import type { GitHubRepository } from '../history/githubReferences';
 
+export type PullRequestChecks = 'success' | 'failure' | 'pending';
+
 /** An open pull request, as the sidebar lists it. */
 export interface PullRequestDto {
   number: number;
@@ -13,6 +15,8 @@ export interface PullRequestDto {
   baseRef: string;
   /** What reviewers decided: `APPROVED`, `CHANGES_REQUESTED` or `REVIEW_REQUIRED`, when the repository asks for reviews. */
   reviewDecision: string | null;
+  /** How the checks on the latest commit stand, when it has any. */
+  checks: PullRequestChecks | null;
   /** ISO time of the last change. */
   updatedAt: string;
   url: string;
@@ -34,6 +38,7 @@ const FIELDS = `
     number title url isDraft updatedAt headRefName baseRefName reviewDecision
     author { login }
     headRepository { nameWithOwner }
+    commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
   }`;
 
 /** One GraphQL request for all three lists: the search syntax `@me` is the signed-in user. */
@@ -55,6 +60,22 @@ export function pullRequestsQuery(repo: GitHubRepository): { query: string; vari
   };
 }
 
+/** GitHub's rollup states folded into the three a row can show; no checks at all is null. */
+export function checksFrom(state: unknown): PullRequestChecks | null {
+  switch (state) {
+    case 'SUCCESS':
+      return 'success';
+    case 'FAILURE':
+    case 'ERROR':
+      return 'failure';
+    case 'PENDING':
+    case 'EXPECTED':
+      return 'pending';
+    default:
+      return null;
+  }
+}
+
 function pullRequestFrom(node: unknown): PullRequestDto | undefined {
   const value = node as Record<string, unknown> | null;
   if (!value || typeof value.number !== 'number' || typeof value.title !== 'string' || typeof value.url !== 'string') {
@@ -62,6 +83,7 @@ function pullRequestFrom(node: unknown): PullRequestDto | undefined {
   }
   const author = (value.author as { login?: unknown } | null)?.login;
   const head = (value.headRepository as { nameWithOwner?: unknown } | null)?.nameWithOwner;
+  const commits = (value.commits as { nodes?: { commit?: { statusCheckRollup?: { state?: unknown } | null } }[] } | null)?.nodes;
   return {
     number: value.number,
     title: value.title,
@@ -71,6 +93,7 @@ function pullRequestFrom(node: unknown): PullRequestDto | undefined {
     headRepository: typeof head === 'string' ? head : null,
     baseRef: typeof value.baseRefName === 'string' ? value.baseRefName : '',
     reviewDecision: typeof value.reviewDecision === 'string' ? value.reviewDecision : null,
+    checks: checksFrom(commits?.[0]?.commit?.statusCheckRollup?.state),
     updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : '',
     url: value.url,
   };

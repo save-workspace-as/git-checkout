@@ -63,7 +63,7 @@ describe('VS Code Elements in the webviews', () => {
   });
 
   it('imports the registration module from every webview entry that creates elements', () => {
-    for (const entry of ['main', 'changesMain', 'commitMain', 'commitFilesMain', 'treeMain']) {
+    for (const entry of ['main', 'changesMain', 'commitMain', 'treeMain']) {
       assert.match(readFileSync(join(webview, `${entry}.ts`), 'utf8'), /import '\.\/elements';/, entry);
     }
   });

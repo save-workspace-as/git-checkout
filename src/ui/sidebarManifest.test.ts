@@ -8,9 +8,9 @@ import { PULL_REQUEST_COMMANDS } from './pullRequestNodes';
 import {
   SIDEBAR_COMMANDS,
   SIDEBAR_CONTEXT,
-  SIDEBAR_REPO_SLOTS,
+  REPOSITORIES_VIEW_ID,
+  PULL_REQUESTS_VIEW_ID,
   SIDEBAR_VIEW_ID,
-  sidebarViewId,
 } from './sidebarTreeModel';
 
 interface MenuEntry {
@@ -35,8 +35,8 @@ const sidebarCommands = [
   // The pull request rows have their own commands, since they act on GitHub and not on a ref.
   ...Object.values(PULL_REQUEST_COMMANDS),
 ];
-/** Item menus apply to every repository view, not just the first. */
-const SIDEBAR_VIEWS_WHEN = String.raw`view =~ /^gitCheckout\.sidebar(\.\d+)?$/`;
+/** Item menus apply to every section view. */
+const SIDEBAR_VIEWS_WHEN = String.raw`view =~ /^gitCheckout\.sidebar(\.\w+)?$/`;
 const itemMenus = contributes.menus['view/item/context'].filter((m) =>
   m.when?.includes(SIDEBAR_VIEWS_WHEN),
 );
@@ -69,23 +69,50 @@ describe('sidebar manifest contributions', () => {
     );
   });
 
-  it('declares the sidebar view and uses it for the welcome content', () => {
-    const views = Object.values(contributes.views).flat();
-    assert.ok(views.some((v) => v.id === SIDEBAR_VIEW_ID));
-    assert.ok(contributes.viewsWelcome.some((w) => w.view === SIDEBAR_VIEW_ID));
+  it('orders the sidebar: repositories, the commit form, the changes, the commit, files, then branches and the rest, then pull requests', () => {
+    const ids = contributes.views['git-checkout'].map((view) => view.id);
+    assert.deepEqual(ids, [
+      REPOSITORIES_VIEW_ID,
+      'gitCheckout.commitForm',
+      'gitCheckout.changes',
+      'gitCheckout.commitFiles',
+      'gitCheckout.tree',
+      SIDEBAR_VIEW_ID,
+      PULL_REQUESTS_VIEW_ID,
+    ]);
   });
 
-  it('declares one view slot per repository and shows a slot only while that repository exists', () => {
-    const views = new Map(Object.values(contributes.views).flat().map((v) => [v.id, v]));
-    assert.equal(views.get(SIDEBAR_VIEW_ID)?.when, undefined);
-    for (let slot = 1; slot < SIDEBAR_REPO_SLOTS; slot += 1) {
-      assert.equal(
-        views.get(sidebarViewId(slot))?.when,
-        `gitCheckout.sidebarRepoCount > ${slot}`,
-        `slot ${slot}`,
-      );
-    }
-    assert.equal(views.has(sidebarViewId(SIDEBAR_REPO_SLOTS)), false);
+  it('hides the Repositories view while there is only one repository to pick', () => {
+    const view = contributes.views['git-checkout'].find((entry) => entry.id === REPOSITORIES_VIEW_ID);
+    assert.equal(view?.when, 'gitCheckout.repositoryCount != 1');
+  });
+
+  it('puts search on a button of the Repository view, outside the three dots, where it filters', () => {
+    const titleMenu = contributes.menus['view/title'] as MenuEntry[];
+    const buttons = (view: string) => titleMenu.filter((entry) => new RegExp(`^view == ${view.replaceAll('.', '\\.')}( |$)`).test(entry.when ?? '') && entry.group?.startsWith('navigation')).map((entry) => entry.command);
+    assert.deepEqual(buttons('gitCheckout.sidebar'), [SIDEBAR_COMMANDS.search, SIDEBAR_COMMANDS.clearSearch]);
+    assert.deepEqual(buttons(REPOSITORIES_VIEW_ID), []);
+  });
+
+  it('uses the Repositories view for the welcome content', () => {
+    assert.ok(contributes.viewsWelcome.some((w) => w.view === REPOSITORIES_VIEW_ID));
+  });
+
+  it('hides the Repositories view while there is only one repository to pick', () => {
+    const view = contributes.views['git-checkout'].find((entry) => entry.id === REPOSITORIES_VIEW_ID);
+    assert.equal(view?.when, 'gitCheckout.repositoryCount != 1');
+  });
+
+  it('puts search in the menu of the Repository view, where it filters', () => {
+    const titleMenu = contributes.menus['view/title'] as MenuEntry[];
+    const on = (view: string) => titleMenu.filter((entry) => entry.when?.startsWith(`view == ${view}`)).map((entry) => entry.command);
+    assert.ok(on('gitCheckout.sidebar').includes(SIDEBAR_COMMANDS.search));
+    assert.ok(on('gitCheckout.sidebar').includes(SIDEBAR_COMMANDS.clearSearch));
+    assert.ok(!on(REPOSITORIES_VIEW_ID).includes(SIDEBAR_COMMANDS.search));
+  });
+
+  it('uses the Repositories view for the welcome content', () => {
+    assert.ok(contributes.viewsWelcome.some((w) => w.view === REPOSITORIES_VIEW_ID));
   });
 
   it('does not contribute a repository row menu', () => {
@@ -119,6 +146,10 @@ describe('sidebar manifest contributions', () => {
     const withoutMenus = new Set<string>([
       SIDEBAR_CONTEXT.localChanges,
       SIDEBAR_CONTEXT.allCommits,
+      // Picking a repository selects it; the view's title has its actions.
+      SIDEBAR_CONTEXT.repository,
+      // The Pull Requests view has its Refresh in its title bar.
+      SIDEBAR_CONTEXT.pullRequestsSection,
       SIDEBAR_CONTEXT.folder,
       SIDEBAR_CONTEXT.message,
       // A button that signs in or tries again; clicking it is all it does.
@@ -266,7 +297,7 @@ describe('sidebar manifest contributions', () => {
     assert.ok(rows.length > 0);
     assert.deepEqual(rows.filter((entry) => entry.group?.startsWith('inline')), []);
     // Every action that used to have a button is still in the context menu.
-    for (const command of ['applyStash', 'popStash', 'copyWorktreePath', 'updateSubmodules', 'updateSubmodule', 'copySubmodulePath']) {
+    for (const command of ['applyStash', 'popStash', 'copyWorktreePath', 'updateSubmodule', 'copySubmodulePath']) {
       assert.ok(rows.some((entry) => entry.command === `gitCheckout.sidebar.${command}`), command);
     }
   });

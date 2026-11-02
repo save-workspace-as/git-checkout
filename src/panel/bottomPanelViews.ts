@@ -5,14 +5,10 @@ import { readAutolinks } from '../features/history/githubLinkHost';
 import type { HostMessage, WebviewMessage } from '../shared/protocol';
 import { webviewImgSrc } from './webviewImgSrc';
 
-export const COMMIT_VIEW_ID = 'gitCheckout.commit';
-export const COMMIT_FILES_VIEW_ID = 'gitCheckout.changedFiles';
-export const CHANGES_VIEW_ID = 'gitCheckout.workingCopy';
-export const UNSTAGED_VIEW_ID = 'gitCheckout.unstaged';
-export const STAGED_VIEW_ID = 'gitCheckout.staged';
+export const COMMIT_FORM_VIEW_ID = 'gitCheckout.commitForm';
+export const CHANGES_LIST_VIEW_ID = 'gitCheckout.changes';
 export const TREE_VIEW_ID = 'gitCheckout.tree';
 export const COMMIT_FILE_LIST_VIEW_ID = 'gitCheckout.commitFiles';
-export const TREE_PREVIEW_VIEW_ID = 'gitCheckout.treePreview';
 
 /** Queues host messages until the panel webview script has loaded. */
 export class BottomViewSlot {
@@ -97,22 +93,41 @@ export class ScopedBottomViewSlot implements BottomSlot {
   }
 }
 
+/** Posts to every slot: the pages that make up one view each take the messages they need and ignore the rest. */
+export class FanOutSlot implements BottomSlot {
+  constructor(private readonly slots: readonly BottomSlot[]) {}
+
+  post(message: HostMessage): void {
+    this.slots.forEach((slot) => slot.post(message));
+  }
+
+  markReady(): void {
+    this.slots.forEach((slot) => slot.markReady());
+  }
+
+  get view(): vscode.WebviewView | undefined {
+    return this.slots.find((slot) => slot.view)?.view;
+  }
+}
+
 export interface BottomViewSlots {
   commit: BottomViewSlot;
-  files: BottomViewSlot;
   treePreview: BottomViewSlot;
+  /** The diff of the selected change. */
   changes: BottomViewSlot;
+  /** The commit form of the Changes view. */
+  changesForm: BottomViewSlot;
 }
 
 export function createBottomViewSlots(): BottomViewSlots {
   return {
-    commit: new BottomViewSlot(), files: new BottomViewSlot(), treePreview: new BottomViewSlot(),
-    changes: new BottomViewSlot(),
+    commit: new BottomViewSlot(), treePreview: new BottomViewSlot(),
+    changes: new BottomViewSlot(), changesForm: new BottomViewSlot(),
   };
 }
 
 /** The page of a webview that runs one of the bundled scripts in `media/webview`. */
-function viewHtml(
+export function viewHtml(
   webview: vscode.Webview,
   extensionUri: vscode.Uri,
   script: string,
@@ -179,23 +194,8 @@ export function registerBottomPanelViews(
 
   return vscode.Disposable.from(
     vscode.window.registerWebviewViewProvider(
-      COMMIT_VIEW_ID,
-      provider('commit.js', slots.commit),
-      { webviewOptions: { retainContextWhenHidden: true } },
-    ),
-    vscode.window.registerWebviewViewProvider(
-      COMMIT_FILES_VIEW_ID,
-      provider('commitFiles.js', slots.files),
-      { webviewOptions: { retainContextWhenHidden: true } },
-    ),
-    vscode.window.registerWebviewViewProvider(
-      CHANGES_VIEW_ID,
-      provider('changes.js', slots.changes, ' data-pane="main"'),
-      { webviewOptions: { retainContextWhenHidden: true } },
-    ),
-    vscode.window.registerWebviewViewProvider(
-      TREE_PREVIEW_VIEW_ID,
-      provider('tree.js', slots.treePreview),
+      COMMIT_FORM_VIEW_ID,
+      provider('changes.js', slots.changesForm, ' data-part="form"'),
       { webviewOptions: { retainContextWhenHidden: true } },
     ),
   );

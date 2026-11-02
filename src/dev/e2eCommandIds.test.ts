@@ -23,7 +23,7 @@ describe('commandIdsInE2eSource', () => {
   it('skips context keys and the focus command VS Code makes for every view', () => {
     const source = [
       "executeCommand('setContext', 'gitCheckout.panelOpen', true);",
-      "executeCommand('gitCheckout.unstaged.focus');",
+      "executeCommand('gitCheckout.changes.focus');",
       "executeCommand('gitCheckout.changes.stage');",
     ].join('\n');
     assert.deepEqual(commandIdsInE2eSource(source), ['gitCheckout.changes.stage']);

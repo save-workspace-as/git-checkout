@@ -9,7 +9,7 @@ import { buildSidebarTree, treeItemSpec, withSidebarSearch } from './sidebarTree
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
 const pull = (number: number, over: Partial<PullRequestDto> = {}): PullRequestDto => ({
   number, title: `Change ${number}`, author: 'ada', isDraft: false, headRef: `branch-${number}`, headRepository: 'octo/app', baseRef: 'main',
-  reviewDecision: null, updatedAt: '2026-10-30T10:00:00Z', url: `https://github.com/octo/app/pull/${number}`, ...over,
+  reviewDecision: null, checks: null, updatedAt: '2026-10-30T10:00:00Z', url: `https://github.com/octo/app/pull/${number}`, ...over,
 });
 const ready = (lists: Partial<Record<'createdByMe' | 'reviewRequested' | 'allOpen', PullRequestDto[]>>): PullRequestState => ({
   kind: 'ready', repo, remote: 'origin', lists: { createdByMe: [], reviewRequested: [], allOpen: [], ...lists },
@@ -42,10 +42,11 @@ describe('pullRequestSection', () => {
     assert.equal(section.description, '3');
     assert.deepEqual(section.children.map((child) => [child.label, child.description, treeItemSpec(child).collapsible]), [
       ['Created by me', '1', 'expanded'],
-      ['Waiting for my review', '0', 'collapsed'],
+      ['Waiting for my review', '0', 'none'],
       ['All open', '3', 'collapsed'],
     ]);
-    assert.deepEqual(section.children[1].children.map((child) => child.label), ['No pull requests']);
+    assert.deepEqual(section.children[1].children, []);
+    assert.equal(section.children[1].description, '0');
     assert.deepEqual(section.children[2].children.map((child) => child.ref), ['1', '2', '3']);
   });
 
@@ -96,5 +97,14 @@ describe('the sidebar with pull requests', () => {
     assert.deepEqual(found('blame'), ['5']);
     assert.deepEqual(found('#6'), ['6']);
     assert.deepEqual(found('grace'), ['6']);
+  });
+});
+
+describe('pullRequestNode checks', () => {
+  it('carries how the checks stand to the row, and says it in the tooltip', () => {
+    const failing = pullRequestNode(pull(1, { checks: 'failure' }), 'allOpen');
+    assert.equal(treeItemSpec(failing).checks, 'failure');
+    assert.match(failing.tooltip ?? '', /Checks failed/);
+    assert.equal(treeItemSpec(pullRequestNode(pull(2), 'allOpen')).checks, undefined);
   });
 });

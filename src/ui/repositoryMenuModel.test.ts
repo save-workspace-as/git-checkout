@@ -7,9 +7,8 @@ import {
   applyRepositoryMenu,
   REPOSITORY_ACTIONS,
   repositoryActionCommand,
-  repositoryMenuId,
 } from './repositoryMenuModel';
-import { SIDEBAR_REPO_SLOTS, sidebarViewId } from './sidebarTreeModel';
+import { REPOSITORIES_VIEW_ID, SIDEBAR_VIEW_ID } from './sidebarTreeModel';
 
 type Manifest = Parameters<typeof applyRepositoryMenu>[0];
 
@@ -28,18 +27,22 @@ describe('repository menu', () => {
     assert.deepEqual(applyRepositoryMenu(structuredClone(once)), once);
   });
 
-  it('gives every repository view its own dropdown, shown only in that view', () => {
-    const titleMenus = manifest.contributes.menus['view/title'];
-    for (let slot = 0; slot < SIDEBAR_REPO_SLOTS; slot += 1) {
-      const entry = titleMenus.find((item) => item.submenu === repositoryMenuId(slot));
-      assert.equal(entry?.when, `view == ${sidebarViewId(slot)}`, `slot ${slot}`);
-      assert.ok(manifest.contributes.submenus?.some((item) => item.id === repositoryMenuId(slot)));
-      const items = manifest.contributes.menus[repositoryMenuId(slot)];
-      assert.deepEqual(
-        items.map((item) => item.command),
-        REPOSITORY_ACTIONS.map((action) => repositoryActionCommand(slot, action.id)),
-      );
+  it('offers the same actions on a right-click of a repository and in the menu of the Repository view', () => {
+    const wanted = REPOSITORY_ACTIONS.map((action) => repositoryActionCommand(action.id));
+    const commandsOn = (menu: 'view/item/context' | 'view/title', view: string): string[] =>
+      manifest.contributes.menus[menu].filter((entry) => new RegExp(`^view == ${view.replaceAll('.', '\\.')}( |$)`).test(String(entry.when ?? ''))).map((entry) => String(entry.command));
+    assert.deepEqual(commandsOn('view/item/context', REPOSITORIES_VIEW_ID), wanted);
+    assert.deepEqual(commandsOn('view/title', SIDEBAR_VIEW_ID).filter((id) => id.startsWith('gitCheckout.repo.')), wanted);
+    // Only a repository's row has the menu.
+    for (const entry of manifest.contributes.menus['view/item/context'].filter((item) => String(item.command ?? '').startsWith('gitCheckout.repo.'))) {
+      assert.match(String(entry.when ?? ''), /viewItem == repository/);
     }
+  });
+
+  it('has no menu or command left from when each repository had its own view', () => {
+    const menus = [...Object.keys(manifest.contributes.menus), ...(manifest.contributes.submenus ?? []).map((item) => item.id)];
+    assert.deepEqual(menus.filter((id) => /^gitCheckout\.repoMenu\./.test(id)), []);
+    assert.deepEqual([...commands.keys()].filter((id) => /^gitCheckout\.repo\.\d/.test(id)), []);
   });
 
   it('only offers actions backed by a declared command, with a title and the same enablement', () => {
@@ -61,10 +64,8 @@ describe('repository menu', () => {
     const hidden = new Set(
       manifest.contributes.menus.commandPalette.filter((item) => item.when === 'false').map((item) => item.command),
     );
-    for (let slot = 0; slot < SIDEBAR_REPO_SLOTS; slot += 1) {
-      for (const action of REPOSITORY_ACTIONS) {
-        assert.ok(hidden.has(repositoryActionCommand(slot, action.id)), `${slot}.${action.id}`);
-      }
+    for (const action of REPOSITORY_ACTIONS) {
+      assert.ok(hidden.has(repositoryActionCommand(action.id)), action.id);
     }
   });
 

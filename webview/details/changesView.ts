@@ -4,6 +4,8 @@ import {
   DEFAULT_CHANGES_VIEW,
   DEFAULT_SUBJECT_LIMITS,
   filterChangeEntries,
+  joinCommitMessage,
+  splitCommitMessage,
   subjectLengthLevel,
   type ChangesHostMessage,
   type ChangesViewOptions,
@@ -25,7 +27,6 @@ import { html, nothing, render } from 'lit';
 import { live } from 'lit/directives/live.js';
 import type { VscodeCheckbox } from '@vscode-elements/elements/dist/vscode-checkbox/index.js';
 import type { VscodeTextarea } from '@vscode-elements/elements/dist/vscode-textarea/index.js';
-import type { VscodeTextfield } from '@vscode-elements/elements/dist/vscode-textfield/index.js';
 
 
 interface Selection {
@@ -38,9 +39,16 @@ interface Selection {
  * tree views; the host tells this view which change they selected, and it picks what to show when
  * the changes themselves change.
  */
+/** What a page shows: the commit form, the diff of the selected change, or both together. */
+export type ChangesPart = 'form' | 'diff' | 'both';
+
+const FORM_MESSAGES = new Set<string>(['changesSubjectLimits', 'changesShortcut', 'changesGenerating', 'changesGeneratedMessage', 'changesAmendMessage', 'changesCommitted']);
+const DIFF_MESSAGES = new Set<string>(['changesSelection', 'commitDiffView', 'editorTokenColors', 'changesDiff', 'changesConflict']);
+
 export function mountChangesView(
   container: HTMLElement,
   postMessage: (message: WebviewMessage) => void,
+  part: ChangesPart = 'both',
 ): { applyHostMessage(message: HostMessage): void } {
   render(nothing, container);
   container.classList.add('changes');
@@ -58,12 +66,13 @@ export function mountChangesView(
   return mountMain();
 
   function mountMain(): { applyHostMessage(message: HostMessage): void } {
-    const form = { subject: '', description: '', amend: false, generating: false };
+    const form = { message: '', amend: false, generating: false };
+    const subjectOf = (): string => splitCommitMessage(form.message).subject;
     let subjectLimits: SubjectLengthLimits = { ...DEFAULT_SUBJECT_LIMITS };
 
     function subjectHint(): string | undefined {
-      const level = subjectLengthLevel(form.subject, subjectLimits);
-      const length = form.subject.trim().length;
+      const level = subjectLengthLevel(subjectOf(), subjectLimits);
+      const length = subjectOf().length;
       return level === 'limit'
         ? l10n.t('The subject is {0} characters, over the limit of {1}.', length, subjectLimits.limit)
         : level === 'warning'
@@ -72,7 +81,7 @@ export function mountChangesView(
     }
 
     const blocker = (): ReturnType<typeof changesCommitBlocker> =>
-      changesCommitBlocker(stagedEntries().length, form.subject, form.amend);
+      changesCommitBlocker(stagedEntries().length, subjectOf(), form.amend);
 
     function generateTitle(): string {
       return form.generating
@@ -93,8 +102,8 @@ export function mountChangesView(
 
     function messagePlaceholder(): string {
       return branch
-        ? l10n.t("Message (Ctrl/Cmd+Enter to commit on '{0}'; add Shift to also push to the remote)", branch)
-        : l10n.t('Message (Ctrl/Cmd+Enter to commit; add Shift to also push to the remote)');
+        ? l10n.t("Message (Ctrl/Cmd+Enter to commit on '{0}')", branch)
+        : l10n.t('Message (Ctrl/Cmd+Enter to commit)');
     }
 
     /** The diff above, and the commit form below it. */
@@ -102,30 +111,28 @@ export function mountChangesView(
       const noneStaged = stagedEntries().length === 0;
       const hint = subjectHint();
       render(html`
-        <div class="changes-diff commit-file-diff"></div>
-        <div class="changes-form">
-          <div class="changes-subject-row">
-            <vscode-textfield class="changes-subject"
+        ${part === 'form' ? nothing : html`<div class="changes-diff commit-file-diff"></div>`}
+        ${part === 'diff' ? nothing : html`<div class="changes-form">
+          <div class="changes-message-box">
+            <vscode-textarea class="changes-message" rows="4"
               placeholder=${messagePlaceholder()}
-              ?invalid=${subjectLengthLevel(form.subject, subjectLimits) === 'limit'}
-              aria-label=${l10n.t('Commit subject')} .value=${live(form.subject)}
-              @input=${(event: Event) => { form.subject = (event.target as VscodeTextfield).value; paint(); }}>
-              <vscode-button type="button" class="changes-generate" slot="content-after" icon=${ACTION_ICONS.generateMessage} icon-only
-                ?disabled=${noneStaged || form.generating} title=${generateTitle()} aria-label=${generateTitle()}
-                @click=${() => postMessage({ type: 'changesGenerateMessage' })}></vscode-button>
-            </vscode-textfield>
+              ?invalid=${subjectLengthLevel(subjectOf(), subjectLimits) === 'limit'}
+              aria-label=${l10n.t('Commit message')} .value=${live(form.message)}
+              @input=${(event: Event) => { form.message = (event.target as VscodeTextarea).value; paint(); }}></vscode-textarea>
           </div>
           ${hint ? html`<div class="changes-subject-hint" role="status">${hint}</div>` : nothing}
-          <vscode-textarea class="changes-description" rows="3" placeholder=${l10n.t('Body')}
-            aria-label=${l10n.t('Commit body')} .value=${live(form.description)}
-            @input=${(event: Event) => { form.description = (event.target as VscodeTextarea).value; }}></vscode-textarea>
           <div class="changes-form-footer">
+            <div class="changes-form-options">
+            <vscode-button type="button" class="changes-generate" icon=${ACTION_ICONS.generateMessage} icon-only
+              ?disabled=${noneStaged || form.generating} title=${generateTitle()} aria-label=${generateTitle()}
+              @click=${() => postMessage({ type: 'changesGenerateMessage' })}></vscode-button>
             <vscode-checkbox class="changes-amend" label=${l10n.t('Amend')} .checked=${live(form.amend)}
               @change=${(event: Event) => {
                 form.amend = (event.target as VscodeCheckbox).checked;
                 if (form.amend) { postMessage({ type: 'changesAmend' }); }
                 paint();
               }}></vscode-checkbox>
+            </div>
             <vscode-button-group>
               <vscode-button type="button" class="changes-commit" ?disabled=${blocker() !== undefined} title=${commitTitle()}
                 @click=${() => submit()}>${l10n.t('Commit')}</vscode-button>
@@ -134,7 +141,7 @@ export function mountChangesView(
                 @click=${() => submit(false, true)}>${l10n.t('Commit and push…')}</vscode-button>
             </vscode-button-group>
           </div>
-        </div>`, container);
+        </div>`}`, container);
     }
 
     /** `push` pushes at once with the usual choices; `pushForm` opens the Push form after the commit. */
@@ -144,8 +151,7 @@ export function mountChangesView(
       }
       postMessage({
         type: 'changesCommit',
-        subject: form.subject.trim(),
-        description: form.description.trim(),
+        ...splitCommitMessage(form.message),
         amend: form.amend,
         ...(push ? { push } : {}),
         ...(pushForm ? { pushForm } : {}),
@@ -163,7 +169,8 @@ export function mountChangesView(
     }, true);
 
     paint();
-    const diff = container.querySelector<HTMLElement>('.changes-diff')!;
+    // A page with only the form has no diff; the viewer then draws into an element that is never shown.
+    const diff = container.querySelector<HTMLElement>('.changes-diff') ?? document.createElement('div');
     const viewer = mountCodeViewer(diff);
     viewer.showMessage(l10n.t('Select a change to see its diff.'));
 
@@ -171,6 +178,9 @@ export function mountChangesView(
 
     /** Keeps the selection on the same change, following it between Unstaged and Staged. */
     function reconcileSelection(): void {
+      if (part === 'form') {
+        return;
+      }
       const entries = shown();
       const stillThere = (candidate: Selection): boolean =>
         entries.some((entry) => entry.path === candidate.path && sideOf(entry) === candidate.side);
@@ -312,6 +322,9 @@ export function mountChangesView(
 
     return {
       applyHostMessage(message): void {
+        if ((part === 'form' && DIFF_MESSAGES.has(message.type)) || (part === 'diff' && FORM_MESSAGES.has(message.type))) {
+          return;
+        }
         switch (message.type) {
           case 'workingCopySnapshot':
             allEntries = message.snapshot.entries;
@@ -345,7 +358,7 @@ export function mountChangesView(
             return;
           case 'changesShortcut':
             if (message.action === 'focusCommit') {
-              container.querySelector<HTMLElement>('.changes-subject')?.focus();
+              container.querySelector<HTMLElement>('.changes-message')?.focus();
             } else {
               submit(message.action === 'commitAndPush');
             }
@@ -356,13 +369,11 @@ export function mountChangesView(
             return;
           case 'changesGeneratedMessage':
           case 'changesAmendMessage':
-            form.subject = message.subject;
-            form.description = message.description;
+            form.message = joinCommitMessage(message.subject, message.description);
             paint();
             return;
           case 'changesCommitted':
-            form.subject = '';
-            form.description = '';
+            form.message = '';
             form.amend = false;
             paint();
             return;

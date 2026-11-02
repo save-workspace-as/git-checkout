@@ -14,8 +14,10 @@ export class RevisionList extends NativeFileList<RevisionNode> {
     private readonly decorations: ChangeDecorations,
     folderState: vscode.TreeItemCollapsibleState,
     onPick: (node: RevisionNode) => void,
+    initialMessage?: string,
   ) {
     super(viewId, {
+      initialMessage,
       item: (node) => {
         const item = new vscode.TreeItem(
           node.label,
@@ -68,6 +70,13 @@ export class ScopedRevisionList {
   selectPath(path: string | null): void {
     if (this.owns()) {
       this.list.selectPath(path);
+    }
+  }
+
+  /** The line above the files: which commit they belong to. */
+  setSummary(summary: string | undefined): void {
+    if (this.owns()) {
+      this.list.setSummary(summary);
     }
   }
 

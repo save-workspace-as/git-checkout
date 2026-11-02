@@ -9,6 +9,7 @@ export const PULL_REQUEST_COMMANDS = {
   grantAccess: 'gitCheckout.pullRequests.grantAccess',
   checkout: 'gitCheckout.pullRequests.checkout',
   checkoutInWorktree: 'gitCheckout.pullRequests.checkoutInWorktree',
+  review: 'gitCheckout.pullRequests.review',
   openOnGitHub: 'gitCheckout.pullRequests.openOnGitHub',
   copyLink: 'gitCheckout.pullRequests.copyLink',
 } as const;
@@ -68,6 +69,19 @@ function decisionText(pull: PullRequestDto): string {
   }
 }
 
+function checksText(pull: PullRequestDto): string {
+  switch (pull.checks) {
+    case 'success':
+      return l10n.t('Checks passed');
+    case 'failure':
+      return l10n.t('Checks failed');
+    case 'pending':
+      return l10n.t('Checks pending');
+    default:
+      return '';
+  }
+}
+
 export function pullRequestNode(pull: PullRequestDto, category: PullRequestCategory): SidebarNode {
   const details = [pull.author ? l10n.t('by {0}', pull.author) : '', pull.isDraft ? l10n.t('Draft') : ''].filter(Boolean).join(' · ');
   return {
@@ -75,12 +89,13 @@ export function pullRequestNode(pull: PullRequestDto, category: PullRequestCateg
     kind: 'pullRequest',
     label: pull.title,
     description: `#${pull.number}${details ? ` ${details}` : ''}`,
-    tooltip: [`#${pull.number} ${pull.title}`, `${pull.headRepository ? `${pull.headRepository}:` : ''}${pull.headRef} → ${pull.baseRef}`, decisionText(pull)]
+    tooltip: [`#${pull.number} ${pull.title}`, `${pull.headRepository ? `${pull.headRepository}:` : ''}${pull.headRef} → ${pull.baseRef}`, decisionText(pull), checksText(pull)]
       .filter(Boolean)
       .join('\n'),
     contextValue: SIDEBAR_CONTEXT.pullRequest,
     ref: String(pull.number),
     icon: iconOf(pull),
+    checks: pull.checks ?? undefined,
     children: [],
   };
 }
@@ -124,7 +139,7 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
             contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
             icon: { id: key === 'createdByMe' ? 'account' : key === 'reviewRequested' ? 'eye' : 'list-flat' },
             expanded: expandWhenNotEmpty && pulls.length > 0,
-            children: pulls.length > 0 ? pulls.map((pull) => pullRequestNode(pull, key)) : [message(`${key}:none`, l10n.t('No pull requests'))],
+            children: pulls.map((pull) => pullRequestNode(pull, key)),
           } satisfies SidebarNode;
         }),
         String(state.lists.allOpen.length),

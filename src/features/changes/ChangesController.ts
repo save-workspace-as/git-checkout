@@ -41,10 +41,9 @@ export type ChangesContext = Pick<
   | 'postState'
   | 'reloadGraphOnHeadChange'
   | 'setContext'
-  | 'stagedList'
+  | 'changesList'
   | 'stashSelection'
   | 'sync'
-  | 'unstagedList'
   | 'workingTreeService'
 >;
 
@@ -76,19 +75,12 @@ export class ChangesController {
     const entries = filterChangeEntries(this.changeEntries, this.ctx.changesView);
     const staged = entries.filter((entry) => entry.group === 'staged');
     const unstaged = entries.filter((entry) => entry.group !== 'staged');
-    this.ctx.unstagedList.show({ entries: unstaged, tree: this.ctx.changesView.mode === 'tree' });
-    this.ctx.stagedList.show({ entries: staged, tree: this.ctx.changesView.mode === 'tree' });
-    const unstagedView = this.ctx.unstagedList.view;
-    if (unstagedView) {
-      unstagedView.description = unstaged.length > 0 ? String(unstaged.length) : undefined;
-      // The Changes tab in the panel bar counts every change, like the Problems tab counts problems.
-      unstagedView.badge = entries.length > 0
+    this.ctx.changesList.show({ staged, unstaged, tree: this.ctx.changesView.mode === 'tree' });
+    const listView = this.ctx.changesList.view;
+    if (listView) {
+      listView.badge = entries.length > 0
         ? { value: entries.length, tooltip: l10n.t('{0} changes', entries.length) }
         : undefined;
-    }
-    const stagedView = this.ctx.stagedList.view;
-    if (stagedView) {
-      stagedView.description = staged.length > 0 ? String(staged.length) : undefined;
     }
     for (const [key, value] of [
       ['gitCheckout.changes.hasStageable', unstaged.some((entry) => entry.status !== 'ignored')],
@@ -147,22 +139,14 @@ export class ChangesController {
    * was opened on, then the whole selection when that row is part of it.
    */
   async runChangesFileCommand(
-    command: 'stage' | 'unstage' | 'discard' | 'open' | 'reveal' | 'copyPath' | 'history' | 'blame' | 'externalDiff',
+    command: 'stage' | 'unstage' | 'toggle' | 'discard' | 'open' | 'reveal' | 'copyPath' | 'history' | 'blame' | 'externalDiff',
     arg: unknown,
     selected?: unknown,
   ): Promise<void> {
     // A keybinding names the list that has focus, since it hands over no row.
     const keyboardList = (arg as { list?: unknown } | undefined)?.list;
-    const list =
-      keyboardList === 'unstaged' || keyboardList === 'staged'
-        ? keyboardList
-        : command === 'stage' || command === 'discard'
-          ? 'unstaged'
-          : command === 'unstage'
-            ? 'staged'
-            : undefined;
-    const keyboardRows = list === 'unstaged' ? this.ctx.unstagedList.view?.selection : list === 'staged' ? this.ctx.stagedList.view?.selection : undefined;
-    const targets = commandChangeTargets(keyboardList ? undefined : arg, selected, keyboardRows);
+    const fromKeyboard = keyboardList !== undefined || (arg === undefined && selected === undefined);
+    const targets = commandChangeTargets(keyboardList ? undefined : arg, selected, fromKeyboard ? this.ctx.changesList.view?.selection : undefined);
     const target = targets[0];
     const root = this.ctx.activeRepoRoot();
     if (!target || !root) {
@@ -179,6 +163,11 @@ export class ChangesController {
         if (actions.length > 0) {
           await this.runLocalChangeActions(actions);
         }
+        return;
+      }
+      case 'toggle': {
+        // Enter on a list: stage what is not staged and unstage what is.
+        await this.runLocalChangeActions(targets.map((entry) => ({ op: entry.side === 'staged' ? ('unstage' as const) : ('stage' as const), path: entry.path })));
         return;
       }
       case 'open':

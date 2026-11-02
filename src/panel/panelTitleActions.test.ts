@@ -20,15 +20,21 @@ const { contributes } = JSON.parse(
   };
 };
 
-const titleActions = contributes.menus['editor/title'];
+const allTitleActions = contributes.menus['editor/title'];
+/** The diff tab has its own options; every other tab action belongs to a Git Checkout window. */
+const isDiffTab = (entry: MenuEntry): boolean => /activeWebviewPanelId == 'gitCheckout\.(diff|commitDiff|treePreview)'/.test(entry.when ?? '');
+const optionsOf = (panel: string): string[] =>
+  allTitleActions.filter((entry) => entry.when?.startsWith(`activeWebviewPanelId == '${panel}'`) && entry.command.startsWith('gitCheckout.diff.'))
+    .map((entry) => entry.command.replace('gitCheckout.diff.', ''));
+const titleActions = allTitleActions.filter((entry) => !isDiffTab(entry));
 const commandById = new Map(contributes.commands.map((c) => [c.command, c]));
 
 describe('panel title bar actions', () => {
   it('only show while a Git Checkout panel is active', () => {
-    for (const entry of titleActions) {
+    for (const entry of allTitleActions) {
       assert.match(
         entry.when ?? '',
-        /activeWebviewPanelId == 'gitCheckout\.(main|pathHistory|blame)'/,
+        /activeWebviewPanelId == 'gitCheckout\.(main|pathHistory|blame|diff|commitDiff|treePreview)'/,
         entry.command,
       );
     }
@@ -140,15 +146,12 @@ describe('panel title bar actions', () => {
     assert.equal(contributes.configurationDefaults?.['workbench.view.alwaysShowHeaderActions'], true);
   });
 
-  it('puts the diff options in the header of every diff view, highlighted while on', () => {
-    const titles = (contributes.menus as Record<string, (MenuEntry & { when?: string })[]>)['view/title'];
-    const commandsOf = (view: string): string[] =>
-      titles.filter((entry) => (entry.when === `view == ${view}` || entry.when?.startsWith(`view == ${view} `)) && entry.command.startsWith('gitCheckout.diff.'))
-        .map((entry) => entry.command.replace('gitCheckout.diff.', ''));
+  it('puts the diff options in the title bar of every diff tab, highlighted while on', () => {
     const shared = ['toggleIgnoreWhitespace', 'toggleInvisibles', 'toggleWrap', 'moreContext', 'lessContext', 'toggleFullFile', 'toggleSideBySide'];
-    assert.deepEqual(commandsOf('gitCheckout.commit'), ['swapSides', ...shared]);
-    assert.deepEqual(commandsOf('gitCheckout.workingCopy'), shared);
-    assert.deepEqual(commandsOf('gitCheckout.treePreview'), ['toggleIgnoreWhitespace', 'toggleInvisibles', 'toggleWrap']);
+    // A diff or a preview is a tab of the editor area: its options are in the tab's title bar.
+    assert.deepEqual(optionsOf('gitCheckout.commitDiff'), ['swapSides', ...shared]);
+    assert.deepEqual(optionsOf('gitCheckout.diff'), shared);
+    assert.deepEqual(optionsOf('gitCheckout.treePreview'), ['toggleIgnoreWhitespace', 'toggleInvisibles', 'toggleWrap']);
     // The buttons that switch something on carry the state that highlights them.
     for (const id of ['toggleIgnoreWhitespace', 'toggleInvisibles', 'toggleWrap', 'toggleFullFile', 'toggleSideBySide']) {
       assert.ok(commandById.get(`gitCheckout.diff.${id}`)?.toggled, id);
@@ -158,6 +161,7 @@ describe('panel title bar actions', () => {
   it('lists in the Command Palette only what the tab toolbar offers, and Open', () => {
     const palette = (contributes.menus as Record<string, { command: string; when?: string }[]>).commandPalette;
     const toolbar = new Set(titleActions.map((entry) => entry.command));
+    // The diff tab's buttons are hidden from the palette, like the diff buttons of the other views.
     const shown = contributes.commands
       .map((command) => command.command)
       .filter((id) => !palette.some((entry) => entry.command === id && entry.when === 'false'));
@@ -175,12 +179,10 @@ describe('panel title bar actions', () => {
     assert.equal(when('gitCheckout.open'), undefined);
   });
 
-  it('moves files between the Unstaged and Staged lists with Enter', () => {
-    const enter = (view: string) =>
-      contributes.keybindings.find((binding) => binding.key === 'enter' && binding.when?.includes(`focusedView == ${view}`));
-    assert.equal(enter('gitCheckout.unstaged')?.command, 'gitCheckout.changes.stage');
-    assert.equal(enter('gitCheckout.staged')?.command, 'gitCheckout.changes.unstage');
+  it('stages an unstaged file and unstages a staged one with Enter in the Changes list', () => {
+    const enter = contributes.keybindings.find((binding) => binding.key === 'enter' && binding.when?.includes('focusedView == gitCheckout.changes'));
+    assert.equal(enter?.command, 'gitCheckout.changes.toggle');
     // Typing in a box must not stage anything.
-    assert.match(enter('gitCheckout.unstaged')?.when ?? '', /!inputFocus/);
+    assert.match(enter?.when ?? '', /!inputFocus/);
   });
 });

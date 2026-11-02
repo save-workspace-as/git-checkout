@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import * as vscode from 'vscode';
 
 import { answer, commitFile, menuContext, submitForm } from './graphMenu';
-import { bindExtension, git, readyTree, repoRoot, waitFor } from './harness';
+import { bindExtension, changeGroupRows, git, readyTree, repoRoot, waitFor } from './harness';
 
 describe('Operation banner', () => {
   const ctx = bindExtension();
@@ -129,11 +129,11 @@ describe('Operation banner', () => {
       const { topic } = divergingEdits();
       await mergeTopicIntoMain(topic);
       const paths = async (): Promise<string[]> =>
-        ((await ctx.api.changesLists.unstaged.getChildren()) as { path?: string }[]).map((node) => node.path ?? '');
+        (await changeGroupRows(ctx.api, 'unstaged')).map((node) => node.path ?? '');
       await banner(/^Merging/);
       await ctx.api.sendPanelMessage({ type: 'workingCopyReady' });
       await waitFor('the conflicted file in Unstaged', async () => ((await paths()).includes('c.txt') ? true : undefined));
-      const [row] = (await ctx.api.changesLists.unstaged.getChildren()) as unknown as { path: string; status: string }[];
+      const [row] = (await changeGroupRows(ctx.api, 'unstaged')) as unknown as { path: string; status: string }[];
       assert.equal(row.path, 'c.txt');
       assert.equal(row.status, 'conflict');
     });

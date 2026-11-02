@@ -38,6 +38,10 @@ function keyOf(repoRoot: string): string {
 export class PullRequestStore implements vscode.Disposable {
   private readonly states = new Map<string, PullRequestState>();
   private readonly loading = new Set<string>();
+  /** Repositories asked to read again while a reading was under way; they read once more when it ends. */
+  private readonly again = new Set<string>();
+  /** The path each known repository was asked for by, to read it again on refresh. */
+  private readonly roots = new Map<string, string>();
   /** Repositories whose state a test set; a reading that was already under way must not replace it. */
   private readonly seeded = new Set<string>();
   private readonly changed = new vscode.EventEmitter<void>();
@@ -75,6 +79,7 @@ export class PullRequestStore implements vscode.Disposable {
       return { kind: 'hidden' };
     }
     const known = this.states.get(keyOf(repoRoot));
+    this.roots.set(keyOf(repoRoot), repoRoot);
     if (known) {
       return known;
     }
@@ -89,10 +94,12 @@ export class PullRequestStore implements vscode.Disposable {
     this.set(repoRoot, state);
   }
 
-  /** Reads every repository again. */
+  /** Reads every repository again in the background; what is shown stays until the new reading replaces it. */
   refresh(): void {
-    this.states.clear();
     this.seeded.clear();
+    for (const root of this.roots.values()) {
+      void this.load(root);
+    }
     this.changed.fire();
   }
 
@@ -135,16 +142,20 @@ export class PullRequestStore implements vscode.Disposable {
   private async load(repoRoot: string): Promise<void> {
     const key = keyOf(repoRoot);
     if (this.loading.has(key)) {
+      this.again.add(key);
       return;
     }
     this.loading.add(key);
+    const shown = this.states.get(key);
     try {
       const github = await loadGitHubRemote(this.cliRegistry.getOrCreate(repoRoot));
       if (!github) {
         this.finish(repoRoot, { kind: 'hidden' });
         return;
       }
-      this.finish(repoRoot, { kind: 'loading' });
+      if (shown?.kind !== 'ready') {
+        this.finish(repoRoot, { kind: 'loading' });
+      }
       const session = await this.session();
       if (!session) {
         this.finish(repoRoot, { kind: 'signedOut' });
@@ -156,6 +167,10 @@ export class PullRequestStore implements vscode.Disposable {
       } catch (error) {
         const failure = error instanceof PullRequestError ? error.failure : 'other';
         log.warn('could not read the pull requests', error);
+        if (shown?.kind === 'ready' && failure !== 'unauthorized' && failure !== 'needsAccess') {
+          // A refresh that fails for a passing reason leaves the list as it was.
+          return;
+        }
         this.finish(
           repoRoot,
           failure === 'unauthorized' ? { kind: 'signedOut' } : failure === 'needsAccess' ? { kind: 'needsAccess' } : { kind: 'error', message: error instanceof Error ? error.message : String(error) },
@@ -166,6 +181,9 @@ export class PullRequestStore implements vscode.Disposable {
       this.finish(repoRoot, { kind: 'hidden' });
     } finally {
       this.loading.delete(key);
+      if (this.again.delete(key)) {
+        void this.load(repoRoot);
+      }
     }
   }
 }

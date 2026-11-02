@@ -108,6 +108,6 @@ describe('Undo Last Operation', () => {
 
   it('is in the Repository dropdown', async () => {
     await readyTree(ctx.api);
-    assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.0.undo'));
+    assert.ok((await vscode.commands.getCommands(true)).includes('gitCheckout.repo.undo'));
   });
 });

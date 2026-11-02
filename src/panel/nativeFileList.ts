@@ -16,6 +16,8 @@ export interface FileListOptions<N extends FileListNode> {
   item(node: N): vscode.TreeItem;
   /** A file was picked in the list (not by `select`); of a multi-selection, the one just added. */
   onPick(node: N): void;
+  /** What the view says while it has nothing to list, such as before a commit is selected. */
+  initialMessage?: string;
 }
 
 /**
@@ -36,6 +38,7 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
   private previousPicks = new Set<string>();
 
   private lastPick: { key: string; at: number } | undefined;
+  private summary: string | undefined;
 
   /** What the view shows, also read by tests. */
   readonly provider: vscode.TreeDataProvider<N> = {
@@ -65,6 +68,7 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
       canSelectMany: true,
       showCollapseAll: true,
     });
+    this.view.message = options.initialMessage;
     this.disposables.push(
       vscode.commands.registerCommand(this.pickCommand, (node: N) => this.clicked(node)),
       this.view,
@@ -99,16 +103,24 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
     // A different set of rows can make the selected one reappear; show it selected.
     const selectedAppeared = this.selectedKey !== undefined && keys.has(this.selectedKey) && !this.shownKeys.has(this.selectedKey);
     this.shownKeys = keys;
-    this.view.message = this.nodes.length === 0 ? emptyMessage : undefined;
+    const empty = emptyMessage ?? (nodes === null ? this.options.initialMessage : undefined);
+    this.view.message = this.nodes.length === 0 ? (empty ?? this.summary) : this.summary;
     this.changed.fire();
     if (selectedAppeared) {
       this.reveal();
     }
   }
 
+  /** A line above the rows, such as which commit they belong to; it stays through updates of the rows. */
+  setSummary(summary: string | undefined): void {
+    this.summary = summary;
+    this.view.message = this.nodes.length === 0 ? (this.view.message ?? summary) : summary;
+  }
+
   /** The window that owns the view changed: forget what it showed. */
   reload(): void {
     this.selectedKey = undefined;
+    this.summary = undefined;
     this.shownKeys = new Set();
     this.previousPicks = new Set();
     this.show(null);

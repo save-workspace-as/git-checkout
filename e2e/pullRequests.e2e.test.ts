@@ -18,7 +18,7 @@ describe('Pull requests in the sidebar', () => {
 
   const pull = (over: Record<string, unknown> = {}) => ({
     number: 7, title: 'Speed up blame', author: 'ada', isDraft: false, headRef: 'speed', headRepository: 'octo/app', baseRef: 'main',
-    reviewDecision: null, updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/7', ...over,
+    reviewDecision: null, checks: 'failure', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/7', ...over,
   });
   const seed = (pulls = [pull()]) => ctx.api.seedPullRequests(repoRoot(), {
     kind: 'ready', remote: 'origin', repo: { host: 'github.com', owner: 'octo', repo: 'app' },
@@ -31,6 +31,8 @@ describe('Pull requests in the sidebar', () => {
 
   beforeEach(async () => {
     await readyTree(ctx.api);
+    // An earlier suite may have left another repository's window as the current one.
+    await ctx.api.selectRepository(repoRoot());
     opened.length = 0;
     head = commitFile('base.txt', 'base\n', 'base');
     remote = mkdtempSync(join(tmpdir(), 'git-checkout-e2e-pr-'));
@@ -63,6 +65,21 @@ describe('Pull requests in the sidebar', () => {
     assert.equal(labels[labels.indexOf('Remotes') + 1], 'Pull Requests');
     const categories = tree.find((entry) => entry.label === 'Pull Requests')!.children.map((child) => child.label);
     assert.deepEqual(categories, ['Created by me', 'Waiting for my review', 'All open']);
+  });
+
+  it('reviews a pull request against its target branch without touching any branch', async () => {
+    git('push', '-q', 'origin', 'main');
+    await vscode.commands.executeCommand('gitCheckout.pullRequests.review', await pullNode());
+    const shown = await waitFor('the pull request changes', async () => {
+      const files = ctx.api.commitFiles();
+      return files?.baseSha ? files : undefined;
+    }, 10_000, () => `commit files: ${JSON.stringify(ctx.api.commitFiles())}; compare: ${JSON.stringify(ctx.api.operationFormState()?.form.title)}`);
+    assert.equal(shown.sha, head);
+    assert.equal(shown.baseSha, git('rev-parse', 'main'));
+    assert.deepEqual(shown.files.map((file) => file.path), ['speed.txt']);
+    assert.equal(git('rev-parse', 'refs/remotes/origin/main'), git('rev-parse', 'main'));
+    assert.equal(git('branch', '--show-current'), 'main');
+    assert.equal(git('branch', '--list', 'pr/7'), '');
   });
 
   it('checks a pull request out as the branch pr/<n>, and moves it forward when the pull request changes', async () => {

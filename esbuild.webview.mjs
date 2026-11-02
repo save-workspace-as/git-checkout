@@ -10,7 +10,6 @@ const ctx = await esbuild.context({
     main: 'webview/main.ts',
     commit: 'webview/commitMain.ts',
     changes: 'webview/changesMain.ts',
-    commitFiles: 'webview/commitFilesMain.ts',
     tree: 'webview/treeMain.ts',
   },
   bundle: true,
