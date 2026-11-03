@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 
-import { bindExtension, findByRef, git, loadTree, readyTree, repoRoot, waitFor } from './harness';
+import { bindExtension, findByRef, git, loadTree, readyTree, repoRoot, samePath, waitFor } from './harness';
 
 describe('Create worktree', () => {
   const ctx = bindExtension();
@@ -134,10 +134,12 @@ describe('Create worktree', () => {
   });
 
   it('copies the worktree path and keeps the current worktree open from its context menu', async () => {
-    const tree = await readyTree(ctx.api);
-    const current = tree.find((node) => node.id === 'section:worktrees')?.children[0];
-    assert.equal(current?.kind, 'worktree');
-    assert.ok(current.ref);
+    await readyTree(ctx.api);
+    // The tree can still be the previous fixture's right after the folder changed; its worktree is not a workspace folder, so opening it would ask.
+    const current = await waitFor('the current worktree of this repository', async () => {
+      const node = (await loadTree(ctx.api)).find((entry) => entry.id === 'section:worktrees')?.children[0];
+      return node?.kind === 'worktree' && node.ref && samePath(node.ref, repoRoot()) ? node : undefined;
+    });
     await vscode.env.clipboard.writeText('');
     await vscode.commands.executeCommand('gitCheckout.sidebar.copyWorktreePath', current);
     assert.equal(await vscode.env.clipboard.readText(), current.ref);

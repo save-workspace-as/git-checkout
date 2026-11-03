@@ -115,7 +115,7 @@ interface GitExtensionApi {
   getAPI(version: 1): GitApi;
 }
 
-function samePath(left: string, right: string): boolean {
+export function samePath(left: string, right: string): boolean {
   try {
     return realpathSync(left) === realpathSync(right);
   } catch {
