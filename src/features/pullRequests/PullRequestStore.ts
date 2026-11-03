@@ -28,6 +28,10 @@ const PRIVATE_SCOPES = ['repo'];
 const AUTH_PROVIDER = 'github';
 
 /** The same repository can be reached by more than one path, such as through a symlink; they share one entry. */
+function sameRepository(a: GitHubRepository, b: GitHubRepository): boolean {
+  return a.host === b.host && a.owner === b.owner && a.repo === b.repo;
+}
+
 function keyOf(repoRoot: string): string {
   try {
     return realpathSync(repoRoot);
@@ -166,13 +170,15 @@ export class PullRequestStore implements vscode.Disposable {
       return;
     }
     this.loading.add(key);
-    const shown = this.states.get(key);
+    const previous = this.states.get(key);
     try {
       const github = await loadGitHubRemote(this.cliRegistry.getOrCreate(repoRoot));
       if (!github) {
         this.finish(repoRoot, { kind: 'hidden' });
         return;
       }
+      // The list on show stays while it is read again, unless the remote now points at another repository.
+      const shown = previous?.kind === 'ready' && sameRepository(previous.repo, github.repo) ? previous : undefined;
       if (this.activity && !this.activity.active) {
         // Nobody looks at the list: GitHub is not asked until its view is shown.
         if (shown?.kind === 'ready') {

@@ -2,6 +2,7 @@
 // macOS only: a window is captured with `screencapture`, so the shot has the title bar, traffic lights and shadow.
 //
 //   node .agents/skills/screenshots/scripts/run.mjs [--only 01,12] [--out docs/screenshots] [--no-package] [--keep-open]
+//   node .agents/skills/screenshots/scripts/run.mjs --video [--out docs/demo.mov]   records the tour of demo-video.md instead
 import { execFileSync, spawn } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -14,7 +15,8 @@ const args = process.argv.slice(2);
 const flag = (name) => args.includes(`--${name}`);
 const option = (name) => { const at = args.indexOf(`--${name}`); return at >= 0 ? args[at + 1] : undefined; };
 
-const out = resolve(repo, option('out') ?? 'docs/screenshots');
+const video = flag('video');
+const out = resolve(repo, option('out') ?? (video ? 'docs/demo.mov' : 'docs/screenshots'));
 const only = option('only')?.split(',').map((id) => id.trim().padStart(2, '0'));
 // A short path: VS Code's IPC socket path must stay under 103 characters.
 const work = '/tmp/gcshots';
@@ -70,7 +72,7 @@ async function openWindow(folder, port) {
     'workbench.welcomePage.walkthroughs.openOnInstall': false, 'workbench.secondarySideBar.defaultVisibility': 'hidden',
     'telemetry.telemetryLevel': 'off', 'update.mode': 'none', 'extensions.autoCheckUpdates': false, 'extensions.autoUpdate': false,
     'chat.disableAIFeatures': true, 'window.commandCenter': false, 'window.title': 'Git Checkout — ${rootName}',
-    'window.titleBarStyle': 'custom', 'security.workspace.trust.enabled': false, 'editor.minimap.enabled': false,
+    'window.titleBarStyle': 'custom', 'window.menuStyle': 'custom', 'security.workspace.trust.enabled': false, 'editor.minimap.enabled': false,
     'git.autofetch': false, 'gitCheckout.pullRequests.enabled': false, 'typescript.validate.enable': false, 'javascript.validate.enable': false, 'git.blame.statusBarItem.enabled': false, 'gitCheckout.autoFetch.enabled': false, 'gitCheckout.graph.githubAvatars': true, 'gitCheckout.graph.gravatar': false,
   }, null, 2));
   // The commands that open a modal for a file need the file; a key runs each.
@@ -151,7 +153,7 @@ function tools(window) {
       const header = page.locator('.pane-header').filter({ has: page.locator('.title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
       if (await header.count() === 0) { return; }
       const expanded = (await header.getAttribute('aria-expanded')) === 'true';
-      if (expanded !== open) { await header.click(); await sleep(700); }
+      if (expanded !== open) { await t.glide(header); await header.click(); await sleep(700); }
     },
     /** Opens exactly the collapsibles named, so the ones shown have the room. */
     async layout(...open) {
@@ -160,7 +162,32 @@ function tools(window) {
     },
     /** A row of a native list in the sidebar, by its text. */
     row: (text) => page.locator('.pane-body .monaco-list-row').filter({ hasText: text }).first(),
-    async clickRow(text) { await t.row(text).click(); await sleep(1800); },
+    /** In the video the pointer travels to the target and taps before the click, so a viewer sees where. */
+    async glide(locator) {
+      if (!video) { return; }
+      const box = await locator.boundingBox();
+      if (!box) { return; }
+      await page.mouse.move(box.x + Math.min(box.width / 2, 120), box.y + box.height / 2);
+      await sleep(700);
+      await page.evaluate(() => window.__demoCursor?.tap());
+    },
+    /** Right-clicks a target and picks an item of the menu VS Code draws, the way a person would. */
+    async menu(locator, item) {
+      await t.glide(locator);
+      await locator.click({ button: 'right' });
+      await sleep(900);
+      const entry = page.locator('.context-view .action-label').filter({ hasText: item }).first();
+      await t.glide(entry);
+      await entry.click();
+      await sleep(1500);
+    },
+    /** Types into the Command Palette and runs the first match, slowly enough to read. */
+    async typed(title) {
+      await page.keyboard.press('Meta+Shift+p'); await sleep(600);
+      await page.keyboard.type(title, { delay: 60 }); await sleep(900);
+      await page.keyboard.press('Enter'); await sleep(1200);
+    },
+    async clickRow(text) { await t.glide(t.row(text)); await t.row(text).click(); await sleep(1800); },
     /** Sets the height of one collapsible by dragging the sash at its bottom edge. */
     async setHeight(name, px) {
       const pane = page.locator('.pane').filter({ has: page.locator('.pane-header .title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
@@ -178,10 +205,43 @@ function tools(window) {
     /** The first row of the list in one collapsible. */
     async clickFirstRow(name) {
       const pane = page.locator('.pane').filter({ has: page.locator('.pane-header .title', { hasText: new RegExp(`^${name}$`, 'i') }) }).first();
-      await pane.locator('.monaco-list-row').first().click(); await sleep(1800);
+      await t.glide(pane.locator('.monaco-list-row').first()); await pane.locator('.monaco-list-row').first().click(); await sleep(1800);
     },
   };
   return t;
+}
+
+/** A pointer drawn over the window, since the automation moves no real one: it glides to where the mouse is sent and ripples on a tap. */
+async function showCursor(page) {
+  await page.evaluate(() => {
+    const cursor = document.createElement('div');
+    cursor.style.cssText = 'position:fixed;left:0;top:0;width:28px;height:28px;z-index:2147483647;pointer-events:none;transition:transform .55s cubic-bezier(.3,.7,.3,1);transform:translate(600px,400px);filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))';
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('width', '28'); svg.setAttribute('height', '28'); svg.setAttribute('viewBox', '0 0 24 24');
+    const arrow = document.createElementNS(ns, 'path');
+    arrow.setAttribute('d', 'M4 2l15 9-6.5 1.5L9 19z'); arrow.setAttribute('fill', '#fff'); arrow.setAttribute('stroke', '#000');
+    arrow.setAttribute('stroke-width', '1.5'); arrow.setAttribute('stroke-linejoin', 'round');
+    svg.append(arrow); cursor.append(svg);
+    document.body.append(cursor);
+    const style = document.createElement('style');
+    style.append('@keyframes demo-ripple{from{transform:translate(-50%,-50%) scale(.3);opacity:.9}to{transform:translate(-50%,-50%) scale(1.8);opacity:0}}');
+    document.head.append(style);
+    let x = 600; let y = 400;
+    window.__demoCursor = {
+      move(nx, ny) { x = nx; y = ny; cursor.style.transform = `translate(${nx - 4}px,${ny - 2}px)`; },
+      tap() {
+        const ring = document.createElement('div');
+        ring.style.cssText = `position:fixed;left:${x}px;top:${y}px;width:44px;height:44px;border-radius:50%;border:3px solid #3794ff;background:rgba(55,148,255,.25);z-index:2147483646;pointer-events:none;animation:demo-ripple .6s ease-out forwards`;
+        document.body.append(ring);
+        setTimeout(() => ring.remove(), 700);
+      },
+    };
+  });
+  const move = page.mouse.move.bind(page.mouse);
+  const down = page.mouse.down.bind(page.mouse);
+  page.mouse.move = async (x, y, options) => { await move(x, y, options); await page.evaluate(([nx, ny]) => window.__demoCursor?.move(nx, ny), [x, y]).catch(() => {}); };
+  page.mouse.down = async (options) => { await page.evaluate(() => window.__demoCursor?.tap()).catch(() => {}); await down(options); };
 }
 
 const SECTIONS = ['Repositories', 'Commit Message', 'Changes', 'Commit', 'File Tree', 'Repository', 'Pull Requests'];
@@ -191,7 +251,72 @@ const clearSearch = async (graph, page) => {
   await page.keyboard.press('Meta+a'); await page.keyboard.press('Backspace'); await page.keyboard.press('Enter');
   await sleep(1200);
 };
-const closeWindow = (window) => { if (!flag('keep-open')) { try { process.kill(-window.pid); } catch { try { process.kill(window.pid); } catch { /* already gone */ } } } };
+// Ask the window to quit itself; a SIGTERM would leave "The window terminated unexpectedly" behind.
+const closeWindow = async (window) => {
+  if (flag('keep-open')) { return; }
+  try {
+    // The window quits before it can answer, so the reply is not waited for.
+    (await window.browser.newBrowserCDPSession()).send('Browser.close').catch(() => {});
+    await sleep(2500);
+  } catch {
+    try { process.kill(-window.pid); } catch { try { process.kill(window.pid); } catch { /* already gone */ } }
+  }
+};
+
+// ---- the video: the scenes of demo-video.md, recorded as the rectangle of the window ---------------------------------------
+if (video) {
+  const { tour, narration } = await import('./tour.mjs');
+  // The narration is spoken by the system voice: one clip per scene, laid on the recording afterwards.
+  const clips = {};
+  for (const [number, text] of Object.entries(narration)) {
+    const file = join(work, `scene-${number}.aiff`);
+    run('say', ['-v', option('voice') ?? 'Samantha', '-r', '160', '-o', file, text]);
+    clips[number] = { file, seconds: Number(run('sh', ['-c', `afinfo ${file} | awk '/estimated duration/ {print $3}'`])) };
+  }
+  const mux = join(work, 'mux');
+  if (!existsSync(mux)) { mkdirSync(join(work, 'mux-src'), { recursive: true }); copyFileSync(join(here, 'mux.swift'), join(work, 'mux-src', 'main.swift')); run('swiftc', ['-o', mux, join(work, 'mux-src', 'main.swift')]); }
+  const stage = await openWindow(join(work, 'stage', 'git-checkout'), 9411);
+  try {
+    const t = tools(stage);
+    const { page } = t;
+    await page.bringToFront();
+    await showCursor(page);
+    await t.openGitCheckout();
+    const graph = await t.graph();
+    const box = await page.evaluate(() => ({ x: window.screenX, y: window.screenY, w: window.outerWidth, h: window.outerHeight }));
+    mkdirSync(dirname(out), { recursive: true });
+    rmSync(out, { force: true });
+    // The recording stops with SIGINT, which is what makes screencapture finish the file.
+    const recorder = spawn('screencapture', ['-v', '-x', `-R${box.x},${box.y},${box.w},${box.h}`, out], { stdio: 'ignore' });
+    await sleep(1500);
+    const started = Date.now();
+    const offsets = {};
+    const chosen = option('scenes')?.split(',');
+    const scene = async (number, title, play) => {
+      if (chosen && !chosen.includes(String(number))) { return; }
+      console.log(`scene ${number}: ${title}`);
+      offsets[number] = (Date.now() - started) / 1000 + 1.5;
+      const begun = Date.now();
+      await play();
+      // The scene lasts as long as its sentence, so the voice is never cut off by the next thing on screen.
+      await sleep(Math.max(0, (clips[number].seconds + 1) * 1000 - (Date.now() - begun)));
+    };
+    try {
+      await tour({ t, page, graph, historyFile, changedFile, scene });
+    } finally {
+      await sleep(1000);
+      recorder.kill('SIGINT');
+      await new Promise((done) => recorder.on('exit', done));
+    }
+    const final = out.replace(/\.mov$/, '.mp4');
+    run(mux, [out, final, ...Object.keys(clips).flatMap((number) => [String(offsets[number]), clips[number].file])]);
+    rmSync(out);
+    console.log(`recorded ${final}`);
+  } finally {
+    await closeWindow(stage);
+  }
+  process.exit(0);
+}
 
 // ---- the shots --------------------------------------------------------------------------------------------------------
 const stage = await openWindow(join(work, 'stage', 'git-checkout'), 9411);
@@ -282,9 +407,8 @@ try {
     await page.keyboard.type('1'); await page.keyboard.press('Enter'); await sleep(1500);
     await t.shot('15', 'file-blame');
   }
-  await stage.browser.close();
 } finally {
-  closeWindow(stage);
+  await closeWindow(stage);
 }
 
 if (wanted('12')) {
@@ -303,9 +427,8 @@ if (wanted('12')) {
     await cell.hover(); await sleep(300);
     await cell.locator('.merge-pick').click(); await sleep(700);
     await t.shot('12', 'merge-conflict');
-    await merge.browser.close();
   } finally {
-    closeWindow(merge);
+    await closeWindow(merge);
   }
 }
 console.log(`done: ${out}`);

@@ -63,6 +63,8 @@ export interface GitCheckoutApi {
   pretendWindowFocused(focused: boolean | undefined): void;
   /** Whether a view that shows the changes is on screen right now (e2e only). */
   changesOnScreen(): boolean;
+  /** Whether the Pull Requests view is on screen right now (e2e only). */
+  pullRequestsOnScreen(): boolean;
   /** Sends a message as if it came from the main panel webview (e2e only). */
   sendPanelMessage(message: WebviewMessage): Promise<void>;
   /** Makes the repository at `repoRoot` the one commands and the views act on (e2e only). */
@@ -133,7 +135,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   const pullRequests = new PullRequestStore(cliRegistry);
   context.subscriptions.push(pullRequests);
   new PullRequestController(pullRequests, cliRegistry, panelManager).register(context);
-  const { providers: sidebars, repositories, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
+  const { providers: sidebars, repositories, badge: sidebarBadge, pullRequestsOnScreen } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
 
   const statusBar = new DiagnosticsStatusBar(gitService);
   context.subscriptions.push(statusBar);
@@ -542,6 +544,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     keepViewsFresh: keepEverythingActive,
     pretendWindowFocused,
     changesOnScreen: () => windows.changesOnScreen(),
+    pullRequestsOnScreen,
     sendPanelMessage: (message) => panelManager.sendPanelMessage(message),
     selectRepository: (repoRoot) => panelManager.selectRepository(repoRoot),
     operationFormState: () => panelManager.operationFormState(),

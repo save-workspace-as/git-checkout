@@ -67,3 +67,9 @@ Open each picture before you hand it over. Look for:
 - Never change this repository's history or working tree to set up a shot: the demo is a clone.
 - Do not commit anything unless asked. Report which pictures changed.
 - If a shot fails, fix the step in `run.mjs` rather than editing the picture.
+
+## The demo video
+
+`node .agents/skills/screenshots/scripts/run.mjs --video` records the tour in `scripts/demo-video.md` (the scenes are in `scripts/tour.mjs`) as `docs/demo.mp4`: the window is recorded with `screencapture -v`, a drawn pointer glides to each target and ripples on a tap, and each scene is narrated with the system voice (`say`, `--voice <name>`), laid on the recording by `scripts/mux.swift`. A scene lasts as long as its sentence. Same requirements as the shots; the file is large, so do not commit it (host it instead).
+
+The voice is what macOS has installed; the default `Samantha` is the compact one and sounds flat. For a natural voice, download a premium one (System Settings → Accessibility → Spoken Content → System Voice → Manage Voices, for example "Ava (Premium)") and pass it: `--voice "Ava (Premium)"`.

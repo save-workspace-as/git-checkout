@@ -246,7 +246,7 @@ export function registerGitCheckoutSidebar(
   gitService: GitExtensionService,
   watchService: GitWatchService,
   pullRequests?: PullRequestStore,
-): { providers: vscode.TreeDataProvider<SidebarNode>[]; repositories: vscode.TreeDataProvider<SidebarNode>; badge(): number | undefined } {
+): { providers: vscode.TreeDataProvider<SidebarNode>[]; repositories: vscode.TreeDataProvider<SidebarNode>; badge(): number | undefined; pullRequestsOnScreen(): boolean } {
   const search = { query: '' };
   const source = new SidebarSource(panel, search, pullRequests);
   // The sections of the repository in one view, and the pull requests in another.
@@ -578,7 +578,7 @@ export function registerGitCheckoutSidebar(
       context.subscriptions.push(vscode.commands.registerCommand(commandId, run));
     }
   }
-  return { providers: [everything], repositories, badge: () => repositoriesView.badge?.value };
+  return { providers: [everything], repositories, badge: () => repositoriesView.badge?.value, pullRequestsOnScreen: () => pullRequestsView.visible };
 }
 
 async function promptSidebarSearch(

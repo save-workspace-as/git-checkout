@@ -55,6 +55,7 @@ export interface GitCheckoutApi {
   keepViewsFresh(on: boolean): void;
   pretendWindowFocused(focused: boolean | undefined): void;
   changesOnScreen(): boolean;
+  pullRequestsOnScreen(): boolean;
   sendPanelMessage(message: { type: string } & Record<string, unknown>): Promise<void>;
   changesList: vscode.TreeDataProvider<ChangeRow>;
   revisionLists: Record<'commitFiles' | 'tree', vscode.TreeDataProvider<RevisionRow>>;
