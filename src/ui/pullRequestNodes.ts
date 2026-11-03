@@ -114,6 +114,7 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
     children,
   });
   switch (state.kind) {
+    case 'idle':
     case 'loading':
       return section([{ ...message('loading', l10n.t('Loading…')), icon: { id: 'loading~spin' } }]);
     case 'signedOut':

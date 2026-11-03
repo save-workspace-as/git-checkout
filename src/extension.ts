@@ -1,4 +1,6 @@
 import { platformCommandIds } from './shared/app/platformCommands';
+import { keepEverythingActive } from './core/whenActive';
+import { pretendWindowFocused, trackWindowFocus } from './panel/windowFocus';
 import './installL10n';
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
@@ -55,6 +57,14 @@ export interface GitCheckoutApi {
   repositories: vscode.TreeDataProvider<SidebarNode>;
   /** The number on the Git Checkout icon in the Activity Bar (e2e only). */
   activityBadge(): number | undefined;
+  /** Keeps every view up to date whether it is on screen or not, as a headless test window needs (e2e only). */
+  keepViewsFresh(on: boolean): void;
+  /** Says the window is in front (or not), whatever it is; `undefined` goes back to the truth (e2e only). */
+  pretendWindowFocused(focused: boolean | undefined): void;
+  /** Whether a view that shows the changes is on screen right now (e2e only). */
+  changesOnScreen(): boolean;
+  /** Whether the Pull Requests view is on screen right now (e2e only). */
+  pullRequestsOnScreen(): boolean;
   /** Sends a message as if it came from the main panel webview (e2e only). */
   sendPanelMessage(message: WebviewMessage): Promise<void>;
   /** Makes the repository at `repoRoot` the one commands and the views act on (e2e only). */
@@ -85,7 +95,7 @@ export interface GitCheckoutApi {
 
 export async function activate(context: vscode.ExtensionContext): Promise<GitCheckoutApi> {
   const outputChannel = getLogChannel();
-  context.subscriptions.push(outputChannel);
+  context.subscriptions.push(outputChannel, trackWindowFocus());
 
   rememberBranchCheckoutIn(context.globalState);
   const cliRegistry = getGitCliRegistry();
@@ -125,7 +135,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   const pullRequests = new PullRequestStore(cliRegistry);
   context.subscriptions.push(pullRequests);
   new PullRequestController(pullRequests, cliRegistry, panelManager).register(context);
-  const { providers: sidebars, repositories, badge: sidebarBadge } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
+  const { providers: sidebars, repositories, badge: sidebarBadge, pullRequestsOnScreen } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
 
   const statusBar = new DiagnosticsStatusBar(gitService);
   context.subscriptions.push(statusBar);
@@ -531,6 +541,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     sidebar: sidebars[0],
     repositories,
     activityBadge: () => sidebarBadge(),
+    keepViewsFresh: keepEverythingActive,
+    pretendWindowFocused,
+    changesOnScreen: () => windows.changesOnScreen(),
+    pullRequestsOnScreen,
     sendPanelMessage: (message) => panelManager.sendPanelMessage(message),
     selectRepository: (repoRoot) => panelManager.selectRepository(repoRoot),
     operationFormState: () => panelManager.operationFormState(),

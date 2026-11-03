@@ -1,6 +1,8 @@
 import { REVEAL_COMMAND_BASES, platformCommandIds } from '../shared/app/platformCommands';
 import { basename } from 'node:path';
 import { Debouncer } from '../core/debounce';
+import { Activity, whenActive } from '../core/whenActive';
+import { windowFocus } from '../panel/windowFocus';
 import { sameWorktreePath } from '../features/worktrees/worktreeParser';
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
@@ -78,8 +80,6 @@ class SidebarSource {
         return undefined;
       }
       const pullRequests = this.pullRequests && pullRequestSection(this.pullRequests.peek(root));
-      // The Pull Requests view is there only while the repository is on GitHub and the setting is on.
-      void vscode.commands.executeCommand('setContext', 'gitCheckout.pullRequestsAvailable', pullRequests !== undefined);
       const sections = buildSidebarTree(data.snapshot, data.stashes, data.worktrees, data.submodules, pullRequests);
       const nodes = withSidebarSearch(sections, this.search.query);
       for (const node of nodes) {
@@ -246,7 +246,7 @@ export function registerGitCheckoutSidebar(
   gitService: GitExtensionService,
   watchService: GitWatchService,
   pullRequests?: PullRequestStore,
-): { providers: vscode.TreeDataProvider<SidebarNode>[]; repositories: vscode.TreeDataProvider<SidebarNode>; badge(): number | undefined } {
+): { providers: vscode.TreeDataProvider<SidebarNode>[]; repositories: vscode.TreeDataProvider<SidebarNode>; badge(): number | undefined; pullRequestsOnScreen(): boolean } {
   const search = { query: '' };
   const source = new SidebarSource(panel, search, pullRequests);
   // The sections of the repository in one view, and the pull requests in another.
@@ -260,12 +260,21 @@ export function registerGitCheckoutSidebar(
   const repositoriesView = vscode.window.createTreeView(REPOSITORIES_VIEW_ID, { treeDataProvider: repositories });
   /** True while the view's selection is being set by us rather than by a click. */
   let highlighting = false;
+  /** The Pull Requests view is there only while the repository is on GitHub and the setting is on; this does not read the list. */
+  const updatePullRequestsAvailable = (): void => {
+    const root = panel.activeRepoRoot();
+    const available = Boolean(pullRequests && root && pullRequests.peek(root).kind !== 'hidden');
+    void vscode.commands.executeCommand('setContext', 'gitCheckout.pullRequestsAvailable', available);
+  };
   const refreshAll = (): void => {
+    updatePullRequestsAvailable();
     source.invalidate();
     repositories.refresh();
     scoped.forEach((entry) => entry.provider.refresh());
     everything.refresh();
-    void showActive();
+    if (repositoriesView.visible) {
+      void showActive();
+    }
     updateBadge();
   };
   /** Highlights the selected repository in the Repositories view. */
@@ -292,6 +301,18 @@ export function registerGitCheckoutSidebar(
   const refreshLater = new Debouncer(150);
   let everythingChanged = false;
   const changedElsewhere = new Set<string>();
+  const flush = (): void => {
+    const rows = [...changedElsewhere];
+    changedElsewhere.clear();
+    if (everythingChanged) {
+      everythingChanged = false;
+      refreshAll();
+      return;
+    }
+    rows.forEach((row) => repositories.refresh(row));
+  };
+  // A window in the background reads nothing; what changed meanwhile is read once when it comes back.
+  const flushInFront = whenActive(flush, () => windowFocus.active, windowFocus.onDidBecomeActive);
   const refreshSoon = (root?: string): void => {
     const active = panel.activeRepoRoot();
     if (root === undefined || !active || sameWorktreePath(root, active)) {
@@ -299,16 +320,7 @@ export function registerGitCheckoutSidebar(
     } else {
       changedElsewhere.add(root);
     }
-    refreshLater.schedule(() => {
-      const rows = [...changedElsewhere];
-      changedElsewhere.clear();
-      if (everythingChanged) {
-        everythingChanged = false;
-        refreshAll();
-        return;
-      }
-      rows.forEach((row) => repositories.refresh(row));
-    });
+    refreshLater.schedule(() => flushInFront.request());
   };
   const setSearchQuery = (query: string): void => {
     search.query = query.trim();
@@ -323,7 +335,14 @@ export function registerGitCheckoutSidebar(
       canSelectMany: true,
     }),
   );
+  // GitHub is asked for the pull requests only while their view is on screen.
+  const pullRequestsView = views[scoped.findIndex((entry) => entry.view === PULL_REQUESTS_VIEW_ID)];
+  const pullRequestsActivity = new Activity(() => windowFocus.active && pullRequestsView.visible);
+  pullRequests?.watch(pullRequestsActivity);
+  updatePullRequestsAvailable();
   context.subscriptions.push(
+    pullRequestsView.onDidChangeVisibility(() => pullRequestsActivity.changed()),
+    windowFocus.onDidBecomeActive(() => pullRequestsActivity.changed()),
     repositories,
     repositoriesView,
     everything,
@@ -362,6 +381,7 @@ export function registerGitCheckoutSidebar(
   updateBadge();
   context.subscriptions.push(
     { dispose: () => refreshLater.dispose() },
+    flushInFront,
     gitService.onDidChangeDiagnostics(() => refreshSoon()),
     vscode.workspace.onDidChangeConfiguration((event) => {
       if (event.affectsConfiguration('scm.countBadge')) { updateBadge(); }
@@ -558,7 +578,7 @@ export function registerGitCheckoutSidebar(
       context.subscriptions.push(vscode.commands.registerCommand(commandId, run));
     }
   }
-  return { providers: [everything], repositories, badge: () => repositoriesView.badge?.value };
+  return { providers: [everything], repositories, badge: () => repositoriesView.badge?.value, pullRequestsOnScreen: () => pullRequestsView.visible };
 }
 
 async function promptSidebarSearch(

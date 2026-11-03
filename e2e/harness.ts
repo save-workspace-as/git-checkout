@@ -52,6 +52,10 @@ export interface GitCheckoutApi {
   sidebar: vscode.TreeDataProvider<SidebarNode>;
   repositories: vscode.TreeDataProvider<SidebarNode>;
   activityBadge(): number | undefined;
+  keepViewsFresh(on: boolean): void;
+  pretendWindowFocused(focused: boolean | undefined): void;
+  changesOnScreen(): boolean;
+  pullRequestsOnScreen(): boolean;
   sendPanelMessage(message: { type: string } & Record<string, unknown>): Promise<void>;
   changesList: vscode.TreeDataProvider<ChangeRow>;
   revisionLists: Record<'commitFiles' | 'tree', vscode.TreeDataProvider<RevisionRow>>;
@@ -111,7 +115,7 @@ interface GitExtensionApi {
   getAPI(version: 1): GitApi;
 }
 
-function samePath(left: string, right: string): boolean {
+export function samePath(left: string, right: string): boolean {
   try {
     return realpathSync(left) === realpathSync(right);
   } catch {
@@ -211,6 +215,8 @@ export function bindExtension(): {
     const activated = await activateExtension();
     ctx.extension = activated.extension;
     ctx.api = activated.api;
+    // A headless test window shows no view, so every view is kept up to date as if it did.
+    ctx.api.keepViewsFresh(true);
   });
   beforeEach(openFreshFixture);
   // A test that fails while a form is open leaves it open. The next test would then find that form instead of its

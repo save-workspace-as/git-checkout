@@ -9,3 +9,5 @@ media/webview/*.ttf
 .vscode-test/
 out/
 *.vsix
+docs/demo.mov
+docs/demo.mp4
