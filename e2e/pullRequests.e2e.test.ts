@@ -147,4 +147,30 @@ describe('Pull requests in the sidebar', () => {
     await vscode.workspace.getConfiguration('gitCheckout').update('pullRequests.enabled', false, vscode.ConfigurationTarget.Global);
     await waitFor('the section to go with the setting', async () => ((await loadTree(ctx.api)).some((entry) => entry.label === 'Pull Requests') ? undefined : true));
   });
+
+  it('asks GitHub for the list only once its view is on screen', async () => {
+    const label = async (): Promise<string[]> =>
+      (await loadTree(ctx.api)).find((entry) => entry.label === 'Pull Requests')?.children.map((child) => child.label) ?? [];
+    // A repository on GitHub, with no sign-in in this test window: the list cannot be read, so what the view says shows whether it was asked.
+    git('remote', 'set-url', 'origin', 'https://github.com/octo/app.git');
+    undo.push(() => git('remote', 'set-url', 'origin', remote));
+    ctx.api.keepViewsFresh(false);
+    ctx.api.pretendWindowFocused(true);
+    try {
+      await vscode.commands.executeCommand('gitCheckout.pullRequests.refresh');
+      await waitFor('the view to wait', async () => ((await label()).join() === 'Loading…' ? true : undefined));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      assert.equal((await label()).join(), 'Loading…', 'nothing asked GitHub while the view was out of sight');
+
+      await vscode.commands.executeCommand('gitCheckout.sidebar.pullRequests.focus');
+      await waitFor('the list to be read once the view is shown', async () => ((await label()).join() === 'Sign in to GitHub' ? true : undefined));
+    } finally {
+      ctx.api.pretendWindowFocused(undefined);
+      ctx.api.keepViewsFresh(true);
+      // The repository is not on GitHub again, and the section goes with it.
+      git('remote', 'set-url', 'origin', remote);
+      await vscode.commands.executeCommand('gitCheckout.pullRequests.refresh');
+      await waitFor('the section to go', async () => ((await loadTree(ctx.api)).some((entry) => entry.label === 'Pull Requests') ? undefined : true));
+    }
+  });
 });

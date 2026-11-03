@@ -23,6 +23,7 @@ describe('pullRequestSection', () => {
   it('shows what is happening while the list is not there yet', () => {
     const labels = (state: PullRequestState) => pullRequestSection(state)!.children.map((child) => child.label);
     assert.deepEqual(labels({ kind: 'loading' }), ['Loading…']);
+    assert.deepEqual(labels({ kind: 'idle' }), ['Loading…']);
     assert.deepEqual(labels({ kind: 'signedOut' }), ['Sign in to GitHub']);
     assert.deepEqual(labels({ kind: 'needsAccess' }), ['Allow access to private repositories']);
     assert.deepEqual(labels({ kind: 'error', message: 'boom' }), ['Could not load pull requests', 'Try again']);

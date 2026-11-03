@@ -5,6 +5,7 @@ import { loadGitHubRemote } from '../../core/githubRepository';
 import { createLogger } from '../../log';
 import type { GitHubRepository } from '../../shared/history/githubReferences';
 import type { PullRequestDto, PullRequestLists } from '../../shared/pullRequests/pullRequests';
+import type { Activity } from '../../core/whenActive';
 import { fetchPullRequestLists, PullRequestError } from './pullRequestClient';
 
 const log = createLogger('pull-requests');
@@ -14,6 +15,8 @@ export type PullRequestState =
   /** Turned off in the settings, or the repository is not on GitHub: nothing is shown. */
   | { kind: 'hidden' }
   | { kind: 'loading' }
+  /** A GitHub repository whose list has not been read, because nobody looks at the Pull Requests view yet. */
+  | { kind: 'idle' }
   | { kind: 'signedOut' }
   | { kind: 'needsAccess' }
   | { kind: 'error'; message: string }
@@ -44,6 +47,9 @@ export class PullRequestStore implements vscode.Disposable {
   private readonly roots = new Map<string, string>();
   /** Repositories whose state a test set; a reading that was already under way must not replace it. */
   private readonly seeded = new Set<string>();
+  /** Repositories whose list was left alone while the view was out of sight, and has to be read when it is shown. */
+  private readonly stale = new Set<string>();
+  private activity: Activity | undefined;
   private readonly changed = new vscode.EventEmitter<void>();
   readonly onDidChange = this.changed.event;
   private readonly disposables: vscode.Disposable[] = [this.changed];
@@ -66,6 +72,20 @@ export class PullRequestStore implements vscode.Disposable {
   dispose(): void {
     for (const disposable of this.disposables) {
       disposable.dispose();
+    }
+  }
+
+  /** GitHub is asked for the lists only while the Pull Requests view is on screen; what was skipped is read when it is shown. */
+  watch(activity: Activity): void {
+    this.activity = activity;
+    this.disposables.push(activity.onDidBecomeActive(() => this.readWhatWasSkipped()));
+  }
+
+  private readWhatWasSkipped(): void {
+    for (const [key, root] of this.roots) {
+      if (this.states.get(key)?.kind === 'idle' || this.stale.delete(key)) {
+        void this.load(root);
+      }
     }
   }
 
@@ -151,6 +171,15 @@ export class PullRequestStore implements vscode.Disposable {
       const github = await loadGitHubRemote(this.cliRegistry.getOrCreate(repoRoot));
       if (!github) {
         this.finish(repoRoot, { kind: 'hidden' });
+        return;
+      }
+      if (this.activity && !this.activity.active) {
+        // Nobody looks at the list: GitHub is not asked until its view is shown.
+        if (shown?.kind === 'ready') {
+          this.stale.add(key);
+        } else {
+          this.finish(repoRoot, { kind: 'idle' });
+        }
         return;
       }
       if (shown?.kind !== 'ready') {

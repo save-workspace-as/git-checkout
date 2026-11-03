@@ -17,6 +17,8 @@ import {
 import { ChangeDecorations, ChangesList, type PanelLists } from '../features/changes/changesList';
 import { RevisionList } from '../features/history/revisionLists';
 import { GitCheckoutPanelManager } from './gitCheckoutPanelManager';
+import { Activity } from '../core/whenActive';
+import { windowFocus } from './windowFocus';
 import { CHANGE_DIFF_TAB, COMMIT_DIFF_TAB, EditorTab, TREE_PREVIEW_TAB } from './editorTab';
 import * as path from 'node:path';
 import type { PanelWindowHost } from './panelWindowHost';
@@ -61,6 +63,14 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
       void this.current.handleViewMessage({ type: 'commitTreeOpen', revision: node.revision ?? 'HEAD', path: node.path });
     }, l10n.t('Select a commit in the graph to browse its files.')),
   };
+  /** Whether a view that shows the changes is on screen: the Changes list, the commit form or a diff tab. */
+  readonly changesActivity = new Activity(
+    () => windowFocus.active && this.changesOnScreen(),
+  );
+  /** Whether the Changes list, the commit form or a diff tab is on screen, whatever the window focus. */
+  changesOnScreen(): boolean {
+    return this.lists.changes.view.visible || this.slots.changesForm.visible || this.diffEditor.visible;
+  }
   private readonly windows: GitCheckoutPanelManager[] = [];
   private current: GitCheckoutPanelManager;
   private readonly refsChanged = new vscode.EventEmitter<void>();
@@ -80,7 +90,12 @@ export class GitCheckoutWindows implements PanelWindowHost, vscode.Disposable {
     this.diffEditor = new EditorTab(context, CHANGE_DIFF_TAB, this.slots.changes, forward);
     this.commitDiffEditor = new EditorTab(context, COMMIT_DIFF_TAB, this.slots.commit, forward);
     this.treePreviewEditor = new EditorTab(context, TREE_PREVIEW_TAB, this.slots.treePreview, forward);
+    const changesVisibilityChanged = (): void => this.changesActivity.changed();
     this.disposables.push(
+      windowFocus.onDidBecomeActive(changesVisibilityChanged),
+      this.lists.changes.view.onDidChangeVisibility(changesVisibilityChanged),
+      this.slots.changesForm.onDidChangeVisible(changesVisibilityChanged),
+      this.diffEditor.onDidChangeVisible(changesVisibilityChanged),
       this.diffEditor,
       this.commitDiffEditor,
       this.treePreviewEditor,

@@ -23,6 +23,14 @@ export const TREE_PREVIEW_TAB: EditorTabKind = { viewType: 'gitCheckout.treePrev
  */
 export class EditorTab implements vscode.Disposable {
   private panel: vscode.WebviewPanel | undefined;
+  private readonly visibility = new vscode.EventEmitter<void>();
+  /** The tab was opened, closed, shown or hidden. */
+  readonly onDidChangeVisible = this.visibility.event;
+
+  /** Whether the tab is on screen. */
+  get visible(): boolean {
+    return this.panel?.visible === true;
+  }
 
   constructor(
     private readonly context: vscode.ExtensionContext,
@@ -49,6 +57,8 @@ export class EditorTab implements vscode.Disposable {
       },
     );
     this.panel = panel;
+    this.visibility.fire();
+    panel.onDidChangeViewState(() => this.visibility.fire());
     const binding = this.slot.bind(panel.webview, this.onMessage);
     const load = (): void => {
       panel.webview.html = viewHtml(panel.webview, this.context.extensionUri, this.kind.script, this.kind.rootAttributes);
@@ -59,10 +69,12 @@ export class EditorTab implements vscode.Disposable {
       binding.dispose();
       this.slot.setReloader(undefined);
       this.panel = undefined;
+      this.visibility.fire();
     });
   }
 
   dispose(): void {
     this.panel?.dispose();
+    this.visibility.dispose();
   }
 }

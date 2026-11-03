@@ -76,6 +76,8 @@ import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
 import { ignoreRevsEnabled } from '../features/blame/blameSettings';
 import { autolinksBodyAttribute } from '../shared/history/autolinks';
 import { commitSummaryText, compareSummaryText } from '../features/history/commitSummaryText';
+import { Activity, whenActive } from '../core/whenActive';
+import { windowFocus } from './windowFocus';
 import { ChangesSlot, ScopedWebviewSlot, type SlotPoster } from './webviewSlots';
 import { webviewImgSrc } from './webviewImgSrc';
 import { ScopedChangesList } from '../features/changes/changesList';
@@ -228,6 +230,8 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
   readonly interactiveRebase: InteractiveRebaseController;
   readonly operation = new OperationController(this);
   readonly changesSlot: SlotPoster;
+  /** Whether the graph is on screen, in a window that is in front. */
+  private readonly graphActivity: Activity;
   readonly changesList: ScopedChangesList;
   changesView: ChangesViewOptions;
 
@@ -349,7 +353,26 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     this.changes.publishChangesViewContext();
     this.details.publishCommitDiffContext();
     this.details.publishCommitFileListContext();
+    // What is out of sight is not kept up to date: a change is read once when the graph, or the Changes views, come back
+    // on screen, and a window in the background reads nothing.
+    this.graphActivity = new Activity(() => windowFocus.active && this.panel?.visible === true);
+    const refreshGraph = whenActive(
+      () => {
+        void this.postState('state');
+        void this.reloadGraphOnHeadChange();
+      },
+      () => this.graphActivity.active,
+      this.graphActivity.onDidBecomeActive,
+    );
+    const refreshChanges = whenActive(
+      () => void this.changes.sendWorkingCopySnapshot(),
+      () => host.changesActivity.active,
+      host.changesActivity.onDidBecomeActive,
+    );
     this.disposables.push(
+      refreshGraph,
+      refreshChanges,
+      windowFocus.onDidBecomeActive(() => this.graphActivity.changed()),
       this.operationForm,
       this._onDidChangeRefs,
       this._onDidChangeActiveRepo,
@@ -358,17 +381,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
           this.panel.title = this.panelTitle();
         }
         void this.syncRepoOperationContext();
-        void this.postState('state');
-        void this.reloadGraphOnHeadChange();
-        void this.changes.sendWorkingCopySnapshot();
+        refreshGraph.request();
+        refreshChanges.request();
       }),
       watchService.onDidRefresh((event) => {
         this.headShortByRepo.set(event.repoRoot, event.headShort);
-        // The Changes tab lives outside the main panel, so it needs fresh changes either way.
-        void this.changes.sendWorkingCopySnapshot();
+        refreshChanges.request();
         if (this.panel) {
-          void this.postState('state');
-          void this.reloadGraphOnHeadChange();
+          refreshGraph.request();
         }
       }),
       vscode.window.onDidChangeActiveColorTheme(() => {
@@ -461,6 +481,7 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     });
 
     panel.onDidChangeViewState(() => {
+      this.graphActivity.changed();
       if (panel.visible) {
         void hideBuiltInScm();
       }

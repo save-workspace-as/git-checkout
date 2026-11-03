@@ -13,6 +13,9 @@ export const COMMIT_FILE_LIST_VIEW_ID = 'gitCheckout.commitFiles';
 
 /** Queues host messages until the panel webview script has loaded. */
 export class WebviewSlot {
+  private readonly visibility = new vscode.EventEmitter<void>();
+  /** The view of this slot was shown or hidden. */
+  readonly onDidChangeVisible = this.visibility.event;
   private webview: vscode.Webview | undefined;
   private ready = false;
   private readonly pending: HostMessage[] = [];
@@ -30,6 +33,15 @@ export class WebviewSlot {
 
   /** The resolved view, for setting its title and description. */
   view: vscode.WebviewView | undefined;
+
+  /** Whether the view is on screen: resolved, expanded and in a visible container. */
+  get visible(): boolean {
+    return this.view?.visible === true;
+  }
+
+  notifyVisibility(): void {
+    this.visibility.fire();
+  }
 
   /** Set once the view is resolved: reloads its page so it starts over and says it is ready again. */
   private reloader: (() => void) | undefined;
@@ -190,7 +202,10 @@ export function registerSidebarWebviews(
       view.onDidDispose(() => {
         slot.view = undefined;
         slot.setReloader(undefined);
+        slot.notifyVisibility();
       });
+      view.onDidChangeVisibility(() => slot.notifyVisibility());
+      slot.notifyVisibility();
       const load = (): void => {
         view.webview.html = viewHtml(view.webview, context.extensionUri, script, rootAttributes);
       };
