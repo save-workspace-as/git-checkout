@@ -34,7 +34,6 @@ import {
   firstMatchFrom,
   nextFindStep,
   compactGraphRefs,
-  visibleGraphRefs,
   type BisectStateDto,
 } from '../protocol';
 import { rowSvgTemplate } from './graphRowSvg';
@@ -428,7 +427,7 @@ export function mountGraphView(
           <div class="graph-cell graph-col-subject"
             style=${styleMap({ paddingLeft: `min(${rowTextOffset(lane, geometry)}px, calc(100% - 80px))`, '--ref-color': `var(--graph-lane-${lane.color})` })}>
             ${bisectMark ? html`<span class="graph-bisect-tag graph-bisect-tag-${bisectMark}">${bisectMark}</span>` : nothing}
-            ${(compactBranchLabels ? compactGraphRefs(visibleGraphRefs(commit.refs, activeBranchOnly)) : visibleGraphRefs(commit.refs, activeBranchOnly)).map(refBadge)}
+            ${(compactBranchLabels ? compactGraphRefs(commit.refs) : commit.refs).map(refBadge)}
             <span class="graph-subject" title=${commit.subject}
             >${githubLinkedText(commit.subject, github, (url) => postMessage({ type: 'openGitHubLink', url }))}</span>
           </div>
