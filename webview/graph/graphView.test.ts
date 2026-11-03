@@ -183,6 +183,17 @@ describe('commit graph', () => {
     assert.deepEqual(sent.at(-1), { type: 'graphExitActiveBranchOnly' });
   });
 
+  it('keeps the labels of branches that are part of the active branch, such as main under a feature branch', () => {
+    const { container, graph } = mount();
+    graph.handleHostMessage(meta({ headRef: 'feature', activeBranchOnly: true }));
+    graph.handleHostMessage(page([
+      commit('a', ['b'], { refs: [{ kind: 'local', name: 'feature', isHead: true }] }),
+      commit('b', [], { refs: [{ kind: 'local', name: 'main' }, { kind: 'remote', name: 'origin/main' }, { kind: 'tag', name: 'v1' }] }),
+    ], { activeBranchOnly: true }));
+    const labels = [...container.querySelectorAll('.graph-row')].map((row) => [...row.querySelectorAll('.graph-ref-name')].map((name) => name.textContent));
+    assert.deepEqual(labels, [['✓ feature'], ['main', 'v1']]);
+  });
+
   describe('filter suggestions in the search', () => {
     const type = (field: El, value: string) => {
       field.value = value;

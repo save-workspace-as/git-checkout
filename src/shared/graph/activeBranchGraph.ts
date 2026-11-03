@@ -1,6 +1,9 @@
 import { type GraphRefDto } from './graphProtocol';
 
-/** Revision `git log` should walk. Active-branch mode follows the checked-out branch. */
+/**
+ * Revision `git log` should walk. Active-branch mode follows the checked-out branch. Every commit it lists is in that
+ * branch's history, so every branch label on one is a branch that is part of it (a feature built on `main` shows `main`).
+ */
 export function graphLogRevision(
   filterRef: string,
   headRef: string | null,
@@ -11,19 +14,6 @@ export function graphLogRevision(
   }
   const branch = headRef?.trim();
   return branch ? branch : 'HEAD';
-}
-
-/** Branch labels to draw. Active-branch mode keeps the checked-out branch and non-branch refs. */
-export function visibleGraphRefs(
-  refs: readonly GraphRefDto[],
-  activeBranchOnly: boolean,
-): GraphRefDto[] {
-  if (!activeBranchOnly) {
-    return [...refs];
-  }
-  return refs.filter(
-    (ref) => ref.isHead === true || (ref.kind !== 'local' && ref.kind !== 'remote'),
-  );
 }
 
 /**

@@ -9,7 +9,7 @@ export { bisectMarkForSha, IDLE_BISECT_STATE } from '../src/shared/bisect/bisect
 export type { BisectStateDto } from '../src/shared/bisect/bisectProtocol';
 export type * from '../src/shared/graph/graphProtocol';
 export { ALL_COMMITS_FILTER } from '../src/shared/graph/graphProtocol';
-export { compactGraphRefs, visibleGraphRefs } from '../src/shared/graph/activeBranchGraph';
+export { compactGraphRefs } from '../src/shared/graph/activeBranchGraph';
 export { authorColor, authorInitials } from '../src/shared/graph/authorAvatar';
 export { formatCommitDate } from '../src/shared/history/commitDate';
 export {

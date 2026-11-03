@@ -1,16 +1,9 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { ALL_COMMITS_FILTER, type GraphRefDto } from './graphProtocol';
-import { compactGraphRefs, graphLogRevision, visibleGraphRefs } from './activeBranchGraph';
+import { ALL_COMMITS_FILTER } from './graphProtocol';
+import { compactGraphRefs, graphLogRevision } from './activeBranchGraph';
 
-const refs: GraphRefDto[] = [
-  { kind: 'local', name: 'main', isHead: true },
-  { kind: 'local', name: 'feature' },
-  { kind: 'remote', name: 'origin/main' },
-  { kind: 'tag', name: 'v1' },
-  { kind: 'head', name: 'HEAD' },
-];
 
 describe('graphLogRevision', () => {
   it('keeps the chosen filter until active-branch mode is on', () => {
@@ -23,20 +16,6 @@ describe('graphLogRevision', () => {
     assert.equal(graphLogRevision('feature', 'release', true), 'release');
     assert.equal(graphLogRevision(ALL_COMMITS_FILTER, null, true), 'HEAD');
     assert.equal(graphLogRevision(ALL_COMMITS_FILTER, '  ', true), 'HEAD');
-  });
-});
-
-describe('visibleGraphRefs', () => {
-  it('returns every ref when all branches are shown', () => {
-    assert.deepEqual(visibleGraphRefs(refs, false), refs);
-  });
-
-  it('hides other branches and keeps the checked-out branch, tags, and detached HEAD', () => {
-    assert.deepEqual(visibleGraphRefs(refs, true), [
-      { kind: 'local', name: 'main', isHead: true },
-      { kind: 'tag', name: 'v1' },
-      { kind: 'head', name: 'HEAD' },
-    ]);
   });
 });
 
