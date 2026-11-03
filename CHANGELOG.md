@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.8.0...git-checkout-v0.9.0) (2026-11-03)
+
+
+### Features
+
+* **perf:** refresh only the views that are on screen ([#36](https://github.com/save-workspace-as/git-checkout/issues/36)) ([964c54b](https://github.com/save-workspace-as/git-checkout/commit/964c54bd7d94a46f6644c122ed31781d279b4f7a))
+* **selection:** implement pickFromSelection function and integrate with NativeFileList ([#38](https://github.com/save-workspace-as/git-checkout/issues/38)) ([7524925](https://github.com/save-workspace-as/git-checkout/commit/75249258fb16401f16c45a38cda650c6f41c96c4))
+
 ## [0.8.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.7.0...git-checkout-v0.8.0) (2026-11-02)
 
 
