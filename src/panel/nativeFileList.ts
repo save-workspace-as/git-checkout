@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { createLogger } from '../log';
+import { pickFromSelection, SELECTION_QUIET_MS } from './filePick';
 
 const log = createLogger('fileList');
 
@@ -36,6 +37,8 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
   private selectedKey: string | undefined;
   private shownKeys = new Set<string>();
   private previousPicks = new Set<string>();
+  /** Until when a selection event is VS Code restoring the selection onto new rows, which is not a click. */
+  private quietUntil = 0;
 
   private lastPick: { key: string; at: number } | undefined;
   private summary: string | undefined;
@@ -105,6 +108,7 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
     this.shownKeys = keys;
     const empty = emptyMessage ?? (nodes === null ? this.options.initialMessage : undefined);
     this.view.message = this.nodes.length === 0 ? (empty ?? this.summary) : this.summary;
+    this.quietUntil = Date.now() + SELECTION_QUIET_MS;
     this.changed.fire();
     if (selectedAppeared) {
       this.reveal();
@@ -166,15 +170,11 @@ export class NativeFileList<N extends FileListNode> implements vscode.Disposable
   }
 
   private picked(selection: readonly N[]): void {
-    const files = selection.filter((node) => node.kind === 'file');
-    // Of a multi-selection the diff follows the file that was just added to it.
-    const added = files.filter((node) => !this.previousPicks.has(node.key));
-    this.previousPicks = new Set(files.map((node) => node.key));
-    const target = added[added.length - 1];
-    if (!target || target.key === this.selectedKey) {
-      return;
+    const { target, previous } = pickFromSelection(selection, this.previousPicks, this.selectedKey, Date.now() < this.quietUntil);
+    this.previousPicks = previous;
+    if (target) {
+      this.pick(target);
     }
-    this.pick(target);
   }
 
   dispose(): void {

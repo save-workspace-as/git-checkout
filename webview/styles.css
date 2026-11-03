@@ -1918,10 +1918,10 @@ vscode-button-group.hidden {
   overflow: hidden;
 }
 
-/* The commit form alone is only as tall as its fields. */
+/* The commit form alone fills its view and scrolls when the view is dragged shorter than its fields, so nothing is cut off. */
 .changes-panel[data-part="form"] {
-  height: auto;
-  overflow: visible;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .changes-panel[data-part="form"] .changes-form {
