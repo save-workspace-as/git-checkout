@@ -61,3 +61,13 @@ describe('CommitTreeService', () => {
     assert.equal(await service.readCommit(repoRoot, 'main'), undefined);
   });
 });
+
+describe('CommitTreeService with a revision that is an option', () => {
+  it('refuses it without running Git, as a list or as a commit lookup', async () => {
+    const { cli, reads } = mockGitCli();
+    const service = new CommitTreeService(mockCliRegistry('/repo', cli));
+    await assert.rejects(() => service.list('/repo', '--help'), /Not a valid revision/);
+    assert.equal(await service.readCommit('/repo', '-n1'), undefined);
+    assert.deepEqual(reads, []);
+  });
+});

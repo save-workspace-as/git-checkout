@@ -12,6 +12,7 @@ import { MAX_IMAGE_PREVIEW_BYTES, MAX_INLINE_BINARY_BYTES } from '../../shared/d
 import { detectContentKind } from '../../shared/diff/contentKind';
 import { DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS } from '../../shared/diff/diffViewOptions';
 import type { WorkingCopyBinaryBlobDto, WorkingCopyFileDiffDto } from '../../shared/changes/workingCopyProtocol';
+import { revisionArg } from '../../core/gitRevision';
 
 const log = createLogger('commit-details');
 
@@ -68,7 +69,7 @@ export class CommitDetailsService {
   constructor(private readonly cliRegistry: GitCliRegistry) {}
 
   async listFiles(repoRoot: string, sha: string): Promise<CommitFileChangeDto[]> {
-    const revision = sha.trim();
+    const revision = revisionArg(sha);
     const result = await this.cliRegistry.getOrCreate(repoRoot).execRead(commitDetailsDiffArgs(revision));
     const files = parseCommitNameStatus(result.stdout);
     log.debug(`listed ${files.length} files at ${revision}`);
@@ -120,7 +121,7 @@ export class CommitDetailsService {
   async listFilesBetween(repoRoot: string, base: string, sha: string): Promise<CommitFileChangeDto[]> {
     const result = await this.cliRegistry
       .getOrCreate(repoRoot)
-      .execRead(commitCompareDiffArgs(base.trim(), sha.trim()));
+      .execRead(commitCompareDiffArgs(revisionArg(base), revisionArg(sha)));
     const files = parseCommitNameStatus(result.stdout);
     log.debug(`listed ${files.length} files between ${base.trim()} and ${sha.trim()}`);
     return files;
@@ -140,8 +141,8 @@ export class CommitDetailsService {
       '-p',
       '-M',
       ...commitDiffGitArgs(view),
-      base.trim(),
-      sha.trim(),
+      revisionArg(base),
+      revisionArg(sha),
       '--',
       ...diffPaths(filePath, oldPath),
     ]);
@@ -150,7 +151,7 @@ export class CommitDetailsService {
 
   /** Message body without the subject line. */
   async readBody(repoRoot: string, sha: string): Promise<string> {
-    const revision = sha.trim();
+    const revision = revisionArg(sha);
     const result = await this.cliRegistry
       .getOrCreate(repoRoot)
       .execRead(['log', '-1', '--format=%b', revision]);
@@ -158,7 +159,7 @@ export class CommitDetailsService {
   }
 
   async readMessage(repoRoot: string, revision: string): Promise<string> {
-    const tag = revision.trim();
+    const tag = revisionArg(revision);
     try {
       const result = await this.cliRegistry.getOrCreate(repoRoot).execRead([
         'log', '-1', '--format=%B', `${tag}^{}`,
@@ -171,7 +172,7 @@ export class CommitDetailsService {
   }
 
   async readCommitter(repoRoot: string, sha: string): Promise<CommitPersonDto> {
-    const revision = sha.trim();
+    const revision = revisionArg(sha);
     const result = await this.cliRegistry
       .getOrCreate(repoRoot)
       .execRead(['log', '-1', '--format=%cn%x1f%ce%x1f%ct', revision]);
@@ -192,7 +193,7 @@ export class CommitDetailsService {
       '-p',
       '-M',
       ...commitDiffGitArgs(view),
-      sha.trim(),
+      revisionArg(sha),
       '--',
       ...diffPaths(filePath, oldPath),
     ]);
@@ -210,6 +211,11 @@ export class CommitDetailsService {
     filePath: string,
   ): Promise<WorkingCopyFileDiffDto> {
     const cli = this.cliRegistry.getOrCreate(repoRoot);
+    for (const revision of [base, sha]) {
+      if (revision) {
+        revisionArg(revision);
+      }
+    }
     const read = async (revision: string | null): Promise<Uint8Array> => {
       if (!revision) {
         return new Uint8Array();
@@ -263,7 +269,7 @@ export class CommitDetailsService {
     filePath: string,
   ): Promise<{ kind: 'image'; mimeType: string; bytes: Uint8Array } | { kind: 'too-large'; byteLength: number } | undefined> {
     const cli = this.cliRegistry.getOrCreate(repoRoot);
-    const spec = `${revision}:${filePath}`;
+    const spec = `${revisionArg(revision)}:${filePath}`;
     let byteLength: number;
     try {
       byteLength = Number.parseInt((await cli.execRead(['cat-file', '-s', spec])).stdout.trim(), 10);
@@ -290,7 +296,7 @@ export class CommitDetailsService {
     try {
       const result = await this.cliRegistry
         .getOrCreate(repoRoot)
-        .execRead(['rev-parse', '--verify', `${sha.trim()}^`]);
+        .execRead(['rev-parse', '--verify', `${revisionArg(sha)}^`]);
       const parent = result.stdout.trim();
       return parent || null;
     } catch (error) {

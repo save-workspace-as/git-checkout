@@ -120,6 +120,11 @@ export interface GitExecOptions {
   env?: Record<string, string>;
   /** Called with each piece of stderr as it arrives, such as `git clone --progress` output. */
   onStderr?: (chunk: string) => void;
+  /**
+   * Called with each piece of stdout as it arrives, which is then not kept: the result's `stdout` is empty. Return `false`
+   * to stop reading; Git is ended and the call succeeds with what was delivered, so a long scan need not run to its end.
+   */
+  onStdout?: (chunk: string) => boolean | void;
 }
 
 export class GitCli {
@@ -271,6 +276,8 @@ export class GitCli {
       const stdoutChunks: Buffer[] = [];
       let stderr = '';
       let settled = false;
+      const onStdout = options?.onStdout;
+      let stoppedByReader = false;
 
       const finish = (error: GitCliError): void => {
         if (settled) {
@@ -328,7 +335,17 @@ export class GitCli {
         } else {
           out.setEncoding('utf8');
           out.on('data', (chunk: string) => {
-            stdout += chunk;
+            if (!onStdout) {
+              stdout += chunk;
+              return;
+            }
+            if (stoppedByReader) {
+              return;
+            }
+            if (onStdout(chunk) === false) {
+              stoppedByReader = true;
+              child.kill('SIGTERM');
+            }
           });
         }
       }
@@ -353,6 +370,11 @@ export class GitCli {
       });
 
       child.on('close', (code) => {
+        if (stoppedByReader) {
+          // Ended on purpose, so the exit status of the killed process says nothing.
+          succeed({ stdout: '', stderr, exitCode: 0 });
+          return;
+        }
         const exitCode = code ?? 1;
         if (exitCode === 0) {
           if (binaryStdout) {

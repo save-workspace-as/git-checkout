@@ -1,5 +1,5 @@
 import type { ExtensionContext } from 'vscode';
-import type { GitCli } from '../gitCli';
+import type { GitCli, GitExecOptions } from '../gitCli';
 import type { GitCliRegistry } from '../gitCliRegistry';
 import type { GitExtensionService } from '../gitExtensionService';
 import type { Repository } from '../vscodeGitApi';
@@ -84,10 +84,18 @@ export function mockGitCli(handler?: {
   const reads: string[][] = [];
   const writes: string[][] = [];
   const cli = {
-    execRead: async (args: string[]) => {
+    execRead: async (args: string[], options?: GitExecOptions) => {
       reads.push(args);
-      if (handler?.execRead) {
-        return handler.execRead(args);
+      const result = handler?.execRead ? await handler.execRead(args) : { stdout: '' };
+      if (!options?.onStdout) {
+        return result;
+      }
+      // A reader of the stream gets the output in uneven pieces, as a pipe delivers it, and none is kept.
+      const size = Math.max(1, Math.ceil(result.stdout.length / 3) + 1);
+      for (let at = 0; at < result.stdout.length; at += size) {
+        if (options.onStdout(result.stdout.slice(at, at + size)) === false) {
+          break;
+        }
       }
       return { stdout: '' };
     },

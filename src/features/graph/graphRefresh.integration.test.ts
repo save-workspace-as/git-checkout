@@ -10,7 +10,7 @@ import {
   mockGitExtensionService,
   mockRepository,
 } from '../../core/testing/serviceTestUtils';
-import { CommitGraphService } from './commitGraphService';
+import { CommitGraphService, SEARCH_CHUNK_SIZE } from './commitGraphService';
 import { graphRefresher } from './graphRefresh';
 
 /** A straight line of `count` commits on `main`, written in one go. */
@@ -99,3 +99,36 @@ describe('graph refresh', () => {
   });
 });
 
+
+describe('graph search', () => {
+  it('finds the same commits at the same rows as the history order, across several batches, and stops when cancelled', async () => {
+    const repo = initTempRepository();
+    try {
+      seedHistory(repo.repoRoot, SEARCH_CHUNK_SIZE * 2 + 250);
+      const graph = new CommitGraphService(
+        mockExtensionContext(),
+        mockGitExtensionService([mockRepository(repo.repoRoot)], { headName: 'main' }),
+        mockCliRegistry(repo.repoRoot, repo.cli),
+      );
+      const order = execSync('git log --format=%s main', { cwd: repo.repoRoot, encoding: 'utf8' }).trim().split('\n');
+      const expected = order.flatMap((subject, index) => (subject.includes('commit 7') ? [index] : []));
+
+      const batches: { count: number; done: boolean }[] = [];
+      const found: { sha: string; index: number }[] = [];
+      await graph.searchCommits(repo.repoRoot, 'commit 7', (matches, done) => {
+        batches.push({ count: matches.length, done });
+        found.push(...matches);
+      });
+      assert.ok(expected.length > 100);
+      assert.deepEqual(found.map((match) => match.index), expected, 'the rows of the history order');
+      assert.deepEqual(batches.map((batch) => batch.done), [false, false, true], 'a batch per chunk of commits, the last one marked done');
+      assert.equal(new Set(found.map((match) => match.sha)).size, found.length, 'no commit twice');
+
+      let calls = 0;
+      await graph.searchCommits(repo.repoRoot, 'commit', () => { calls += 1; }, () => calls > 0);
+      assert.equal(calls, 1, 'nothing after the cancel');
+    } finally {
+      repo.cleanup();
+    }
+  });
+});

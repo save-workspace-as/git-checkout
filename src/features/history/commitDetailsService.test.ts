@@ -174,3 +174,28 @@ describe('CommitDetailsService', () => {
     });
   });
 });
+
+describe('CommitDetailsService with a revision that is an option', () => {
+  it('refuses it without running Git', async () => {
+    const { cli, reads } = mockGitCli();
+    const service = new CommitDetailsService(mockCliRegistry('/repo', cli));
+    const option = '--version';
+    const calls: [string, () => Promise<unknown>][] = [
+      ['listFiles', () => service.listFiles('/repo', option)],
+      ['listFilesBetween', () => service.listFilesBetween('/repo', 'main', option)],
+      ['listFilesBetween base', () => service.listFilesBetween('/repo', option, 'main')],
+      ['diffFile', () => service.diffFile('/repo', option, 'a.txt')],
+      ['diffFileBetween', () => service.diffFileBetween('/repo', option, 'main', 'a.txt')],
+      ['readBody', () => service.readBody('/repo', option)],
+      ['readMessage', () => service.readMessage('/repo', option)],
+      ['readCommitter', () => service.readCommitter('/repo', option)],
+      ['resolveParent', () => service.resolveParent('/repo', option)],
+      ['readImage', () => service.readImage('/repo', option, 'a.png')],
+      ['binaryPreview', () => service.binaryPreview('/repo', null, option, 'a.png')],
+    ];
+    for (const [name, call] of calls) {
+      await assert.rejects(call, /Not a valid revision/, name);
+    }
+    assert.deepEqual(reads, []);
+  });
+});

@@ -1,5 +1,5 @@
 import { strict as assert } from 'node:assert';
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
@@ -178,6 +178,48 @@ describe('GitCli concurrent writes', { skip: process.platform === 'win32' }, () 
       const free = await timeOf(cli.execRead(['status']));
       assert.ok(free < 500, `the read took ${free}ms beside the fetch`);
       assert.equal((await background).stdout, 'fetch');
+    });
+  });
+});
+
+describe('GitCli.execRead with onStdout', { skip: process.platform === 'win32' }, () => {
+  /** A CLI whose `git` is the shell script `body`, run in a folder of its own. */
+  async function withScript<T>(body: string, run: (cli: GitCli, dir: string) => Promise<T>): Promise<T> {
+    const dir = mkdtempSync(join(tmpdir(), 'git-checkout-fake-git-'));
+    const script = join(dir, 'git');
+    writeFileSync(script, `#!/bin/sh\n${body}\n`);
+    chmodSync(script, 0o755);
+    try {
+      return await run(new GitCli(script, dir, new GitOperationQueue()), dir);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('hands over the output as it arrives and keeps none of it', async () => {
+    await withScript('printf "one\\ntwo\\n"', async (cli) => {
+      const seen: string[] = [];
+      const result = await cli.execRead(['log'], { onStdout: (chunk) => void seen.push(chunk) });
+      assert.equal(seen.join(''), 'one\ntwo\n');
+      assert.equal(result.stdout, '');
+    });
+  });
+
+  it('ends Git and succeeds when the reader says to stop', async () => {
+    await withScript('echo $$ > pid\nwhile true; do echo line; sleep 0.02; done', async (cli, dir) => {
+      let chunks = 0;
+      const result = await cli.execRead(['log'], { onStdout: () => ++chunks < 3 });
+      assert.equal(result.exitCode, 0);
+      assert.equal(chunks, 3, 'nothing is delivered after the reader stopped');
+      const pid = Number(readFileSync(join(dir, 'pid'), 'utf8'));
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      assert.throws(() => process.kill(pid, 0), /ESRCH/, 'the git process is gone');
+    });
+  });
+
+  it('still fails when Git fails', async () => {
+    await withScript('echo partial\necho "fatal: bad revision" >&2\nexit 128', async (cli) => {
+      await assert.rejects(() => cli.execRead(['log'], { onStdout: () => undefined }), /fatal: bad revision/);
     });
   });
 });

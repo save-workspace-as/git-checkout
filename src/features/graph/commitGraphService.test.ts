@@ -6,12 +6,15 @@ import {
     buildGraphLogArgs,
     CommitGraphService,
     defaultStartRef,
+    namesNoRevision,
     graphIncludesReflog,
     GRAPH_PAGE_SIZE,
     commitMatchesQuery,
     parseSearchRecords,
     SEARCH_CHUNK_SIZE,
+    SearchRecordParser,
 } from './commitGraphService';
+import { GitCliError } from '../../core/gitCliError';
 import { defaultGitCheckoutSettings } from '../../core/gitCheckoutSettings';
 import {
     mockCliRegistry,
@@ -22,6 +25,9 @@ import {
 } from '../../core/testing/serviceTestUtils';
 
 const REPO = '/repo';
+
+/** The git log of a search, told from the other reads by the fields it asks for. */
+const isSearchScan = (args: string[]): boolean => args[0] === 'log' && args.some((arg) => arg.includes('%B%x01'));
 const FILTER_KEY = 'gitCheckout.graph.filter';
 
 function fakeLogPage(count: number): string {
@@ -43,6 +49,103 @@ function searchLog(entries: { sha: string; author?: string; message: string }[])
     .map((entry) => `${entry.sha}\0${entry.author ?? 'Ann'}\0ann@example.com\0${entry.message}\n\x01`)
     .join('\n');
 }
+
+describe('a graph filter that no longer exists', () => {
+  const missing = new GitCliError('ExitCode', 'git exited with code 128', REPO, "fatal: ambiguous argument 'gone': unknown revision or path not in the working tree.", 128);
+
+  it('falls back to all commits, and remembers it', async () => {
+    const context = mockExtensionContext({ [FILTER_KEY]: { [REPO]: 'gone' } });
+    const { cli, reads } = mockGitCli({
+      execRead: async (args) => {
+        if (args.includes('gone')) {
+          throw missing;
+        }
+        return { stdout: fakeLogPage(3) };
+      },
+    });
+    const svc = new CommitGraphService(
+      context,
+      mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
+      mockCliRegistry(REPO, cli),
+    );
+    const page = await svc.loadInitial(REPO);
+    assert.equal(page.filterRef, ALL_COMMITS_FILTER);
+    assert.equal(page.commits.length, 3);
+    assert.equal(svc.getFilterRef(REPO), ALL_COMMITS_FILTER);
+    assert.equal(reads.filter((args) => args[0] === 'log').length, 2, 'one failed read, then one for all commits');
+  });
+
+  it('does not hide other failures, or a failure of all commits itself', async () => {
+    const failing = (error: Error, filter: string) => {
+      const { cli } = mockGitCli({ execRead: async (args) => { if (args[0] === 'log') { throw error; } return { stdout: '' }; } });
+      return new CommitGraphService(
+        mockExtensionContext({ [FILTER_KEY]: { [REPO]: filter } }),
+        mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
+        mockCliRegistry(REPO, cli),
+      ).loadInitial(REPO);
+    };
+    const lock = new GitCliError('Lock', 'locked', REPO, 'fatal: Unable to create index.lock', 128);
+    await assert.rejects(() => failing(lock, 'gone'), /locked/);
+    await assert.rejects(() => failing(missing, ALL_COMMITS_FILTER), /code 128/);
+  });
+
+  it('counts only a missing revision', () => {
+    assert.equal(namesNoRevision(missing), true);
+    assert.equal(namesNoRevision(new GitCliError('ExitCode', 'x', REPO, 'fatal: bad revision', 128)), true);
+    assert.equal(namesNoRevision(new GitCliError('ExitCode', 'x', REPO, 'fatal: not a git repository', 128)), false);
+    assert.equal(namesNoRevision(new Error('ambiguous argument')), false);
+  });
+});
+
+describe('CommitGraphService with a revision that is an option', () => {
+  it('refuses it without running Git', async () => {
+    const { cli, reads } = mockGitCli();
+    const svc = new CommitGraphService(
+      mockExtensionContext(),
+      mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
+      mockCliRegistry(REPO, cli),
+    );
+    await assert.rejects(() => svc.resolveReveal(REPO, '-n1'), /Not a valid revision/);
+    await assert.rejects(() => svc.loadCommit(REPO, '--version'), /Not a valid revision/);
+    await assert.rejects(() => svc.loadMergeSide(REPO, '--help'), /Not a valid revision/);
+    assert.deepEqual(reads.filter((args) => args[0] !== 'config'), []);
+  });
+});
+
+describe('SearchRecordParser', () => {
+  const entries = [
+    { sha: sha(1), author: 'Ann Lee', message: 'Fix one\n\nWith a body' },
+    { sha: sha(2), message: 'Two' },
+    { sha: sha(3), message: '' },
+  ];
+  const output = searchLog(entries);
+
+  it('gives the same commits however the output is cut, even inside a record or a separator', () => {
+    const whole = parseSearchRecords(output);
+    assert.equal(whole.length, 3);
+    for (const size of [1, 2, 7, 41, 100, output.length]) {
+      const parser = new SearchRecordParser();
+      const records = [];
+      for (let at = 0; at < output.length; at += size) {
+        records.push(...parser.push(output.slice(at, at + size)));
+      }
+      records.push(...parser.end());
+      assert.deepEqual(records, whole, `cut every ${size} characters`);
+    }
+  });
+
+  it('holds back a commit until its end is seen', () => {
+    const parser = new SearchRecordParser();
+    assert.deepEqual(parser.push(output.slice(0, 30)), []);
+    assert.equal(parser.push(output.slice(30)).length, 3);
+    assert.deepEqual(parser.end(), []);
+  });
+
+  it('gives nothing for empty output', () => {
+    const parser = new SearchRecordParser();
+    assert.deepEqual([...parser.push(''), ...parser.end()], []);
+  });
+});
 
 describe('search matching', () => {
   const [record] = parseSearchRecords(searchLog([{ sha: sha(1), author: 'Ann Lee', message: 'Fix the BUG\n\nDetails' }]));
@@ -212,26 +315,21 @@ describe('CommitGraphService', () => {
     assert.equal(svc.loadedCount(REPO), GRAPH_PAGE_SIZE + 3);
   });
 
-  it('streams matches in graph order a chunk at a time and finishes at the end of history', async () => {
-    const reads: string[][] = [];
-    const { cli } = mockGitCli({
-      execRead: async (args) => {
-        reads.push(args);
-        const skip = Number(args.find((a) => a.startsWith('--skip='))?.slice(7) ?? '0');
-        if (skip === 0) {
-          const first = Array.from({ length: SEARCH_CHUNK_SIZE }, (_, i) => ({
-            sha: sha(i), message: i === 5 ? 'fix one' : 'other',
-          }));
-          return { stdout: searchLog(first) };
-        }
-        return { stdout: searchLog([{ sha: sha(5000), message: 'fix two' }, { sha: sha(5001), message: 'other' }]) };
-      },
-    });
+  const searchService = (stdout: () => string): { svc: CommitGraphService; reads: string[][] } => {
+    const { cli, reads } = mockGitCli({ execRead: async () => ({ stdout: stdout() }) });
     const svc = new CommitGraphService(
       mockExtensionContext({ [FILTER_KEY]: { [REPO]: 'main' } }),
       mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
       mockCliRegistry(REPO, cli),
     );
+    return { svc, reads };
+  };
+
+  it('streams matches in graph order, a chunk of commits at a time, from one git process', async () => {
+    const history = Array.from({ length: SEARCH_CHUNK_SIZE }, (_, i) => ({
+      sha: sha(i), message: i === 5 ? 'fix one' : 'other',
+    })).concat([{ sha: sha(5000), message: 'fix two' }, { sha: sha(5001), message: 'other' }]);
+    const { svc, reads } = searchService(() => searchLog(history));
 
     const batches: [{ sha: string; index: number }[], boolean][] = [];
     await svc.searchCommits(REPO, ' FIX ', (matches, done) => batches.push([matches, done]));
@@ -239,20 +337,25 @@ describe('CommitGraphService', () => {
       [[{ sha: sha(5), index: 5 }], false],
       [[{ sha: sha(5000), index: SEARCH_CHUNK_SIZE }], true],
     ]);
-    const scans = reads.filter((args) => args.some((a) => a.startsWith('--skip=')));
+    const scans = reads.filter(isSearchScan);
+    assert.equal(scans.length, 1, 'one git log for the whole scan');
     assert.ok(scans.every((args) => args[args.length - 1] === 'main'));
-    assert.ok(scans.some((args) => args.includes(`--skip=${SEARCH_CHUNK_SIZE}`)));
+    assert.equal(scans[0].some((arg) => arg.startsWith('--skip=') || arg === '-n'), false, 'no walking again per chunk');
     assert.deepEqual(await svc.findCommits(REPO, 'fix'), [sha(5), sha(5000)]);
     assert.deepEqual(await svc.findCommits(REPO, '  '), []);
   });
 
-  it('stops scanning once the search is cancelled', async () => {
-    let calls = 0;
-    const { cli } = mockGitCli({
-      execRead: async (args) => {
-        calls += args.some((a) => a.startsWith('--skip=')) ? 1 : 0;
-        return { stdout: searchLog(Array.from({ length: SEARCH_CHUNK_SIZE }, (_, i) => ({ sha: sha(i), message: 'fix' }))) };
-      },
+  it('says it is done even when history ends exactly on a chunk', async () => {
+    const { svc } = searchService(() => searchLog(Array.from({ length: SEARCH_CHUNK_SIZE }, (_, i) => ({ sha: sha(i), message: 'fix' }))));
+    const batches: [number, boolean][] = [];
+    await svc.searchCommits(REPO, 'fix', (matches, done) => batches.push([matches.length, done]));
+    assert.deepEqual(batches, [[SEARCH_CHUNK_SIZE, false], [0, true]]);
+  });
+
+  it('stops reading once the search is cancelled, without another batch', async () => {
+    let delivered = 0;
+    const { cli, reads } = mockGitCli({
+      execRead: async () => ({ stdout: searchLog(Array.from({ length: SEARCH_CHUNK_SIZE * 2 }, (_, i) => ({ sha: sha(i), message: 'fix' }))) }),
     });
     const svc = new CommitGraphService(
       mockExtensionContext({ [FILTER_KEY]: { [REPO]: 'main' } }),
@@ -261,9 +364,17 @@ describe('CommitGraphService', () => {
     );
     let stop = false;
     const seen: number[] = [];
-    await svc.searchCommits(REPO, 'fix', (matches) => { seen.push(matches.length); stop = true; }, () => stop);
+    await svc.searchCommits(REPO, 'fix', (matches) => { delivered += 1; seen.push(matches.length); stop = true; }, () => stop);
     assert.deepEqual(seen, [SEARCH_CHUNK_SIZE]);
-    assert.equal(calls, 1);
+    assert.equal(delivered, 1);
+    assert.equal(reads.filter(isSearchScan).length, 1);
+  });
+
+  it('does not start when it is cancelled already', async () => {
+    const { svc } = searchService(() => searchLog([{ sha: sha(1), message: 'fix' }]));
+    const seen: unknown[] = [];
+    await svc.searchCommits(REPO, 'fix', (matches) => seen.push(matches), () => true);
+    assert.deepEqual(seen, []);
   });
 
   it('defaults to all commits and keeps a chosen filter when HEAD moves', async () => {
@@ -526,7 +637,7 @@ describe('show reflog commits', () => {
       mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
       mockCliRegistry(REPO, cli),
     );
-    const scan = () => reads.filter((args) => args[0] === 'log' && args.some((a) => a.startsWith('--skip=')));
+    const scan = () => reads.filter(isSearchScan);
 
     await svc.findCommits(REPO, 'abcd');
     assert.equal(scan().some((args) => args.includes('--reflog')), false);
@@ -551,7 +662,7 @@ describe('show reflog commits', () => {
     );
     svc.setActiveBranchOnly(true);
     await svc.findCommits(REPO, 'fix');
-    const scans = reads.filter((args) => args.some((a) => a.startsWith('--skip=')));
+    const scans = reads.filter(isSearchScan);
     assert.ok(scans.length > 0);
     assert.ok(scans.every((args) => args[args.length - 1] === 'main'));
   });
