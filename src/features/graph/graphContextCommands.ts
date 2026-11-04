@@ -1,4 +1,4 @@
-import type { GraphCommitContext } from '../../shared/graph/graphProtocol';
+import type { GraphBranchChoice, GraphCommitContext } from '../../shared/graph/graphProtocol';
 import type { WebviewMessage } from '../../shared/protocol';
 
 export interface GraphContextCommand {
@@ -177,3 +177,31 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     toMessage: (c) => ({ type: 'stashDrop', selector: c.stashSelector ?? '' }),
   },
 };
+
+/** The Branch submenu's commands, and which branches each can act on. */
+const BRANCH_ACTIONS: Record<string, 'any' | 'local'> = {
+  'gitCheckout.graph.checkoutRef': 'any',
+  'gitCheckout.graph.deleteBranch': 'any',
+  'gitCheckout.graph.branch.copyName': 'any',
+  'gitCheckout.graph.branch.fastForward': 'local',
+  'gitCheckout.graph.branch.pull': 'local',
+  'gitCheckout.graph.branch.push': 'local',
+  'gitCheckout.graph.branch.pullRequest': 'local',
+  'gitCheckout.graph.branch.pullRequestWithAi': 'local',
+  'gitCheckout.graph.branch.rename': 'local',
+};
+
+/** The branches to ask about before running `id`: more than one, because a menu cannot name them. Empty when the action has one target. */
+export function branchChoicesFor(id: string, context: GraphCommitContext): GraphBranchChoice[] {
+  const scope = BRANCH_ACTIONS[id];
+  const choices = scope === 'local' ? (context.graphBranchChoices ?? []).filter((c) => c.kind === 'local') : (context.graphBranchChoices ?? []);
+  return scope && choices.length > 1 ? choices : [];
+}
+
+/** `context` aimed at one of the commit's branches. */
+export const withBranch = (context: GraphCommitContext, choice: GraphBranchChoice): GraphCommitContext => ({
+  ...context,
+  graphBranch: choice.name,
+  graphBranchKind: choice.kind,
+  graphBranchChoices: [],
+});

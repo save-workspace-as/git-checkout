@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 
 import type { GraphCommitContext } from '../../shared/graph/graphProtocol';
-import { GRAPH_CONTEXT_COMMANDS } from './graphContextCommands';
+import { branchChoicesFor, GRAPH_CONTEXT_COMMANDS, withBranch } from './graphContextCommands';
 
 interface MenuEntry {
   command: string;
@@ -96,5 +96,34 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
     assert.equal(when('gitCheckout.graph.deleteBranch'), 'graphBranch');
     const commit = menu.find((m) => m.command === 'gitCheckout.graph.checkout')?.when ?? '';
     assert.doesNotMatch(commit, /graphBranch/);
+  });
+
+  describe('which branch a Branch action acts on', () => {
+    const two = [{ name: 'a', kind: 'local' as const }, { name: 'origin/a', kind: 'remote' as const }];
+    const three = [...two, { name: 'b', kind: 'local' as const }];
+    const withChoices = (graphBranchChoices: GraphCommitContext['graphBranchChoices']): GraphCommitContext => ({ ...context, graphBranchChoices });
+
+    it('asks only when the commit has several branches the action can use', () => {
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.checkoutRef', withChoices(three)), three);
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.branch.copyName', withChoices(two)), two);
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.branch.push', withChoices(three)), [three[0], three[2]]);
+      // One local branch and its remote-tracking branch: Push has a single target.
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.branch.push', withChoices(two)), []);
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.deleteBranch', withChoices([])), []);
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.branch.push', context), []);
+      assert.deepEqual(branchChoicesFor('gitCheckout.graph.copyHash', withChoices(three)), []);
+    });
+
+    it('aims the command at the picked branch', () => {
+      const message = GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.branch.push'].toMessage(withBranch(withChoices(three), three[2]));
+      assert.deepEqual(message, { type: 'historyBranchAction', action: 'push', ref: 'b' });
+    });
+
+    it('covers every command of the Branch submenu', () => {
+      const ids = (contributes.menus['gitCheckout.graph.branchMenu'] ?? []).map((m) => m.command);
+      for (const id of ids) {
+        assert.ok(branchChoicesFor(id, withChoices(three)).length > 1, `${id} does not ask which branch`);
+      }
+    });
   });
 });

@@ -66,7 +66,8 @@ import {
   splitCommitMessage,
   type ChangesViewOptions } from '../shared/changes/changesProtocol';
 import { githubRepositoryFor, openGitHubIssueLink, openRemoteInBrowser, readAutolinks } from '../features/history/githubLinkHost';
-import { GRAPH_CONTEXT_COMMANDS } from '../features/graph/graphContextCommands';
+import { ACTION_ICONS } from '../shared/app/actionIcons';
+import { branchChoicesFor, GRAPH_CONTEXT_COMMANDS, withBranch } from '../features/graph/graphContextCommands';
 
 import { showGitCheckoutQuickLaunch, type QuickLaunchHost } from './quickLaunch';
 import { openTerminalForRepo } from './repoTerminal';
@@ -553,8 +554,23 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     this.postWhenReady({ type: 'graphFocusSearch', query });
   }
 
-  runGraphContextCommand(id: string, context: GraphCommitContext): Promise<void> {
+  async runGraphContextCommand(id: string, context: GraphCommitContext): Promise<void> {
     log.info(`graph context command ${id}`);
+    const choices = branchChoicesFor(id, context);
+    if (choices.length > 0) {
+      const picked = await vscode.window.showQuickPick(
+        choices.map((choice) => ({
+          label: `$(${ACTION_ICONS[choice.kind === 'local' ? 'branch' : 'remoteBranch']}) ${choice.name}`,
+          description: choice.kind === 'local' ? l10n.t('local') : l10n.t('remote'),
+          choice,
+        })),
+        { placeHolder: l10n.t('Select a branch') },
+      );
+      if (!picked) {
+        return;
+      }
+      context = withBranch(context, picked.choice);
+    }
     return this.onWebviewMessage(GRAPH_CONTEXT_COMMANDS[id].toMessage(context));
   }
 
