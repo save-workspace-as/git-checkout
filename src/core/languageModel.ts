@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 
 /** Sends one prompt to a language model and returns its whole reply; rejects when the request fails or is canceled. */
-export type ConflictModel = (prompt: string, token: vscode.CancellationToken) => Promise<string>;
+export type AskModel = (prompt: string, token: vscode.CancellationToken) => Promise<string>;
 
-/** Thrown when VS Code has no language model to ask; there is no point in trying the next file. */
+/** Thrown when VS Code has no language model to ask; there is no model to try again. */
 export class NoLanguageModelError extends Error {
   constructor() {
     super('No language model is available');
@@ -11,8 +11,18 @@ export class NoLanguageModelError extends Error {
   }
 }
 
+let seeded: AskModel | undefined;
+
+/** Answers every prompt with `model` instead of a language model; `undefined` goes back to VS Code's (e2e only: the tests have no model to ask). */
+export function seedLanguageModel(model: AskModel | undefined): void {
+  seeded = model;
+}
+
 /** Asks the first language model VS Code provides, such as GitHub Copilot's. */
-export const askLanguageModel: ConflictModel = async (prompt, token) => {
+export const askLanguageModel: AskModel = async (prompt, token) => {
+  if (seeded) {
+    return seeded(prompt, token);
+  }
   const model = (await vscode.lm.selectChatModels())[0];
   if (!model) {
     throw new NoLanguageModelError();

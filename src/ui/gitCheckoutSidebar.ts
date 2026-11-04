@@ -419,6 +419,7 @@ export function registerGitCheckoutSidebar(
     [SIDEBAR_COMMANDS.pullBranch]: (node) => node?.ref ? panel.runPullBranch(node.ref) : undefined,
     [SIDEBAR_COMMANDS.pushBranch]: withRef((ref) => panel.runPushBranch(ref)),
     [SIDEBAR_COMMANDS.openPullRequest]: withRef((ref) => panel.runOpenPullRequest(ref)),
+    [SIDEBAR_COMMANDS.openPullRequestWithAi]: withRef((ref) => panel.runOpenPullRequest(ref, true)),
     [SIDEBAR_COMMANDS.fetchRemote]: withRef((remote) => panel.runFetch(undefined, remote)),
     [SIDEBAR_COMMANDS.merge]: withRef((ref) => panel.runMergeRef(ref)),
     [SIDEBAR_COMMANDS.rebase]: withRef((ref) => panel.runRebaseRef(ref)),

@@ -116,9 +116,9 @@ describe('Operation banner', () => {
     beforeEach(() => {
       prompts.length = 0;
       reply = '```\none\nmain and topic\nthree\n```';
-      ctx.api.seedConflictModel(async (prompt) => { prompts.push(prompt); return reply; });
+      ctx.api.seedLanguageModel(async (prompt) => { prompts.push(prompt); return reply; });
     });
-    afterEach(() => ctx.api.seedConflictModel(undefined));
+    afterEach(() => ctx.api.seedLanguageModel(undefined));
 
     /** `topic` and `main` each change both `c.txt` and `src/d.txt`, so both conflict. */
     async function mergeWithTwoConflicts(): Promise<void> {

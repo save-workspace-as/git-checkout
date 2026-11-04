@@ -112,7 +112,7 @@ export class RefsController {
 
   /** An action from the menu of a branch badge in the graph. */
   async runBranchBadgeAction(
-    action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest',
+    action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest' | 'pullRequestWithAi',
     ref: string,
   ): Promise<void> {
     if (!ref) {
@@ -131,6 +131,8 @@ export class RefsController {
         return this.runCopyBranchName(ref);
       case 'pullRequest':
         return this.ctx.runOpenPullRequest(ref);
+      case 'pullRequestWithAi':
+        return this.ctx.runOpenPullRequest(ref, true);
     }
   }
 

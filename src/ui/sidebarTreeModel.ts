@@ -30,6 +30,7 @@ export const SIDEBAR_COMMANDS = {
   pullBranch: 'gitCheckout.sidebar.pullBranch',
   pushBranch: 'gitCheckout.sidebar.pushBranch',
   openPullRequest: 'gitCheckout.sidebar.openPullRequest',
+  openPullRequestWithAi: 'gitCheckout.sidebar.openPullRequestWithAi',
   fetchRemote: 'gitCheckout.sidebar.fetchRemote',
   merge: 'gitCheckout.sidebar.merge',
   rebase: 'gitCheckout.sidebar.rebase',
