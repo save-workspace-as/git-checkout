@@ -304,8 +304,7 @@ export function mountChangesView(
       message: Extract<ChangesHostMessage, { type: 'changesDiff' }>,
     ): ((positions: number[]) => HunkAction[]) | undefined {
       const entry = allEntries.find((candidate) => candidate.path === message.path && sideOf(candidate) === message.side);
-      // A new file has nothing to patch against, so it goes as a whole, through the buttons over its one hunk.
-      if (!entry || entry.status === 'ignored' || entry.group === 'untracked') {
+      if (!entry || entry.status === 'ignored') {
         return undefined;
       }
       const apply = (positions: number[], op: 'stage' | 'unstage' | 'discard'): void => {
@@ -314,12 +313,28 @@ export function mountChangesView(
           postMessage({ type: 'changesHunk', path: message.path, op, patch });
         }
       };
+      const stash = (positions: number[]): void => {
+        // Stashing takes the patch that makes the selected lines out of what the side is compared with.
+        const patch = buildSelectionPatch(message.path, message.lines, new Set(positions), 'stage');
+        if (patch) {
+          postMessage({ type: 'changesStashPatch', path: message.path, side: message.side, patch });
+        }
+      };
+      // A new file has no index entry to patch, but staging some of its lines adds it with only those lines;
+      // discarding or stashing part of it would need a file to take them from.
+      if (entry.group === 'untracked') {
+        return (positions) => [{ label: l10n.t('Stage'), key: 's', run: () => apply(positions, 'stage') }];
+      }
       return (positions) =>
         message.side === 'staged'
-          ? [{ label: l10n.t('Unstage'), run: () => apply(positions, 'unstage') }]
+          ? [
+              { label: l10n.t('Unstage'), key: 'u', run: () => apply(positions, 'unstage') },
+              { label: l10n.t('Stash Changes…'), run: () => stash(positions) },
+            ]
           : [
-              { label: l10n.t('Stage'), run: () => apply(positions, 'stage') },
+              { label: l10n.t('Stage'), key: 's', run: () => apply(positions, 'stage') },
               { label: l10n.t('Discard Changes…'), run: () => apply(positions, 'discard') },
+              { label: l10n.t('Stash Changes…'), run: () => stash(positions) },
             ];
     }
 

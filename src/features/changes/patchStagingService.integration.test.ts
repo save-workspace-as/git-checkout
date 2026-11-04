@@ -157,5 +157,34 @@ describe('PatchStagingService integration', () => {
       repo.cleanup();
     }
   });
+
+  it('stages only the selected lines of a new file, which then shows as added and modified', async () => {
+    const repo = initTempRepository();
+    try {
+      writeFileSync(join(repo.repoRoot, 'keep.txt'), 'x\n');
+      runGit(repo.repoRoot, ['add', 'keep.txt']);
+      runGit(repo.repoRoot, ['commit', '-m', 'base']);
+      writeFileSync(join(repo.repoRoot, 'new.txt'), 'a\nb\nc\nd\n');
+
+      const registry = mockCliRegistry(repo.repoRoot, repo.cli);
+      const svc = new PatchStagingService(mockGitExtensionService([mockRepository(repo.repoRoot)]), registry);
+      const details = new CommitDetailsService(registry);
+      const lines = (await details.diffWorkingFile(repo.repoRoot, 'new.txt', 'unstaged', true, DEFAULT_COMMIT_DIFF_VIEW)).lines;
+      const pick = (...wanted: string[]) => new Set(wanted.map((want) => lines.findIndex((line) => line.kind === 'add' && line.text === want)));
+
+      await svc.applyHunkPatch(repo.repoRoot, 'stage', buildSelectionPatch('new.txt', lines, pick('b', 'c'), 'stage')!);
+      assert.equal((await repo.cli.execRead(['show', ':new.txt'])).stdout, 'b\nc\n');
+      assert.match((await repo.cli.execRead(['status', '--porcelain', '--', 'new.txt'])).stdout, /^AM new\.txt/);
+      assert.equal(readFileSync(join(repo.repoRoot, 'new.txt'), 'utf8'), 'a\nb\nc\nd\n', 'the working tree keeps every line');
+
+      // The lines left over stage from the unstaged diff the file now has.
+      const rest = (await details.diffWorkingFile(repo.repoRoot, 'new.txt', 'unstaged', false, DEFAULT_COMMIT_DIFF_VIEW)).lines;
+      const restPick = new Set(rest.flatMap((line, index) => (line.kind === 'add' ? [index] : [])));
+      await svc.applyHunkPatch(repo.repoRoot, 'stage', buildSelectionPatch('new.txt', rest, restPick, 'stage')!);
+      assert.equal((await repo.cli.execRead(['show', ':new.txt'])).stdout, 'a\nb\nc\nd\n');
+    } finally {
+      repo.cleanup();
+    }
+  });
 });
 

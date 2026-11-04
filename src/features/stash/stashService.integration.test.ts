@@ -2,6 +2,9 @@ import { strict as assert } from 'node:assert';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
+import { DEFAULT_COMMIT_DIFF_VIEW } from '../../shared/diff/commitDiffPresentation';
+import { buildSelectionPatch } from '../../shared/changes/hunkPatch';
+import { CommitDetailsService } from '../history/commitDetailsService';
 
 import { PatchStagingService } from '../changes/patchStagingService';
 import { initTempRepository, runGit } from '../../core/testing/gitRepoHarness';
@@ -235,6 +238,50 @@ describe('StashService integration', () => {
       assert.equal((await svc.list(repo.repoRoot)).length, 2);
       await svc.drop(repo.repoRoot, ['stash@{0}', 'stash@{1}']);
       assert.equal((await svc.list(repo.repoRoot)).length, 0);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it('stashes only the lines selected in the diff on screen, from the unstaged and from the staged side', async () => {
+    const repo = initTempRepository();
+    try {
+      const file = join(repo.repoRoot, 'l.txt');
+      const base = Array.from({ length: 10 }, (_, i) => `l${i + 1}`);
+      writeFileSync(file, `${base.join('\n')}\n`);
+      runGit(repo.repoRoot, ['add', 'l.txt']);
+      runGit(repo.repoRoot, ['commit', '-m', 'base']);
+      writeFileSync(file, `${base.map((line) => (line === 'l2' ? 'L2' : line === 'l9' ? 'L9' : line)).join('\n')}\n`);
+
+      const registry = mockCliRegistry(repo.repoRoot, repo.cli);
+      const details = new CommitDetailsService(registry);
+      const view = { ...DEFAULT_COMMIT_DIFF_VIEW, contextLines: 1 };
+      const diff = async (side: 'staged' | 'unstaged') => (await details.diffWorkingFile(repo.repoRoot, 'l.txt', side, false, view)).lines;
+      const pick = (lines: Awaited<ReturnType<typeof diff>>, ...wanted: string[]) =>
+        new Set(wanted.map((want) => lines.findIndex((line) => `${line.kind === 'add' ? '+' : line.kind === 'del' ? '-' : ' '}${line.text}` === want)));
+      const svc = new StashService(registry);
+
+      const unstaged = await diff('unstaged');
+      await svc.create(repo.repoRoot, {
+        mode: 'patch', message: 'lines', side: 'unstaged',
+        patch: buildSelectionPatch('l.txt', unstaged, pick(unstaged, '-l9', '+L9'), 'stage')!,
+      });
+      assert.match(readFileSync(file, 'utf8'), /L2/, 'the line that was not selected stays');
+      assert.doesNotMatch(readFileSync(file, 'utf8'), /L9/);
+      assert.match(readFileSync(file, 'utf8'), /l9/);
+
+      await svc.apply(repo.repoRoot, 'stash@{0}', true);
+      assert.match(readFileSync(file, 'utf8'), /L9/, 'applying the stash brings the lines back');
+
+      runGit(repo.repoRoot, ['add', 'l.txt']);
+      const staged = await diff('staged');
+      await svc.create(repo.repoRoot, {
+        mode: 'patch', message: 'staged lines', side: 'staged',
+        patch: buildSelectionPatch('l.txt', staged, pick(staged, '-l2', '+L2'), 'stage')!,
+      });
+      assert.match(readFileSync(file, 'utf8'), /l2/, 'the stashed line is back to the committed one');
+      assert.match(readFileSync(file, 'utf8'), /L9/);
+      assert.equal((await repo.cli.execRead(['show', ':l.txt'])).stdout.includes('L9'), true, 'the other staged line stays staged');
     } finally {
       repo.cleanup();
     }

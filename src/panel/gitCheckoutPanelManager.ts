@@ -798,6 +798,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'changesHunk':
         await this.changes.runChangesHunk(message.op, message.patch);
         break;
+      case 'changesStashPatch':
+        await this.stash.stashPatch(message.side, message.patch);
+        break;
       case 'changesMergeInCheckout':
         this.merge.open(message.path);
         break;

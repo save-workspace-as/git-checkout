@@ -15,6 +15,8 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 export interface HunkAction {
   label: string;
   run(): void;
+  /** A key that runs the action while the selection's buttons show; only on selection actions. */
+  key?: string;
 }
 
 /** What a viewer does with the lines a person selected, such as Stage: the buttons shown beside the selection. */
@@ -203,13 +205,26 @@ export function mountCodeViewer(
     const box = container.getBoundingClientRect();
     render(html`
       <vscode-button-group role="group" aria-label=${l10n.t('Selected lines')}>${actions.map((action) => html`
-        <vscode-button type="button" @click=${() => { action.run(); document.getSelection()?.removeAllRanges(); hideSelectionActions(); }}>${action.label}</vscode-button>`)}
+        <vscode-button type="button" aria-keyshortcuts=${action.key ?? nothing} @click=${() => { action.run(); document.getSelection()?.removeAllRanges(); hideSelectionActions(); }}>${action.label}</vscode-button>`)}
       </vscode-button-group>`, selectionPopup);
     selectionPopup.hidden = false;
     container.classList.add('has-selection-actions');
     const rowTop = selected.first.getBoundingClientRect().top - box.top + container.scrollTop;
     selectionPopup.style.top = `${Math.max(rowTop, container.scrollTop) + 2}px`;
     selectionPopup.style.left = `${container.scrollLeft + container.clientWidth - 12}px`;
+  }
+
+  /** A key (such as `s` for Stage) runs the action of the selection's buttons that names it, unless the person is typing. */
+  function runSelectionActionByKey(event: KeyboardEvent): void {
+    if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey || selectionPopup.hidden) { return; }
+    const typing = event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], vscode-textfield, vscode-textarea');
+    const selected = selectionActions && ready && mode === 'diff' ? selectedChanges() : undefined;
+    const action = !typing && selected ? selectionActions?.(selected.positions).find((candidate) => candidate.key === event.key) : undefined;
+    if (!action) { return; }
+    event.preventDefault();
+    action.run();
+    document.getSelection()?.removeAllRanges();
+    hideSelectionActions();
   }
 
   /** A click on a line number selects the line; with Shift it extends the selection from the line clicked before. */
@@ -267,6 +282,14 @@ export function mountCodeViewer(
     message = { text, error };
     paint();
   }
+
+  /** Whether the diff on show is this one, drawn in full, so showing it again would change nothing. */
+  const shownAlready = (path: string, next: readonly CommitDiffLineDto[]): boolean =>
+    ready && !message && mode === 'diff' && path === shownPath && lines.length === Math.min(next.length, MAX_RENDERED_LINES) && sameLines(allLines, next);
+
+  const sameLines = (left: readonly CommitDiffLineDto[], right: readonly CommitDiffLineDto[]): boolean =>
+    left.length === right.length &&
+    left.every((line, index) => line.kind === right[index].kind && line.text === right[index].text && line.line === right[index].line && line.noEol === right[index].noEol);
 
   async function show(
     path: string,
@@ -333,6 +356,10 @@ export function mountCodeViewer(
         showMessage(binary ? l10n.t('Binary file.') : l10n.t('No textual changes.'));
         return Promise.resolve();
       }
+      // A refresh that brings the same lines draws nothing, so a selection (and the buttons beside it) is not lost.
+      if (keepScroll && shownAlready(path, next)) {
+        return Promise.resolve();
+      }
       return show(path, next, 'diff', keepScroll);
     },
     showMessage,
@@ -350,6 +377,7 @@ export function mountCodeViewer(
       if (next && !listeningForSelection) {
         listeningForSelection = true;
         document.addEventListener('selectionchange', updateSelectionActions);
+        document.addEventListener('keydown', runSelectionActionByKey);
       }
       if (!next) { hideSelectionActions(); }
     },

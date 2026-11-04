@@ -1,8 +1,9 @@
 import { strict as assert } from 'node:assert';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 
+import { answer } from './graphMenu';
 import { bindExtension, changeGroupRows, git, repoRoot, waitFor, type ChangeRow } from './harness';
 
 describe('Changes tab', () => {
@@ -217,6 +218,34 @@ describe('Changes tab', () => {
 
     await ctx.api.sendPanelMessage({ type: 'changesHunk', path: 'lines.txt', op: 'unstage', patch });
     await waitFor('the added line unstaged', async () => (git('show', ':lines.txt') === 'a\nb\nc' ? true : undefined));
+  });
+
+  it('stages only the selected lines of a new file', async () => {
+    writeFileSync(join(repoRoot(), 'fresh.txt'), 'a\nb\nc\nd\n');
+
+    // What the diff view sends for lines b and c of an untracked file.
+    const patch = 'diff --git a/fresh.txt b/fresh.txt\nnew file mode 100644\n--- /dev/null\n+++ b/fresh.txt\n@@ -0,0 +1,2 @@\n+b\n+c\n';
+    await ctx.api.sendPanelMessage({ type: 'changesHunk', path: 'fresh.txt', op: 'stage', patch });
+    await waitFor('the two lines staged', async () => (git('show', ':fresh.txt') === 'b\nc' ? true : undefined));
+    assert.match(git('status', '--porcelain', '--', 'fresh.txt'), /^AM fresh\.txt$/);
+    assert.equal(git('diff', '--', 'fresh.txt').split('\n').filter((line) => /^\+[ad]$/.test(line)).join(), '+a,+d');
+  });
+
+  it('stashes only the selected lines of a change, after asking for a message', async () => {
+    writeFileSync(join(repoRoot(), 'part.txt'), 'a\nb\nc\n');
+    git('add', 'part.txt');
+    git('commit', '-m', 'part base');
+    writeFileSync(join(repoRoot(), 'part.txt'), 'A\nb\nC\n');
+    const restore = answer('showInputBox', async () => 'two lines');
+    try {
+      // What the diff view sends for the change to line c alone: the other change stays out of it.
+      const patch = 'diff --git a/part.txt b/part.txt\n--- a/part.txt\n+++ b/part.txt\n@@ -1,3 +1,3 @@\n a\n b\n-c\n+C\n';
+      await ctx.api.sendPanelMessage({ type: 'changesStashPatch', path: 'part.txt', side: 'unstaged', patch });
+      await waitFor('the stash', async () => (git('stash', 'list').includes('two lines') ? true : undefined));
+    } finally {
+      restore();
+    }
+    assert.equal(readFileSync(join(repoRoot(), 'part.txt'), 'utf8'), 'A\nb\nc\n', 'only the stashed line went back');
   });
 
   it('amends the last commit with a new message', async () => {
