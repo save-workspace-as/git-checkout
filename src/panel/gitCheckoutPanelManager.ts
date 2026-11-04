@@ -804,6 +804,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'changesMergeTakeSide':
         await this.merge.takeSide(message.path, message.side);
         break;
+      case 'changesMergeWithAi':
+        await this.merge.resolveWithAi([message.path]);
+        break;
       case 'changesMergeInEditor':
         await this.changes.openConflictInMergeEditor(message.path);
         break;
@@ -992,6 +995,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
         break;
       case 'historyNewTag':
         await this.runRefsMutate({ op: 'tagCreateAnnotated', objectRef: message.sha });
+        break;
+      case 'operationResolveWithAi':
+        await this.changes.resolveConflictsWithAi();
         break;
       case 'operationResolve':
       case 'operationContinue':
@@ -1398,6 +1404,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
     return this.changes.resolveConflictsWith(side, arg, selected);
+  }
+
+  seedConflictModel(model: ((prompt: string) => Promise<string>) | undefined): void {
+    this.merge.useModel(model);
+  }
+
+  resolveConflictsWithAi(arg?: unknown, selected?: unknown): Promise<void> {
+    return this.changes.resolveConflictsWithAi(arg, selected);
   }
 
   runLocalChangeActions(

@@ -45,19 +45,25 @@ describe('operation banner', () => {
     assert.equal(q('.operation-banner-progress')?.value, 57);
   });
 
-  it('offers Abort and Resolve while files conflict, and Abort and Continue after', () => {
+  it('offers Abort, Resolve with AI and Resolve while files conflict, and Abort and Continue after', () => {
     const { banner, posted, buttons } = mount();
     banner.apply(rebase);
-    let [abort, primary] = buttons();
+    let [abort, ai, primary] = buttons();
     assert.equal(abort.hasAttribute('secondary'), true);
+    assert.equal(ai.textContent?.trim(), 'Resolve with AI');
+    assert.equal(ai.hasAttribute('secondary'), true);
     assert.equal(primary.textContent?.trim(), 'Resolve');
     abort.click();
+    ai.click();
     primary.click();
     banner.apply({ ...rebase, conflicted: false, conflictCount: 0 });
+    assert.equal(buttons().length, 2, 'nothing is left for the model to resolve');
     [abort, primary] = buttons();
     assert.equal(primary.textContent?.trim(), 'Continue');
     primary.click();
-    assert.deepEqual(posted.map((message) => message.type), ['operationAbort', 'operationResolve', 'operationContinue']);
+    assert.deepEqual(posted.map((message) => message.type), [
+      'operationAbort', 'operationResolveWithAi', 'operationResolve', 'operationContinue',
+    ]);
   });
 
   it('has no Abort, Resolve or Continue for a bisect, and no progress bar without progress', () => {

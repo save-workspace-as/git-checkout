@@ -80,6 +80,8 @@ export interface GitCheckoutApi {
   lineBlame(): { sha: string; text: string } | undefined;
   fileBlame(): Map<number, string> | undefined;
   seedPullRequests(repoRoot: string, state: unknown): void;
+  /** Answers conflict prompts with `model` instead of a language model; `undefined` goes back to VS Code's. */
+  seedConflictModel(model: ((prompt: string) => Promise<string>) | undefined): void;
   operationFormState(): {
     sessionId: number;
     form: {

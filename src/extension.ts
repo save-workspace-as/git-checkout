@@ -78,6 +78,8 @@ export interface GitCheckoutApi {
   fileBlame(): Map<number, string> | undefined;
   /** Sets what the Pull Requests section shows for a repository, as if GitHub had answered (e2e only). */
   seedPullRequests(repoRoot: string, state: PullRequestState): void;
+  /** Answers conflict prompts with `model` instead of a language model; `undefined` goes back to VS Code's (e2e only). */
+  seedConflictModel(model: ((prompt: string) => Promise<string>) | undefined): void;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -483,6 +485,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
         panelManager.resolveConflictsWith(side, arg, selected),
       ),
     ),
+    vscode.commands.registerCommand('gitCheckout.changes.resolve.ai', (arg?: unknown, selected?: unknown) =>
+      panelManager.resolveConflictsWithAi(arg, selected),
+    ),
     ...(['tree', 'list'] as const).map((mode) =>
       vscode.commands.registerCommand(`gitCheckout.changes.viewAs.${mode}`, () =>
         panelManager.updateChangesView({ mode }),
@@ -552,6 +557,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     lineBlame: () => lineBlame.currentLine(),
     fileBlame: () => fileBlame.columnText(),
     seedPullRequests: (repoRoot, state) => pullRequests.seed(repoRoot, state),
+    seedConflictModel: (model) => panelManager.seedConflictModel(model),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

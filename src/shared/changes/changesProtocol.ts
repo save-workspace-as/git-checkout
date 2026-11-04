@@ -106,6 +106,8 @@ export type ChangesWebviewMessage =
   /** Resolve a conflicted file in the Merge modal, or in VS Code's merge editor. */
   | { type: 'changesMergeInCheckout'; path: string }
   | { type: 'changesMergeInEditor'; path: string }
+  /** Resolve a conflicted file with the language model. */
+  | { type: 'changesMergeWithAi'; path: string }
   /** Resolve a conflict that cannot be merged line by line by keeping one side whole. */
   | { type: 'changesMergeTakeSide'; path: string; side: 'incoming' | 'current' };
 

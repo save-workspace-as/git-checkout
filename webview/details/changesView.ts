@@ -255,8 +255,14 @@ export function mountChangesView(
             ${message.canMerge
               ? html`<vscode-button type="button"
                   title=${l10n.t('Choose the changes to keep, side by side')}
-                  @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>`
-              : html`${keep('current', message.currentExists)}${keep('incoming', message.incomingExists)}`}
+                  @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>
+                <vscode-button type="button" secondary
+                  title=${l10n.t('Let the language model merge the two sides, then review the result')}
+                  @click=${() => postMessage({ type: 'changesMergeWithAi', path: message.path })}>${l10n.t('Resolve with AI')}</vscode-button>`
+              : html`${keep('current', message.currentExists)}${keep('incoming', message.incomingExists)}
+                <vscode-button type="button" secondary
+                  title=${l10n.t('Let the language model merge the two versions, or decide whether the file stays')}
+                  @click=${() => postMessage({ type: 'changesMergeWithAi', path: message.path })}>${l10n.t('Resolve with AI')}</vscode-button>`}
             <vscode-button type="button" secondary
               @click=${() => postMessage({ type: 'changesMergeInEditor', path: message.path })}>${l10n.t('Resolve in editor')}</vscode-button>
           </div>

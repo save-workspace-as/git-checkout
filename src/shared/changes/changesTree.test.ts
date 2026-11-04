@@ -74,6 +74,22 @@ describe('commandChangeTargets', () => {
   });
 });
 
+describe('conflicted rows', () => {
+  const conflict = (path: string): WorkingCopyEntryDto => ({ path, group: 'unstaged', status: 'conflict' });
+
+  it('marks the folders above a conflicted file, and the group, and no others', () => {
+    const entries = [conflict('src/lib/x.ts'), entry('src/y.ts'), entry('docs/z.md')];
+    const [docs, src] = buildChangeNodes(entries, true);
+    assert.equal((src as { conflicted?: true }).conflicted, true);
+    const [lib, y] = (src as { children: { kind: string; conflicted?: true }[] }).children;
+    assert.equal(lib.conflicted, true);
+    assert.equal(y.conflicted, undefined);
+    assert.equal((docs as { conflicted?: true }).conflicted, undefined);
+    assert.equal(buildChangeGroup('unstaged', 'Unstaged', entries, true).conflicted, true);
+    assert.equal(buildChangeGroup('unstaged', 'Unstaged', [entry('a.ts')], true).conflicted, undefined);
+  });
+});
+
 describe('buildChangeGroup', () => {
   it('holds the rows of one side, and a command on it covers every change in it', () => {
     const group = buildChangeGroup('staged', 'Staged', [entry('a/one.txt', 'staged'), entry('two.txt', 'staged')], true);

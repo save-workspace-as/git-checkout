@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import * as vscode from 'vscode';
 
 import { answer, commitFile, menuContext, submitForm } from './graphMenu';
-import { bindExtension, changeGroupRows, git, readyTree, repoRoot, waitFor } from './harness';
+import { bindExtension, changeGroupRows, git, readyTree, repoRoot, waitFor, type ChangeRow } from './harness';
 
 describe('Operation banner', () => {
   const ctx = bindExtension();
@@ -108,6 +108,160 @@ describe('Operation banner', () => {
   const mergeCommitCount = (): number => git('rev-list', '--parents', '-n', '1', 'HEAD').split(' ').length;
   const mergeDone = (): Promise<boolean | undefined> =>
     waitFor('the merge commit', async () => (mergeCommitCount() === 3 ? true : undefined));
+
+  describe('Resolve with AI', () => {
+    const prompts: string[] = [];
+    let reply = '';
+
+    beforeEach(() => {
+      prompts.length = 0;
+      reply = '```\none\nmain and topic\nthree\n```';
+      ctx.api.seedConflictModel(async (prompt) => { prompts.push(prompt); return reply; });
+    });
+    afterEach(() => ctx.api.seedConflictModel(undefined));
+
+    /** `topic` and `main` each change both `c.txt` and `src/d.txt`, so both conflict. */
+    async function mergeWithTwoConflicts(): Promise<void> {
+      commitFile('c.txt', 'one\nbase\nthree\n', 'base c');
+      mkdirSync(join(repoRoot(), 'src'), { recursive: true });
+      commitFile('src/d.txt', 'one\nbase\nthree\n', 'base d');
+      git('checkout', '-b', 'topic');
+      commitFile('c.txt', 'one\ntopic\nthree\n', 'topic c');
+      const topic = commitFile('src/d.txt', 'one\ntopic\nthree\n', 'topic d');
+      git('checkout', 'main');
+      commitFile('c.txt', 'one\nmain\nthree\n', 'main c');
+      commitFile('src/d.txt', 'one\nmain\nthree\n', 'main d');
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      await ctx.api.sendPanelMessage({ type: 'workingCopyReady' });
+      await waitFor('both conflicts in Unstaged', async () =>
+        (await changeGroupRows(ctx.api, 'unstaged')).length >= 2 ? true : undefined,
+      );
+    }
+
+    const file = (name: string): string => readFileSync(join(repoRoot(), name), 'utf8');
+    const group = async () => ((await ctx.api.changesList.getChildren()) as ChangeRow[]).find((row) => row.group && row.side === 'unstaged')!;
+
+    it('resolves the conflicted file of the Changes tab, stages it, and sends the model the file with the two sides named', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+
+      await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(file('c.txt'), 'one\nmain and topic\nthree\n');
+      assert.match(git('status', '--porcelain'), /^M {2}c\.txt$/m, 'staged');
+      assert.equal(prompts.length, 1);
+      assert.match(prompts[0], /File: c\.txt/);
+      assert.match(prompts[0], /^<<<<<<< /m);
+      assert.match(prompts[0], /Common ancestor of the two sides:\n```\none\nbase\nthree\n```/);
+      assert.equal((await bannerReadyToContinue()).message, 'All conflicts are resolved. Continue to finish.');
+    });
+
+    it('resolves every conflicted file from the banner', async () => {
+      await mergeWithTwoConflicts();
+      await ctx.api.sendPanelMessage({ type: 'operationResolveWithAi' });
+      await waitFor('every file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(prompts.length, 2);
+      assert.equal(file('c.txt'), 'one\nmain and topic\nthree\n');
+      assert.equal(file('src/d.txt'), 'one\nmain and topic\nthree\n');
+      await bannerReadyToContinue();
+    });
+
+    it('resolves the conflicts below a folder row, or the whole group, and only those', async () => {
+      await mergeWithTwoConflicts();
+      await vscode.commands.executeCommand('gitCheckout.changes.viewAs.tree');
+      const dir = await waitFor('the src folder row', async () =>
+        (await changeGroupRows(ctx.api, 'unstaged')).find((row) => row.kind === 'dir' && row.path === 'src'),
+      );
+      assert.equal((await ctx.api.changesList.getTreeItem(dir)).contextValue, 'change.dir.unstaged.conflict');
+      assert.equal((await ctx.api.changesList.getTreeItem(await group())).contextValue, 'change.group.unstaged.conflict');
+
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.ai', dir);
+      await waitFor('the folder to be resolved', async () => (git('ls-files', '-u').includes('src/d.txt') ? undefined : true));
+      assert.deepEqual(git('ls-files', '-u').split('\n').map((line) => line.split('\t')[1]).filter(Boolean).sort(), ['c.txt', 'c.txt', 'c.txt']);
+      assert.equal(prompts.length, 1, 'c.txt was not sent');
+
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.ai', await group());
+      await waitFor('the group to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(prompts.length, 2);
+      await vscode.commands.executeCommand('gitCheckout.changes.viewAs.list');
+    });
+
+    it('leaves the file in conflict, as it was written, when the model leaves conflict markers or answers nothing', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      const before = file('c.txt');
+      const warnings: string[] = [];
+      const restore = answer('showWarningMessage', async (message: unknown) => { warnings.push(String(message)); return undefined; });
+      try {
+        for (const [bad, why] of [
+          ['```\n<<<<<<< HEAD\nx\n=======\ny\n>>>>>>> topic\n```', /conflict markers/],
+          ['', /did not return a file/],
+        ] as const) {
+          reply = bad;
+          warnings.length = 0;
+          await vscode.commands.executeCommand('gitCheckout.changes.resolve.ai', { webviewSection: 'changesFile', path: 'c.txt', side: 'unstaged', untracked: false });
+          await waitFor('the warning', async () => (warnings.length > 0 ? true : undefined));
+          assert.match(warnings[0], why);
+          assert.match(git('ls-files', '-u'), /c\.txt/);
+          assert.equal(file('c.txt'), before);
+        }
+      } finally {
+        restore();
+      }
+    });
+
+    it('puts the conflict back when the notification is answered with Undo', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      const before = git('ls-files', '-u');
+      const restore = answer('showInformationMessage', async (_message: unknown, ...actions: unknown[]) => actions[0]);
+      try {
+        await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+        await waitFor('the conflict to come back', async () => (git('ls-files', '-u') === before && /<<<<<<< /.test(file('c.txt')) ? true : undefined));
+      } finally {
+        restore();
+      }
+      assert.equal(prompts.length, 1);
+    });
+
+    it('asks the model whether a file that one side deleted stays, and deletes it when the answer is DELETE', async () => {
+      await mergeWithDeletedFile();
+      await banner(/^Merging/);
+      reply = 'DELETE';
+      await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'gone.txt' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(existsSync(join(repoRoot(), 'gone.txt')), false);
+      assert.match(prompts[0], /The current side deleted this file/);
+    });
+
+    it('keeps the file a side deleted when the model answers with a file', async () => {
+      await mergeWithDeletedFile();
+      await banner(/^Merging/);
+      reply = '```\nchanged on topic\n```';
+      await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'gone.txt' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(file('gone.txt'), 'changed on topic\n');
+    });
+
+    it('does not send a binary file to the model', async () => {
+      await mergeWithBinaryFile();
+      await banner(/^Merging/);
+      await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'image.bin' });
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      assert.equal(prompts.length, 0);
+      assert.match(git('ls-files', '-u'), /image\.bin/);
+    });
+
+    it('says so, and writes nothing, when no file is in conflict', async () => {
+      await vscode.commands.executeCommand('gitCheckout.changes.resolve.ai');
+      assert.equal(prompts.length, 0);
+      await toast(/no conflicted files/);
+    });
+  });
 
   describe('merge', () => {
     it('stays above the graph while the merge waits for the conflict to be fixed', async () => {

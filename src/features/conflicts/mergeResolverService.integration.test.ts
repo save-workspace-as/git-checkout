@@ -42,6 +42,31 @@ describe('MergeResolverService integration', () => {
     }
   });
 
+  it('reads the common ancestor, and puts the conflict back in a file that was resolved', async () => {
+    const repo = initTempRepository();
+    try {
+      seedDivergentFileConflict(repo);
+      assert.notEqual(runGitAllowFailure(repo.repoRoot, ['merge', 'other', '--no-commit']), 0);
+      const service = new MergeResolverService(mockCliRegistry(repo.repoRoot, repo.cli));
+      const sides = (): string[][][] =>
+        conflictsOf(parseMergeDocument(readFileSync(path.join(repo.repoRoot, 'conflict.txt'), 'utf8'))).map((c) => [c.current, c.incoming]);
+      const conflicted = sides();
+      assert.equal(await service.loadBase(repo.repoRoot, 'conflict.txt'), 'base\n');
+      assert.equal(await service.loadBase(repo.repoRoot, 'no-such-file.txt'), undefined);
+
+      await service.resolve(repo.repoRoot, 'conflict.txt', 'base\nresolved\n');
+      assert.equal((await repo.cli.execRead(['ls-files', '-u'])).stdout.trim(), '');
+
+      await service.reopen(repo.repoRoot, ['conflict.txt']);
+      // Git labels the markers ours and theirs this time, but the conflict is the same.
+      assert.deepEqual(sides(), conflicted, 'the markers are back');
+      assert.match((await repo.cli.execRead(['ls-files', '-u'])).stdout, /conflict\.txt/, 'and Git has it in conflict again');
+    } finally {
+      runGitAllowFailure(repo.repoRoot, ['merge', '--abort']);
+      repo.cleanup();
+    }
+  });
+
   it('names the commit a cherry-pick brings by its branch, or by its hash when no branch has it', async () => {
     const repo = initTempRepository();
     try {

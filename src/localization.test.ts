@@ -80,6 +80,10 @@ describe('source strings', () => {
       /Initializing git-flow does not use/,
       /Git watch verify/,
       /Write a git commit message|Staged changes:/,
+      // The conflict prompts are text for the language model.
+      /conflictPrompt\.ts:\d+:/,
+      // The error the conflict resolver catches, to tell the user in its own words.
+      /conflictModel\.ts:\d+: No language model is available$/,
       // Error codes and key names, which are compared in code and never shown.
       /: (Timeout|Cancelled|Lock|Home|End|Escape|Enter|Tab|Backspace|Delete)$/,
     ];

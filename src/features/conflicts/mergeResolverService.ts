@@ -41,6 +41,16 @@ export class MergeResolverService {
     return { text, current, incoming, currentExists: stages.has(2), incomingExists: stages.has(3), ...(ours === undefined || theirs === undefined ? {} : { ours, theirs }) };
   }
 
+  /** The file as one side has it, from the index: stage 2 is the current side, 3 the incoming one. */
+  async loadStage(repoRoot: string, path: string, stage: 2 | 3): Promise<string | undefined> {
+    return this.tryShow(this.cliRegistry.getOrCreate(repoRoot), `:${stage}:${assertRepoRelativePath(path)}`);
+  }
+
+  /** The file the two sides started from, which Git keeps as stage 1 of the index; nothing when it has none. */
+  async loadBase(repoRoot: string, path: string): Promise<string | undefined> {
+    return this.tryShow(this.cliRegistry.getOrCreate(repoRoot), `:1:${assertRepoRelativePath(path)}`);
+  }
+
   /** The file as it is on disk; a file that one side deleted may not be there, and is empty. */
   private async readWorkingFile(repoRoot: string, rel: string): Promise<string> {
     try {
@@ -92,6 +102,17 @@ export class MergeResolverService {
     const cli = this.cliRegistry.getOrCreate(repoRoot);
     await writeFile(toAbsoluteRepoPath(repoRoot, rel), text, 'utf8');
     await cli.execWrite(['add', '--', rel]);
+  }
+
+  /**
+   * Puts the conflicts back in files that were resolved, with their markers, from what Git remembers of the merge.
+   * Whatever the files hold now is replaced.
+   */
+  async reopen(repoRoot: string, paths: readonly string[]): Promise<void> {
+    const rels = paths.map((path) => assertRepoRelativePath(path));
+    await this.cliRegistry.runWrite(repoRoot, async () => {
+      await this.cliRegistry.getOrCreate(repoRoot).execWrite(['checkout', '--merge', '--', ...rels]);
+    });
   }
 
   private async describeIncoming(cli: GitCli): Promise<MergeSideDto> {

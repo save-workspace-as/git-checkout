@@ -35,6 +35,8 @@ export interface ChangeDirNode {
   files: ChangeTarget[];
   /** The row is a group of the list (Staged, Unstaged), not a folder of the repository. */
   group?: true;
+  /** A file below is in conflict, so the row offers to resolve the conflicts. */
+  conflicted?: true;
 }
 
 export type ChangeNode = ChangeFileNode | ChangeDirNode;
@@ -89,6 +91,9 @@ export function buildChangeNodes(entries: readonly WorkingCopyEntryDto[], tree: 
     siblings.push(file);
     for (const dir of owners) {
       dir.files.push({ path: file.path, side: file.side, untracked: file.untracked });
+      if (file.status === 'conflict') {
+        dir.conflicted = true;
+      }
     }
   }
   const sort = (nodes: ChangeNode[]): void => {
@@ -122,6 +127,7 @@ export function buildChangeGroup(
     side,
     children,
     files: changeFiles(children).map(({ path, side: fileSide, untracked }) => ({ path, side: fileSide, untracked })),
+    ...(entries.some((entry) => entry.status === 'conflict') ? { conflicted: true as const } : {}),
   };
 }
 

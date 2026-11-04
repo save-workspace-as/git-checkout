@@ -29,6 +29,10 @@ export function mountOperationBanner(post: Post): { element: HTMLElement; apply(
         <span class="operation-banner-actions">
           ${model.canAbort ? html`
             <vscode-button type="button" secondary @click=${() => post({ type: 'operationAbort' })}>${l10n.t('Abort')}</vscode-button>` : nothing}
+          ${model.primary === 'resolve' ? html`
+            <vscode-button type="button" secondary
+              title=${l10n.t('Let the language model resolve every conflicted file')}
+              @click=${() => post({ type: 'operationResolveWithAi' })}>${l10n.t('Resolve with AI')}</vscode-button>` : nothing}
           ${model.primary === null ? nothing : html`
             <vscode-button type="button"
               @click=${() => post({ type: model.primary === 'resolve' ? 'operationResolve' : 'operationContinue' })}
