@@ -292,7 +292,8 @@ describe('Changes tab diff and commit form', () => {
       view.applyHostMessage({ type: 'changesSelection', selection: { path: 'a.ts', side: 'unstaged' } });
       view.applyHostMessage({ type: 'changesDiff', path: 'a.ts', side: 'unstaged', binary: false, lines: diffLines });
       select(root, [...root.querySelectorAll('.commit-diff-add')]);
-      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Stage', 'Discard Changes…']);
+      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Stage', 'Discard Changes…', 'Stash Changes…']);
+      assert.deepEqual(buttons(root).map((button) => button.getAttribute('aria-keyshortcuts')), ['s', null, null]);
       buttons(root)[0].click();
       assert.equal(
         (posted.at(-1) as { patch: string }).patch,
@@ -304,21 +305,46 @@ describe('Changes tab diff and commit form', () => {
       view.applyHostMessage({ type: 'changesSelection', selection: { path: 'b.ts', side: 'staged' } });
       view.applyHostMessage({ type: 'changesDiff', path: 'b.ts', side: 'staged', binary: false, lines: diffLines });
       select(root, [...root.querySelectorAll('.commit-diff-del')]);
-      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Unstage']);
+      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Unstage', 'Stash Changes…']);
+      assert.equal(buttons(root)[0].getAttribute('aria-keyshortcuts'), 'u');
       buttons(root)[0].click();
       assert.equal((posted.at(-1) as { op: string }).op, 'unstage');
       assert.match((posted.at(-1) as { patch: string }).patch, /@@ -1,3 \+1,2 @@\n a\n-x\n y\n$/);
     });
 
-    it('does not offer line buttons for an untracked file', () => {
-      const { root, view } = mount();
+    it('stashes the selected lines from either side, with the patch that makes them out of what the side is compared with', () => {
+      const { root, posted, view } = mount();
+      view.applyHostMessage(snapshot([{ path: 'a.ts', group: 'unstaged', status: 'modified' }]));
+      view.applyHostMessage({ type: 'changesSelection', selection: { path: 'a.ts', side: 'unstaged' } });
+      view.applyHostMessage({ type: 'changesDiff', path: 'a.ts', side: 'unstaged', binary: false, lines: diffLines });
+      select(root, [...root.querySelectorAll('.commit-diff-add')]);
+      buttons(root)[2].click();
+      assert.deepEqual(plain(posted.at(-1)), {
+        type: 'changesStashPatch', path: 'a.ts', side: 'unstaged',
+        patch: 'diff --git a/a.ts b/a.ts\n--- a/a.ts\n+++ b/a.ts\n@@ -1,2 +1,3 @@\n a\n x\n+y\n',
+      });
+    });
+
+    it('stages just the selected lines of an untracked file, and offers nothing else for it', () => {
+      const { root, posted, view } = mount();
       view.applyHostMessage(snapshot([{ path: 'new.txt', group: 'untracked', status: 'untracked' }]));
       view.applyHostMessage({ type: 'changesSelection', selection: { path: 'new.txt', side: 'unstaged' } });
       view.applyHostMessage({
         type: 'changesDiff', path: 'new.txt', side: 'unstaged', binary: false,
-        lines: [{ kind: 'hunk', text: '@@ -0,0 +1,1 @@' }, { kind: 'add', text: 'x', line: 1 }],
+        lines: [
+          { kind: 'hunk', text: '@@ -0,0 +1,3 @@' },
+          { kind: 'add', text: 'a', line: 1 }, { kind: 'add', text: 'b', line: 2 }, { kind: 'add', text: 'c', line: 3 },
+        ],
       });
-      assert.equal(root.querySelectorAll('[data-line]').length, 0);
+      const rows = [...root.querySelectorAll('.commit-diff-add')];
+      assert.equal(root.querySelectorAll('[data-line]').length, 3);
+      select(root, [rows[1], rows[2]]);
+      assert.deepEqual(buttons(root).map((button) => button.textContent!.trim()), ['Stage']);
+      buttons(root)[0].click();
+      assert.deepEqual(plain(posted.at(-1)), {
+        type: 'changesHunk', path: 'new.txt', op: 'stage',
+        patch: 'diff --git a/new.txt b/new.txt\nnew file mode 100644\n--- /dev/null\n+++ b/new.txt\n@@ -0,0 +1,2 @@\n+b\n+c\n',
+      });
     });
   });
 

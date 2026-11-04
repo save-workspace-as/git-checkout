@@ -240,6 +240,62 @@ describe('shared read-only code viewer', () => {
       return { ...m, picked, popup: () => m.one('.code-viewer-selection-actions')! };
     }
 
+    it('draws nothing when a refresh brings the same lines, so the selection stays, and draws again when they differ', async () => {
+      const { all, popup, viewer } = await mountDiff();
+      const rows = all('[data-line]');
+      select(popup().parentElement as El, [rows[0], rows[1]]);
+      assert.equal(popup().hidden, false);
+      await viewer.showDiff('app.ts', diff.map((line) => ({ ...line })), false, true);
+      assert.equal(all('[data-line]')[0], rows[0], 'the rows are the same elements');
+      assert.equal(popup().hidden, false, 'and the buttons still show');
+      await viewer.showDiff('app.ts', [...diff, { kind: 'add', text: 'extra', line: 99 }], false, true);
+      assert.notEqual(all('[data-line]').length, rows.length, 'a changed diff is drawn');
+    });
+
+    describe('a key on a button', () => {
+      async function withKey() {
+        const m = mount();
+        const ran: string[] = [];
+        m.viewer.setSelectionActions(() => [
+          { label: 'Stage', key: 's', run: () => ran.push('stage') },
+          { label: 'Discard Changes…', run: () => ran.push('discard') },
+        ]);
+        await m.viewer.showDiff('app.ts', diff, false);
+        const rows = m.all('[data-line]');
+        select(m.one('.code-viewer-selection-actions')!.parentElement as El, [rows[0]]);
+        return { ...m, ran };
+      }
+      const press = (key: string, init: KeyboardEventInit = {}, target: EventTarget = document) =>
+        target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true, ...init }));
+
+      it('runs the action that names the key, once, and then hides the buttons', async () => {
+        const { ran, one } = await withKey();
+        press('s');
+        assert.deepEqual(ran, ['stage']);
+        assert.equal(one('.code-viewer-selection-actions')!.hidden, true);
+        press('s');
+        assert.deepEqual(ran, ['stage'], 'nothing is selected any more');
+      });
+
+      it('ignores other keys, modified keys, a key typed in a field, and a key with no selection', async () => {
+        const { ran } = await withKey();
+        press('d');
+        press('s', { metaKey: true });
+        press('s', { ctrlKey: true });
+        const field = document.createElement('textarea');
+        document.body.append(field);
+        press('s', {}, field);
+        assert.deepEqual(ran, []);
+        const none = mount();
+        const ranNone: string[] = [];
+        none.viewer.setSelectionActions(() => [{ label: 'Stage', key: 's', run: () => ranNone.push('none') }]);
+        await none.viewer.showDiff('app.ts', diff, false);
+        select(none.one('.code-viewer-selection-actions')!.parentElement as El, []);
+        press('s');
+        assert.deepEqual(ranNone, []);
+      });
+    });
+
     it('numbers only the change lines, and only when there is something to do with a selection', async () => {
       const { all } = await mountDiff();
       assert.deepEqual(all('[data-line]').map((row) => row.dataset.line), ['2', '3', '4', '5']);

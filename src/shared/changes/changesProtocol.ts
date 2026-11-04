@@ -99,6 +99,8 @@ export type ChangesWebviewMessage =
   | { type: 'changesSelect'; path: string; side: WorkingCopyDiffSide }
   /** Stage, unstage or discard one hunk, given as a patch built from the diff on screen. */
   | { type: 'changesHunk'; path: string; op: 'stage' | 'unstage' | 'discard'; patch: string }
+  /** Stash the lines a patch covers, from the staged or the unstaged side of a file. */
+  | { type: 'changesStashPatch'; path: string; side: WorkingCopyDiffSide; patch: string }
   | { type: 'changesCommit'; subject: string; description: string; amend: boolean; push?: boolean; pushForm?: boolean }
   | { type: 'changesAmend' }
   | { type: 'changesGenerateMessage' }

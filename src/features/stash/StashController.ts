@@ -173,6 +173,17 @@ export class StashController {
     await this.ctx.changes.sendWorkingCopyFileDiff(action.path, action.side);
   }
 
+  /** Stashes the lines of a patch made from the diff on screen, asking for a message first. */
+  async stashPatch(side: 'staged' | 'unstaged', patch: string): Promise<void> {
+    const message = await promptStashMessage();
+    if (message === null) {
+      return;
+    }
+    await this.runStash(l10n.t('Stashing'), (repoRoot) =>
+      this.ctx.stashService.create(repoRoot, { mode: 'patch', message, patch, side }),
+    );
+  }
+
   /** The active repository and the stash entry for `selector`, after telling the person why there is none. */
   private async findStash(selector: string): Promise<{ root: string; stash: StashEntryDto } | undefined> {
     const root = this.ctx.activeRepoRoot();
