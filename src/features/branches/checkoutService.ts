@@ -21,7 +21,14 @@ export interface CheckoutOptions {
   localBranch?: boolean;
   /** Checkout a commit without moving the current branch. */
   detach?: boolean;
+  /**
+   * What happens to the changes in the working tree: `keep` leaves them for Git to carry over or refuse, `stash` sets
+   * them aside and puts them back after, `discard` drops them first. Defaults to the lean branching setting.
+   */
+  localChanges?: LocalChangesMode;
 }
+
+export type LocalChangesMode = 'keep' | 'stash' | 'discard';
 
 export interface FastForwardOffer {
   localBranch: string;
@@ -71,14 +78,17 @@ export class CheckoutService {
   async checkout(repoRoot: string, ref: string, options?: CheckoutOptions): Promise<string> {
     const repo = this.requireRepository(repoRoot);
     const execOpts = this.execOptions(options?.cancellationToken);
-    const lean = this.settings.leanBranchingStashOnSwitch();
+    const localChanges = options?.localChanges ?? (this.settings.leanBranchingStashOnSwitch() ? 'stash' : 'keep');
     const cli = this.cliRegistry.getOrCreate(repoRoot);
 
     log.info(`checkout ${ref} in ${repoRoot}`);
     let filterRef = ref;
 
     // execRead and execWrite already use the repo queue. Wrapping them in runWrite deadlocks it.
-    await withLeanStash(repoRoot, lean, this.workingTree, cli, async () => {
+    if (localChanges === 'discard') {
+      await cli.execWrite(['reset', '--hard'], execOpts);
+    }
+    await withLeanStash(repoRoot, localChanges === 'stash', this.workingTree, cli, async () => {
       if (options?.detach) {
         await cli.execWrite(['checkout', '--detach', ref], execOpts);
         filterRef = ref;

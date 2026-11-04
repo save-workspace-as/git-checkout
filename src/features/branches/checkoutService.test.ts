@@ -136,6 +136,40 @@ describe('CheckoutService.checkout', () => {
     ]);
   });
 
+  it('stashes and reapplies local changes when asked, whatever the setting says', async () => {
+    const { cli, writes } = mockGitCli();
+    const svc = new CheckoutService(
+      mockGitExtensionService([mockRepository(REPO)]),
+      mockCliRegistry(REPO, cli),
+      mockWorkingTree(false),
+    );
+    await svc.checkout(REPO, 'origin/feature', { localChanges: 'stash' });
+    assert.deepEqual(writes.map((args) => args.slice(0, 2).join(' ')), ['stash push', 'checkout feature', 'stash pop']);
+  });
+
+  it('keeps local changes out of the stash when asked, even with the lean branching setting on', async () => {
+    const { cli, writes } = mockGitCli();
+    const svc = new CheckoutService(
+      mockGitExtensionService([mockRepository(REPO)]),
+      mockCliRegistry(REPO, cli),
+      mockWorkingTree(false),
+      { ...defaultGitCheckoutSettings, leanBranchingStashOnSwitch: () => true },
+    );
+    await svc.checkout(REPO, 'origin/feature', { localChanges: 'keep' });
+    assert.deepEqual(writes, [['checkout', 'feature']]);
+  });
+
+  it('discards local changes before switching when asked', async () => {
+    const { cli, writes } = mockGitCli();
+    const svc = new CheckoutService(
+      mockGitExtensionService([mockRepository(REPO)]),
+      mockCliRegistry(REPO, cli),
+      mockWorkingTree(false),
+    );
+    await svc.checkout(REPO, 'origin/feature', { localChanges: 'discard' });
+    assert.deepEqual(writes, [['reset', '--hard'], ['checkout', 'feature']]);
+  });
+
   it('falls back to CLI when vscode.git checkout fails', async () => {
     const { cli, writes } = mockGitCli({
       execWrite: async (args) => {
