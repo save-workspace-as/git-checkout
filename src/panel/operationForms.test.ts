@@ -29,8 +29,30 @@ import {
   applyPatchForm,
   createPatchForm,
   undoOperationForm,
+  checkoutForm,
 } from './operationForms';
 import { validateOperationForm } from '../shared/forms/operationForm';
+
+describe('Checkout form', () => {
+  it('offers the fast-forward, and names the checkout after it while it is on', () => {
+    const form = checkoutForm('origin/main', { localBranch: 'main', remoteRef: 'origin/main' }, false, 'keep');
+    assert.equal(form.title, 'Checkout');
+    assert.equal(form.submitLabel, 'Checkout');
+    assert.deepEqual(form.checkedSubmitLabel, { field: 'fastForward', label: 'Checkout and Fast-Forward' });
+    assert.deepEqual(form.fields.map((field) => field.id), ['target', 'fastForward']);
+    assert.deepEqual(form.values, { target: 'main', fastForward: true, localChanges: 'keep' });
+  });
+
+  it('asks what to do with local changes only when there are some, starting from the preferred choice', () => {
+    const form = checkoutForm('topic', null, true, 'stash');
+    assert.deepEqual(form.fields.map((field) => field.id), ['target', 'localChanges']);
+    assert.equal(form.checkedSubmitLabel, undefined);
+    assert.equal(form.values.localChanges, 'stash');
+    const radio = form.fields.find((field) => field.id === 'localChanges');
+    assert.deepEqual(radio?.type === 'radio' ? radio.options.map((option) => option.value) : [], ['keep', 'stash', 'discard']);
+    assert.deepEqual(validateOperationForm(form, form.values).errors, {});
+  });
+});
 
 describe('operation-specific form definitions', () => {
   it('shows what the undo reverts and where the branch goes back to, keeping local changes by default', () => {

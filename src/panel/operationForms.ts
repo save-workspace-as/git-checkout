@@ -7,6 +7,7 @@ import {
   normalizeWorktreeCreateRequest, suggestWorktreePath, validateNewWorktreeBranch,
   validateWorktreeCreate, validateWorktreeDestination, type WorktreeCreateContext,
 } from '../features/worktrees/worktreeCreate';
+import type { LocalChangesMode } from '../features/branches/checkoutService';
 import { branchNameInputFrom, type BranchNamePrefill } from '../shared/branches/branchCreate';
 import type { OperationFormDefinition, OperationFormErrors, OperationFormValues } from '../shared/forms/operationForm';
 import type { WorktreeCreateRequest } from '../shared/worktrees/worktreeProtocol';
@@ -120,6 +121,43 @@ export function mergeForm(
           { value: MERGE_TYPE_FAST_FORWARD },
         ],
       },
+    ],
+  };
+}
+
+/** What a checkout can do with the changes in the working tree, as the values of the Checkout form's radio buttons. */
+export const CHECKOUT_LOCAL_CHANGES: readonly LocalChangesMode[] = ['keep', 'stash', 'discard'];
+
+/**
+ * The Checkout form, opened when there is something to decide: a local branch that can fast-forward to its
+ * remote-tracking branch, or changes in the working tree.
+ */
+export function checkoutForm(
+  ref: string,
+  fastForward: { localBranch: string; remoteRef: string } | null,
+  dirty: boolean,
+  localChanges: LocalChangesMode,
+): OperationFormDefinition {
+  return {
+    title: l10n.t('Checkout'),
+    submitLabel: l10n.t('Checkout'),
+    ...(fastForward ? { checkedSubmitLabel: { field: 'fastForward', label: l10n.t('Checkout and Fast-Forward') } } : {}),
+    values: { target: fastForward?.localBranch ?? ref, fastForward: true, localChanges },
+    fields: [
+      { id: 'target', type: 'text', label: l10n.t('Switch to'), readOnly: true,
+        description: l10n.t('The branch, tag or commit to check out.') },
+      ...(fastForward ? [{
+        id: 'fastForward', type: 'checkbox' as const,
+        label: l10n.t('Fast-forward {0} to {1}', fastForward.localBranch, fastForward.remoteRef),
+      }] : []),
+      ...(dirty ? [{
+        id: 'localChanges', type: 'radio' as const, label: l10n.t('Local changes'),
+        options: [
+          { value: 'keep', label: l10n.t("Don't change: keep them, and let Git refuse when they conflict") },
+          { value: 'stash', label: l10n.t('Stash and reapply: set them aside, then put them back') },
+          { value: 'discard', label: l10n.t('Discard: drop all local changes') },
+        ],
+      }] : []),
     ],
   };
 }

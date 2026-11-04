@@ -60,6 +60,48 @@ describe('Graph context menu: Branch submenu', () => {
     assert.equal(git('branch', '--show-current'), 'first-topic');
   });
 
+  it('Checkout: a clean working tree switches at once, with no form', async () => {
+    git('branch', 'quiet');
+    await vscode.commands.executeCommand('gitCheckout.graph.checkoutRef', branchContext('quiet'));
+    assert.equal(git('branch', '--show-current'), 'quiet');
+    assert.equal(ctx.api.operationFormState(), undefined);
+  });
+
+  it('Checkout: local changes can be stashed and reapplied, kept, or discarded', async () => {
+    git('branch', 'other-topic');
+    writeFileSync(join(repoRoot(), 'base.txt'), 'edited\n');
+    // Stash and reapply: the edit follows to the new branch.
+    let command = vscode.commands.executeCommand('gitCheckout.graph.checkoutRef', branchContext('other-topic'));
+    await submitForm(ctx.api, command, 'Checkout', { localChanges: 'stash' });
+    assert.equal(git('branch', '--show-current'), 'other-topic');
+    assert.equal(git('status', '--porcelain'), 'M base.txt');
+    // Discard: the edit is gone.
+    command = vscode.commands.executeCommand('gitCheckout.graph.checkoutRef', branchContext('main'));
+    await submitForm(ctx.api, command, 'Checkout', { localChanges: 'discard' });
+    assert.equal(git('branch', '--show-current'), 'main');
+    assert.equal(git('status', '--porcelain'), '');
+  });
+
+  it('Checkout: canceling the form leaves the branch and the changes alone', async () => {
+    git('branch', 'never');
+    writeFileSync(join(repoRoot(), 'base.txt'), 'edited\n');
+    const command = vscode.commands.executeCommand('gitCheckout.graph.checkoutRef', branchContext('never'));
+    await cancelForm(ctx.api, command, 'Checkout');
+    assert.equal(git('branch', '--show-current'), 'main');
+    assert.equal(git('status', '--porcelain'), 'M base.txt');
+  });
+
+  it('Checkout: an upstream branch ahead of the local one offers to fast-forward it', async () => {
+    git('checkout', '-b', 'elsewhere');
+    const tip = remoteAhead('ahead');
+    const command = vscode.commands.executeCommand('gitCheckout.graph.checkoutRef', branchContext('origin/main', 'remote'));
+    const state = await waitFor('Checkout modal', async () => ctx.api.operationFormState());
+    assert.equal(state.form.values.target, 'main');
+    await submitForm(ctx.api, command, 'Checkout');
+    assert.equal(git('branch', '--show-current'), 'main');
+    assert.equal(git('rev-parse', 'HEAD'), tip);
+  });
+
   it('Checkout: a remote branch', async () => {
     gitIn(other, 'push', 'origin', 'HEAD:refs/heads/remote-only');
     git('fetch', 'origin');

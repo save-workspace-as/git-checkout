@@ -6,7 +6,8 @@ import { checkMergePreflight } from '../branches/mergePreflight';
 import type { ResetMode } from './historyService';
 import { createLogger } from '../../log';
 import type { CommitPatchFormat, PatchExportOp } from '../../shared/patches/patchProtocol';
-import { promptCheckoutRef, runCheckoutWithFfPrompt } from '../branches/checkoutHost';
+import { promptCheckoutRef } from '../branches/checkoutHost';
+import type { LocalChangesMode } from '../branches/checkoutService';
 import { runCommitFlow } from '../changes/commitHost';
 import { executeGitFlow } from '../gitflow/gitFlowHost';
 import { executeSigningToggle } from '../signing/signingHost';
@@ -16,7 +17,7 @@ import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
-import { MERGE_TYPE_FAST_FORWARD, editCommitMessageForm, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
+import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('history');
@@ -93,13 +94,35 @@ export class HistoryOperationsController {
     return executeSigningToggle(this.ctx.commitService, root, arg);
   }
 
+  /** Checks out `ref`. With a fast-forward to offer or changes in the working tree there is something to decide, so a form asks first. */
   async runCheckout(ref: string, localBranch = false): Promise<void> {
-    await this.ctx.sync.runSyncOp(l10n.t('Checking out'), async (root, token) => {
-      await runCheckoutWithFfPrompt(this.ctx.checkoutService, root, ref, token, localBranch);
-      if (this.ctx.gitSettings.checkoutUpdateSubmodules()) {
-        // Submodules follow the commits the checked-out branch records, as `git checkout --recurse-submodules` would.
-        await this.ctx.submoduleService.updateIfPresent(root);
-      }
+    const run = (options: { fastForward?: boolean; localChanges?: LocalChangesMode }): Promise<void> =>
+      this.ctx.sync.runSyncOp(l10n.t('Checking out'), async (root, token) => {
+        await this.ctx.checkoutService.checkout(root, ref, { cancellationToken: token, localBranch, ...options });
+        if (this.ctx.gitSettings.checkoutUpdateSubmodules()) {
+          // Submodules follow the commits the checked-out branch records, as `git checkout --recurse-submodules` would.
+          await this.ctx.submoduleService.updateIfPresent(root);
+        }
+      });
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      await run({});
+      return;
+    }
+    const offer = localBranch ? null : await this.ctx.checkoutService.detectFastForward(root, ref);
+    const dirty = (await this.ctx.workingTreeService.getStatus(root)).dirty;
+    if (!offer && !dirty) {
+      await run({});
+      return;
+    }
+    const preferred: LocalChangesMode = this.ctx.gitSettings.leanBranchingStashOnSwitch() ? 'stash' : 'keep';
+    await this.ctx.operationForm.show(checkoutForm(ref, offer, dirty, preferred), {
+      validate: () => ({}),
+      submit: async (values) => {
+        const chosen = CHECKOUT_LOCAL_CHANGES.find((mode) => mode === values.localChanges);
+        await run({ fastForward: offer !== null && values.fastForward === true, ...(dirty && chosen ? { localChanges: chosen } : {}) });
+        return true;
+      },
     });
   }
 
