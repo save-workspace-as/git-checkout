@@ -201,6 +201,23 @@ export class ChangesController {
     }
   }
 
+  /**
+   * Resolves conflicted files with the language model: those of the clicked row or of every selected row (a folder
+   * or a group covers the conflicts below it), or all of them when no row is named, as the banner asks.
+   */
+  async resolveConflictsWithAi(arg?: unknown, selected?: unknown): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root) {
+      return;
+    }
+    const conflicted = (await this.ctx.workingTreeService.listChanges(root))
+      .filter((entry) => entry.status === 'conflict')
+      .map((entry) => entry.path);
+    const named = commandChangeTargets(arg, selected, this.ctx.changesList.view?.selection).map((target) => target.path);
+    const paths = named.length === 0 ? conflicted : conflicted.filter((path) => named.includes(path));
+    await this.ctx.merge.resolveWithAi([...new Set(paths)]);
+  }
+
   /** Opens a conflicted file in VS Code's merge editor, one of the two ways to fix it. */
   async openConflictInMergeEditor(path: string): Promise<void> {
     const root = this.ctx.activeRepoRoot();

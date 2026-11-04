@@ -215,12 +215,15 @@ describe('Changes tab diff and commit form', () => {
         [...root.querySelectorAll('.merge-side-commit')].map((commit) => commit.textContent),
         ['Add the topic', 'Change main'],
       );
-      const [here, editor] = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
+      const [here, ai, editor] = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
       assert.equal(here.textContent, 'Resolve in Git Checkout');
+      assert.equal(ai.textContent, 'Resolve with AI');
       here.click();
+      ai.click();
       editor.click();
-      assert.deepEqual(plain(posted.slice(-2)), [
+      assert.deepEqual(plain(posted.slice(-3)), [
         { type: 'changesMergeInCheckout', path: 'c.txt' },
+        { type: 'changesMergeWithAi', path: 'c.txt' },
         { type: 'changesMergeInEditor', path: 'c.txt' },
       ]);
     });
@@ -230,7 +233,9 @@ describe('Changes tab diff and commit form', () => {
       select(view);
       view.applyHostMessage(conflict(false));
       const buttons = [...root.querySelectorAll('.changes-conflict-actions vscode-button')] as El[];
-      assert.deepEqual(buttons.map((button) => button.textContent!.trim()), ['Keep current', 'Keep incoming', 'Resolve in editor']);
+      assert.deepEqual(buttons.map((button) => button.textContent!.trim()), ['Keep current', 'Keep incoming', 'Resolve with AI', 'Resolve in editor']);
+      buttons[2].click();
+      assert.deepEqual(posted.at(-1), { type: 'changesMergeWithAi', path: 'c.txt' });
       buttons[1].click();
       assert.deepEqual(posted.at(-1), { type: 'changesMergeTakeSide', path: 'c.txt', side: 'incoming' });
       buttons[0].click();
@@ -242,7 +247,7 @@ describe('Changes tab diff and commit form', () => {
       select(view);
       view.applyHostMessage(conflict(false, 'c.txt', { current: false, incoming: true }));
       const labels = [...root.querySelectorAll('.changes-conflict-actions vscode-button')].map((button) => button.textContent!.trim());
-      assert.deepEqual(labels, ['Delete, as current did', 'Keep incoming', 'Resolve in editor']);
+      assert.deepEqual(labels, ['Delete, as current did', 'Keep incoming', 'Resolve with AI', 'Resolve in editor']);
     });
 
     it('ignores a conflict for a file that is no longer the selected one, and shows the next diff in its place', () => {

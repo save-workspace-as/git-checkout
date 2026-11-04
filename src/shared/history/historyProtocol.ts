@@ -44,5 +44,7 @@ export type HistoryWebviewMessage =
   | { type: 'historyInteractiveRebase'; onto: string }
   /** The banner's buttons while a merge, rebase, cherry-pick or revert is unfinished. */
   | { type: 'operationResolve' }
+  /** Resolve every conflicted file with the language model. */
+  | { type: 'operationResolveWithAi' }
   | { type: 'operationContinue' }
   | { type: 'operationAbort' };

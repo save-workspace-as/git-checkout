@@ -335,6 +335,8 @@
   "command.gitCheckout.changes.resolve.current.category": "Git Checkout",
   "command.gitCheckout.changes.resolve.incoming.title": "Resolve Using Incoming",
   "command.gitCheckout.changes.resolve.incoming.category": "Git Checkout",
+  "command.gitCheckout.changes.resolve.ai.title": "Resolve with AI",
+  "command.gitCheckout.changes.resolve.ai.category": "Git Checkout",
   "command.gitCheckout.changes.history.title": "History…",
   "command.gitCheckout.changes.history.category": "Git Checkout",
   "command.gitCheckout.changes.copyPath.title": "Copy Path",

@@ -1002,6 +1002,11 @@
         "category": "%command.gitCheckout.changes.resolve.incoming.category%"
       },
       {
+        "command": "gitCheckout.changes.resolve.ai",
+        "title": "%command.gitCheckout.changes.resolve.ai.title%",
+        "category": "%command.gitCheckout.changes.resolve.ai.category%"
+      },
+      {
         "command": "gitCheckout.changes.history",
         "title": "%command.gitCheckout.changes.history.title%",
         "category": "%command.gitCheckout.changes.history.category%"
@@ -2635,6 +2640,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.changes.resolve.ai",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.changes.history",
           "when": "false"
         },
@@ -3254,27 +3263,27 @@
         {
           "command": "gitCheckout.changes.stage",
           "group": "1_stage@1",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.stage",
           "group": "inline@1",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.unstage",
           "group": "1_stage@2",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.unstage",
           "group": "inline@1",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.staged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.discard",
           "group": "1_stage@3",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged$/"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir)\\.unstaged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.open",
@@ -3320,6 +3329,11 @@
           "command": "gitCheckout.changes.resolve.incoming",
           "group": "3_resolve@2",
           "when": "view == gitCheckout.changes && viewItem =~ /^change\\.file\\.\\w+\\.conflict$/"
+        },
+        {
+          "command": "gitCheckout.changes.resolve.ai",
+          "group": "3_resolve@3",
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir|group)\\.\\w+\\.conflict$/"
         },
         {
           "command": "gitCheckout.changes.copyPath",
@@ -3674,12 +3688,12 @@
         {
           "command": "gitCheckout.changes.stageAll",
           "group": "inline@1",
-          "when": "view == gitCheckout.changes && viewItem == change.group.unstaged"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.group\\.unstaged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.changes.unstageAll",
           "group": "inline@1",
-          "when": "view == gitCheckout.changes && viewItem == change.group.staged"
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/"
         },
         {
           "command": "gitCheckout.repo.fetch",

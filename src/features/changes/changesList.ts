@@ -94,12 +94,13 @@ export class ChangesList extends NativeFileList<ChangeNode> {
         item.id = node.key;
         if (node.kind === 'dir' && node.group) {
           // The count, like the badge on a group of the Source Control view.
-          item.contextValue = `change.group.${node.side}`;
+          item.contextValue = `change.group.${node.side}${node.conflicted ? '.conflict' : ''}`;
           item.description = String(node.files.length);
           return item;
         }
-        // A conflicted file also offers to be resolved by keeping one side.
-        item.contextValue = `change.${node.kind}.${node.side}${node.kind === 'file' && node.status === 'conflict' ? '.conflict' : ''}`;
+        // A conflicted file, or a folder with one, also offers to be resolved.
+        const conflicted = node.kind === 'file' ? node.status === 'conflict' : node.conflicted === true;
+        item.contextValue = `change.${node.kind}.${node.side}${conflicted ? '.conflict' : ''}`;
         if (node.kind === 'file') {
           item.resourceUri = changeUri(node.path, workingCopyUriStatus(node.status));
           item.description = node.folder || undefined;
