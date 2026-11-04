@@ -5,6 +5,7 @@ import {
   type CommitDiffViewOptions,
 } from '../../src/shared/diff/commitDiffPresentation';
 import type { EditorTokenColors } from '../../src/shared/diff/editorTokenColors';
+import { editorLineHeight } from '../../src/shared/diff/editorLineHeight';
 import { escapeHtml, markInvisibles } from '../../src/shared/diff/invisibleChars';
 import * as l10n from '@vscode/l10n';
 import { highlightDiffLines } from './highlightLine';
@@ -263,6 +264,11 @@ export function mountCodeViewer(
   }
 
   function paint(): void {
+    // The code gets the line height the editor would give its font size, which VS Code does not pass to webviews.
+    const fontSize = parseFloat(getComputedStyle(container).getPropertyValue('--vscode-editor-font-size'));
+    if (Number.isFinite(fontSize)) {
+      container.style.setProperty('--code-line-height', `${editorLineHeight(fontSize, /Mac/.test(navigator.platform))}px`);
+    }
     container.classList.toggle('wrap-lines', options.wrapLines);
     if (ready && mode === 'diff') {
       container.classList.toggle('show-invisibles', options.showInvisibles);
