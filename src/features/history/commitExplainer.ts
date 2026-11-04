@@ -2,6 +2,7 @@ import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { getGitCliRegistry } from '../../core/gitCliRegistry';
 import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
+import { showMarkdownBeside } from '../../core/markdownDocument';
 import { createLogger } from '../../log';
 import { buildExplainPrompt } from '../../shared/history/commitExplainPrompt';
 import { loadCommitForExplain } from './commitExplainSource';
@@ -42,7 +43,5 @@ export async function explainCommit(repoRoot: string, revision: string): Promise
   if (!shown) {
     return;
   }
-  const content = `# ${shown.sha.slice(0, 7)} ${shown.subject}\n\n${shown.explanation}\n`;
-  const document = await vscode.workspace.openTextDocument({ language: 'markdown', content });
-  await vscode.window.showTextDocument(document, { viewColumn: vscode.ViewColumn.Beside, preserveFocus: false, preview: true });
+  await showMarkdownBeside(`# ${shown.sha.slice(0, 7)} ${shown.subject}\n\n${shown.explanation}\n`);
 }

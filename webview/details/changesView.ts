@@ -88,6 +88,9 @@ export function mountChangesView(
           : l10n.t('Write a commit message with AI');
     }
 
+    const reviewTitle = (): string =>
+      stagedEntries().length === 0 ? l10n.t('Stage changes to review them') : l10n.t('Review the staged changes with AI');
+
     function commitTitle(): string {
       const reason = blocker();
       return reason === 'nothingStaged'
@@ -123,6 +126,9 @@ export function mountChangesView(
             <vscode-button type="button" class="changes-generate" icon=${ACTION_ICONS.generateMessage} icon-only
               ?disabled=${noneStaged || form.generating} title=${generateTitle()} aria-label=${generateTitle()}
               @click=${() => postMessage({ type: 'changesGenerateMessage' })}></vscode-button>
+            <vscode-button type="button" class="changes-review" icon=${ACTION_ICONS.reviewChanges} icon-only
+              ?disabled=${noneStaged} title=${reviewTitle()} aria-label=${reviewTitle()}
+              @click=${() => postMessage({ type: 'changesReviewStaged' })}></vscode-button>
             <vscode-checkbox class="changes-amend" label=${l10n.t('Amend')} .checked=${live(form.amend)}
               @change=${(event: Event) => {
                 form.amend = (event.target as VscodeCheckbox).checked;

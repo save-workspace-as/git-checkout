@@ -12,6 +12,7 @@ import { DEFAULT_WORKING_COPY_DIFF_VIEW_OPTIONS } from '../../shared/diff/diffVi
 import type { CommitDiffLineDto } from '../../shared/history/commitDetailsProtocol';
 import { commitTreePathContext } from '../../shared/history/pathHistoryProtocol';
 import { generateCommitMessage } from './commitMessageGenerator';
+import { reviewStagedChanges } from './stagedReview';
 import { EMPTY_WORKING_COPY, type WorkingCopyAction, type WorkingCopyDiffSide, type WorkingCopyFileDiffDto, type WorkingCopyEntryDto, type WorkingCopyPatchAction } from '../../shared/changes/workingCopyProtocol';
 import { commitStaged } from './commitHost';
 import { filterChangeEntries, joinCommitMessage, type ChangesViewOptions } from '../../shared/changes/changesProtocol';
@@ -312,6 +313,14 @@ export class ChangesController {
       );
     } finally {
       this.ctx.changesSlot.post({ type: 'changesGenerating', busy: false });
+    }
+  }
+
+  /** Has the language model review the staged changes, for the review button and the Staged group's menu. */
+  async runReviewStaged(): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (root && this.ctx.graphReady()) {
+      await reviewStagedChanges(this.ctx.cliRegistry.getOrCreate(root));
     }
   }
 

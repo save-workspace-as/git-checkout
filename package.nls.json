@@ -339,6 +339,8 @@
   "command.gitCheckout.changes.resolve.incoming.category": "Git Checkout",
   "command.gitCheckout.changes.resolve.ai.title": "Resolve with AI",
   "command.gitCheckout.changes.resolve.ai.category": "Git Checkout",
+  "command.gitCheckout.changes.review.title": "Review Staged Changes with AI",
+  "command.gitCheckout.changes.review.category": "Git Checkout",
   "command.gitCheckout.changes.history.title": "History…",
   "command.gitCheckout.changes.history.category": "Git Checkout",
   "command.gitCheckout.changes.copyPath.title": "Copy Path",

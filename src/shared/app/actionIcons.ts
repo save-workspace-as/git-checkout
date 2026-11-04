@@ -10,6 +10,7 @@ export const ACTION_ICONS = {
   unstage: 'remove',
   discard: 'discard',
   generateMessage: 'sparkle',
+  reviewChanges: 'checklist',
   ignoreWhitespace: 'whitespace',
   showInvisibles: 'eye',
   wrapLines: 'word-wrap',

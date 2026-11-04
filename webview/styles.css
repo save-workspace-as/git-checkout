@@ -2022,15 +2022,17 @@ vscode-button-group.hidden {
   display: none;
 }
 
-/* The generate button sits inside the subject field, like the clear button in a search box. */
-.changes .changes-generate {
+/* The generate and review buttons sit in the form's footer as plain icons, like the clear button in a search box. */
+.changes .changes-generate,
+.changes .changes-review {
   --vscode-button-background: transparent;
   --vscode-button-hoverBackground: var(--vscode-toolbar-hoverBackground);
   --vscode-button-foreground: var(--vscode-icon-foreground);
   --vscode-button-border: transparent;
 }
 
-.changes .changes-generate::part(base) {
+.changes .changes-generate::part(base),
+.changes .changes-review::part(base) {
   padding: 2px 4px;
 }
 

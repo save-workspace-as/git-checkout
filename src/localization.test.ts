@@ -81,7 +81,7 @@ describe('source strings', () => {
       /Git watch verify/,
       /Write a git commit message|Staged changes:/,
       // The conflict prompts are text for the language model.
-      /(conflict|pullRequest|commitExplain)Prompt\.ts:\d+:/,
+      /(conflict|pullRequest|commitExplain|review)Prompt\.ts:\d+:/,
       // The error the AI features catch, to tell the user in their own words.
       /languageModel\.ts:\d+: No language model is available$/,
       // Error codes and key names, which are compared in code and never shown.

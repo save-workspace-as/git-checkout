@@ -22,7 +22,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 | Section | What it holds |
 | --- | --- |
 | **Repositories** | Every repository of the workspace, with its branch and how far it is from its upstream. Pick one and all the sections below follow it. Right-click for fetch, pull, push, stash, undo, patches, settings and more. |
-| **Commit Message** | The box you commit from, with Amend, Commit, Commit and push, and a button that writes a message with AI. |
+| **Commit Message** | The box you commit from, with Amend, Commit, Commit and push, a button that writes a message with AI, and one that has AI review the staged changes before you commit. |
 | **Changes** | What is staged and what is not, as two groups. Click a file to open its diff. |
 | **Commit** | The files the commit selected in the graph changed. |
 | **File Tree** | The repository as it was at that commit, with a preview of any file. |

@@ -1017,6 +1017,11 @@
         "category": "%command.gitCheckout.changes.resolve.ai.category%"
       },
       {
+        "command": "gitCheckout.changes.review",
+        "title": "%command.gitCheckout.changes.review.title%",
+        "category": "%command.gitCheckout.changes.review.category%"
+      },
+      {
         "command": "gitCheckout.changes.history",
         "title": "%command.gitCheckout.changes.history.title%",
         "category": "%command.gitCheckout.changes.history.category%"
@@ -2671,6 +2676,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.changes.review",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.changes.history",
           "when": "false"
         },
@@ -3725,6 +3734,11 @@
         {
           "command": "gitCheckout.changes.unstageAll",
           "group": "inline@1",
+          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/"
+        },
+        {
+          "command": "gitCheckout.changes.review",
+          "group": "1_ai@1",
           "when": "view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/"
         },
         {

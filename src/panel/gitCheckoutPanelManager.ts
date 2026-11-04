@@ -827,6 +827,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'changesGenerateMessage':
         await this.changes.generateChangesMessage();
         break;
+      case 'changesReviewStaged':
+        await this.changes.runReviewStaged();
+        break;
       case 'changesAmend': {
         const root = this.activeRepoRoot();
         if (root) {
@@ -1416,6 +1419,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
     return this.changes.resolveConflictsWith(side, arg, selected);
+  }
+
+  runReviewStaged(): Promise<void> {
+    return this.changes.runReviewStaged();
   }
 
   resolveConflictsWithAi(arg?: unknown, selected?: unknown): Promise<void> {
