@@ -6,6 +6,7 @@ import { live } from 'lit/directives/live.js';
 import { repeat } from 'lit/directives/repeat.js';
 import type { GitHubRepository } from '../../src/shared/history/githubReferences';
 import { ACTION_ICONS, type ActionIcon } from '../../src/shared/app/actionIcons';
+import { headHistory } from './headHistory';
 import { githubLinkedText } from '../githubLinkText';
 import type {
   GraphCommitContext,
@@ -149,7 +150,7 @@ export function mountGraphView(
   let initialPageLoaded = false;
   let loadingMore = false;
   let pendingReveal: { ref: string; sha: string; pagesLoaded: number } | null = null;
-  let layout: { rows: GraphRow[]; geometry: GraphGeometry } | null = null;
+  let layout: { rows: GraphRow[]; geometry: GraphGeometry; onHead: Set<string> | undefined } | null = null;
   let searchText = '';
   /** What the search field offers for the word being typed, and which of them is picked. */
   let suggestions: SearchSuggestions | undefined;
@@ -165,7 +166,7 @@ export function mountGraphView(
     paint();
   }
 
-  function getLayout(): { rows: GraphRow[]; geometry: GraphGeometry } {
+  function getLayout(): { rows: GraphRow[]; geometry: GraphGeometry; onHead: Set<string> | undefined } {
     if (!layout) {
       const visible = collapseMergesEnabled ? withMergeSides(commits, expandedMerges, mergeSides) : commits;
       const lanes = layoutGraph(visible).rows;
@@ -177,6 +178,7 @@ export function mountGraphView(
           commit, lane: lanes[i], parentCount: parentCounts.get(commit.sha) ?? commit.parents.length,
         })),
         geometry: graphGeometry(maxLanes),
+        onHead: headHistory(visible),
       };
     }
     return layout;
@@ -403,7 +405,7 @@ export function mountGraphView(
     return html`
       <div class=${classMap({
         'graph-row': true, 'graph-grid': true,
-        'graph-row-cursor': commit.sha === cursorSha, 'graph-row-selected': selected, 'graph-row-head': isHeadCommit(commit),
+        'graph-row-cursor': commit.sha === cursorSha, 'graph-row-selected': selected, 'graph-row-head': isHeadCommit(commit), 'graph-row-off-head': getLayout().onHead?.has(commit.sha) === false,
         'graph-row-reflog': commit.reflogOnly === true, 'graph-row-match': matchSet.has(commit.sha), 'graph-row-flash': commit.sha === flashSha,
         'graph-row-bisect-good': bisectMark === 'good', 'graph-row-bisect-bad': bisectMark === 'bad',
         'graph-row-bisect-skip': bisectMark === 'skip',
