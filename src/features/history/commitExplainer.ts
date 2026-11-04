@@ -1,7 +1,7 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { getGitCliRegistry } from '../../core/gitCliRegistry';
-import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
+import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import { showMarkdownBeside } from '../../core/markdownDocument';
 import { createLogger } from '../../log';
 import { buildExplainPrompt } from '../../shared/history/commitExplainPrompt';
@@ -25,6 +25,10 @@ export async function explainCommit(repoRoot: string, revision: string): Promise
         }
       } catch (error) {
         if (token.isCancellationRequested) {
+          return;
+        }
+        if (error instanceof AiDisabledError) {
+          void vscode.window.showInformationMessage(aiDisabledMessage());
           return;
         }
         if (error instanceof NoLanguageModelError) {

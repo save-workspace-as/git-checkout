@@ -1432,6 +1432,16 @@
     ],
     "configuration": {
       "properties": {
+        "gitCheckout.ai.enabled": {
+          "default": true,
+          "description": "%config.gitCheckout.ai.enabled.description%",
+          "type": "boolean"
+        },
+        "gitCheckout.ai.reviewConflictResolutions": {
+          "default": false,
+          "description": "%config.gitCheckout.ai.reviewConflictResolutions.description%",
+          "type": "boolean"
+        },
         "gitCheckout.autoFetch.enabled": {
           "default": true,
           "description": "%config.gitCheckout.autoFetch.enabled.description%",
@@ -3369,7 +3379,7 @@
         {
           "command": "gitCheckout.changes.resolve.ai",
           "group": "3_resolve@3",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir|group)\\.\\w+\\.conflict$/"
+          "when": "(view == gitCheckout.changes && viewItem =~ /^change\\.(file|dir|group)\\.\\w+\\.conflict$/) && config.gitCheckout.ai.enabled"
         },
         {
           "command": "gitCheckout.changes.copyPath",
@@ -3429,7 +3439,7 @@
         {
           "command": "gitCheckout.sidebar.openPullRequestWithAi",
           "group": "2_sync@5",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
+          "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/) && config.gitCheckout.ai.enabled"
         },
         {
           "command": "gitCheckout.sidebar.fetchRemote",
@@ -3739,7 +3749,7 @@
         {
           "command": "gitCheckout.changes.review",
           "group": "1_ai@1",
-          "when": "view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/"
+          "when": "(view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/) && config.gitCheckout.ai.enabled"
         },
         {
           "command": "gitCheckout.repo.fetch",
@@ -4028,7 +4038,7 @@
         {
           "command": "gitCheckout.graph.explain",
           "group": "7_ai@1",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+          "when": "(webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single') && config.gitCheckout.ai.enabled"
         },
         {
           "command": "gitCheckout.graph.savePatch",
@@ -4209,7 +4219,7 @@
         {
           "command": "gitCheckout.graph.branch.pullRequestWithAi",
           "group": "1_branch@6",
-          "when": "graphBranchKind == local"
+          "when": "(graphBranchKind == local) && config.gitCheckout.ai.enabled"
         },
         {
           "command": "gitCheckout.graph.branch.rename",

@@ -123,10 +123,10 @@ export function mountChangesView(
           ${hint ? html`<div class="changes-subject-hint" role="status">${hint}</div>` : nothing}
           <div class="changes-form-footer">
             <div class="changes-form-options">
-            <vscode-button type="button" class="changes-generate" icon=${ACTION_ICONS.generateMessage} icon-only
+            <vscode-button type="button" class="changes-generate ai-action" icon=${ACTION_ICONS.generateMessage} icon-only
               ?disabled=${noneStaged || form.generating} title=${generateTitle()} aria-label=${generateTitle()}
               @click=${() => postMessage({ type: 'changesGenerateMessage' })}></vscode-button>
-            <vscode-button type="button" class="changes-review" icon=${ACTION_ICONS.reviewChanges} icon-only
+            <vscode-button type="button" class="changes-review ai-action" icon=${ACTION_ICONS.reviewChanges} icon-only
               ?disabled=${noneStaged} title=${reviewTitle()} aria-label=${reviewTitle()}
               @click=${() => postMessage({ type: 'changesReviewStaged' })}></vscode-button>
             <vscode-checkbox class="changes-amend" label=${l10n.t('Amend')} .checked=${live(form.amend)}
@@ -262,11 +262,11 @@ export function mountChangesView(
               ? html`<vscode-button type="button"
                   title=${l10n.t('Choose the changes to keep, side by side')}
                   @click=${() => postMessage({ type: 'changesMergeInCheckout', path: message.path })}>${l10n.t('Resolve in Git Checkout')}</vscode-button>
-                <vscode-button type="button" secondary
+                <vscode-button type="button" secondary class="ai-action"
                   title=${l10n.t('Let the language model merge the two sides, then review the result')}
                   @click=${() => postMessage({ type: 'changesMergeWithAi', path: message.path })}>${l10n.t('Resolve with AI')}</vscode-button>`
               : html`${keep('current', message.currentExists)}${keep('incoming', message.incomingExists)}
-                <vscode-button type="button" secondary
+                <vscode-button type="button" secondary class="ai-action"
                   title=${l10n.t('Let the language model merge the two versions, or decide whether the file stays')}
                   @click=${() => postMessage({ type: 'changesMergeWithAi', path: message.path })}>${l10n.t('Resolve with AI')}</vscode-button>`}
             <vscode-button type="button" secondary

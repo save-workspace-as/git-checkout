@@ -256,6 +256,109 @@ describe('Operation banner', () => {
       assert.match(git('ls-files', '-u'), /image\.bin/);
     });
 
+    it('asks the model once more when a request fails, and leaves the file in conflict when the second one fails too', async () => {
+      const { topic } = divergingEdits();
+      await mergeTopicIntoMain(topic);
+      await banner(/^Merging/);
+      let calls = 0;
+      ctx.api.seedLanguageModel(async () => {
+        calls += 1;
+        if (calls === 1) { throw new Error('Model declined to respond'); }
+        return '```\none\nmain and topic\nthree\n```';
+      });
+      await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+      await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+      assert.equal(calls, 2);
+      assert.equal(file('c.txt'), 'one\nmain and topic\nthree\n');
+
+      git('checkout', '--merge', '--', 'c.txt');
+      calls = 0;
+      const warnings: string[] = [];
+      const restore = answer('showWarningMessage', async (message: unknown) => { warnings.push(String(message)); return undefined; });
+      try {
+        ctx.api.seedLanguageModel(async () => { calls += 1; throw new Error('Model declined to respond'); });
+        await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+        await waitFor('the warning', async () => (warnings.length > 0 ? true : undefined));
+        assert.equal(calls, 2, 'one more try, and no more');
+        assert.match(warnings[0], /c\.txt was left in conflict: Model declined to respond/);
+        assert.match(git('ls-files', '-u'), /c\.txt/);
+      } finally {
+        restore();
+      }
+    });
+
+    describe('with review on', () => {
+      const setReview = (on: boolean | undefined) =>
+        vscode.workspace.getConfiguration('gitCheckout').update('ai.reviewConflictResolutions', on, vscode.ConfigurationTarget.Global);
+      beforeEach(() => setReview(true));
+      afterEach(async () => {
+        await setReview(undefined);
+        await vscode.commands.executeCommand('workbench.action.closeAllEditors');
+      });
+
+      /** Answers the question of whether to take the result with the button named `choice`. */
+      const choose = (choice: 'Accept' | 'Skip', asked: string[]) =>
+        answer('showInformationMessage', async (message: unknown, ...actions: unknown[]) => {
+          asked.push(String(message));
+          return actions.find((action) => action === choice);
+        });
+
+      it('writes and stages the result only after it is accepted, and shows it against the conflicted file', async () => {
+        const { topic } = divergingEdits();
+        await mergeTopicIntoMain(topic);
+        await banner(/^Merging/);
+        const asked: string[] = [];
+        const restore = choose('Accept', asked);
+        try {
+          await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+          await waitFor('the file to be resolved', async () => (git('ls-files', '-u') === '' ? true : undefined));
+        } finally {
+          restore();
+        }
+        assert.ok(asked.some((message) => /Accept the AI resolution of c\.txt\?/.test(message)));
+        assert.equal(file('c.txt'), 'one\nmain and topic\nthree\n');
+        assert.ok(
+          vscode.window.tabGroups.all.flatMap((group) => group.tabs).some((tab) => /c\.txt: as Git left it/.test(tab.label)),
+          'the diff was shown',
+        );
+      });
+
+      it('leaves the file as it was when the result is skipped', async () => {
+        const { topic } = divergingEdits();
+        await mergeTopicIntoMain(topic);
+        await banner(/^Merging/);
+        const before = file('c.txt');
+        const asked: string[] = [];
+        const warnings: string[] = [];
+        const restore = [choose('Skip', asked), answer('showWarningMessage', async (message: unknown) => { warnings.push(String(message)); return undefined; })];
+        try {
+          await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+          await waitFor('the warning', async () => (warnings.length > 0 ? true : undefined));
+        } finally {
+          restore.reverse().forEach((undoOne) => undoOne());
+        }
+        assert.match(warnings[0], /c\.txt was left in conflict: you chose not to accept the result/);
+        assert.equal(file('c.txt'), before);
+        assert.match(git('ls-files', '-u'), /c\.txt/);
+      });
+    });
+
+    describe('with the AI features turned off', () => {
+      beforeEach(() => vscode.workspace.getConfiguration('gitCheckout').update('ai.enabled', false, vscode.ConfigurationTarget.Global));
+      afterEach(() => vscode.workspace.getConfiguration('gitCheckout').update('ai.enabled', undefined, vscode.ConfigurationTarget.Global));
+
+      it('sends nothing to the model, and says the setting is off', async () => {
+        const { topic } = divergingEdits();
+        await mergeTopicIntoMain(topic);
+        await banner(/^Merging/);
+        const before = file('c.txt');
+        await ctx.api.sendPanelMessage({ type: 'changesMergeWithAi', path: 'c.txt' });
+        await toast(/AI features are turned off/);
+        assert.equal(prompts.length, 0);
+        assert.equal(file('c.txt'), before);
+      });
+    });
+
     it('says so, and writes nothing, when no file is in conflict', async () => {
       await vscode.commands.executeCommand('gitCheckout.changes.resolve.ai');
       assert.equal(prompts.length, 0);

@@ -74,6 +74,8 @@ import { RepositoryNotOpenError } from '../core/repositoryNotOpenError';
 import { OperationFormController } from './operationFormController';
 import { buildUiState } from './uiState';
 import { readActiveEditorTokenColors } from './activeEditorTheme';
+import { aiBodyAttribute } from '../shared/app/aiAttribute';
+import { aiEnabled } from '../core/languageModel';
 import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
 import { ignoreRevsEnabled } from '../features/blame/blameSettings';
 import { autolinksBodyAttribute } from '../shared/history/autolinks';
@@ -154,7 +156,7 @@ function getWebviewHtml(
   <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${codiconUri}" nonce="${nonce}" />
   <title>Git Checkout</title>
 </head>
-<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}>
+<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}${aiBodyAttribute(aiEnabled())}>
   <div id="root"></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

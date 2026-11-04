@@ -7,11 +7,14 @@ import type { MergeHostMessage, MergeWebviewMessage } from '../../shared/conflic
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 import { readActiveEditorTokenColors } from '../../panel/activeEditorTheme';
 import { editorTokenColorsFromRules } from '../../shared/diff/editorTokenColors';
-import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
+import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import type { MergeResolverFile } from './mergeResolverService';
 import { MergeResolverService } from './mergeResolverService';
 
 const log = createLogger('merge-resolver');
+
+/** What the model made of a conflicted file: the file to write, or its deletion. */
+type Proposal = { kind: 'file'; text: string; original: string } | { kind: 'delete'; side: 'current' | 'incoming' };
 
 /** What MergeResolverController needs from the window that owns it. */
 export type MergeResolverContext = Pick<
@@ -124,31 +127,40 @@ export class MergeResolverController {
       void vscode.window.showInformationMessage(l10n.t('There are no conflicted files to resolve.'));
       return;
     }
-    const resolved: string[] = [];
+    const proposals = new Map<string, Proposal>();
     const left: { path: string; reason: string }[] = [];
+    let canceled = false;
     await vscode.window.withProgress(
       { location: vscode.ProgressLocation.Notification, title: l10n.t('Resolving conflicts with AI…'), cancellable: true },
       async (progress, token) => {
         for (const [index, path] of paths.entries()) {
           if (token.isCancellationRequested) {
+            canceled = true;
             return;
           }
           progress.report({ message: l10n.t('{0} ({1}/{2})', path, index + 1, paths.length) });
           try {
-            const reason = await this.resolveOne(root, path, token);
-            if (reason === undefined) {
-              resolved.push(path);
+            const proposal = await this.propose(root, path, token);
+            if ('reason' in proposal) {
+              left.push({ path, reason: proposal.reason });
             } else {
-              left.push({ path, reason });
+              proposals.set(path, proposal);
             }
           } catch (error) {
+            if (error instanceof AiDisabledError) {
+              void vscode.window.showInformationMessage(aiDisabledMessage());
+              canceled = true;
+              return;
+            }
             if (error instanceof NoLanguageModelError) {
               void vscode.window.showInformationMessage(
                 l10n.t('No language model is available. Sign in to GitHub Copilot or install a model provider to resolve conflicts.'),
               );
+              canceled = true;
               return;
             }
             if (token.isCancellationRequested) {
+              canceled = true;
               return;
             }
             log.error(`could not resolve ${path} with AI`, error);
@@ -157,6 +169,26 @@ export class MergeResolverController {
         }
       },
     );
+    if (canceled) {
+      return;
+    }
+    const review = vscode.workspace.getConfiguration('gitCheckout.ai').get<boolean>('reviewConflictResolutions', false);
+    const resolved: string[] = [];
+    for (const [path, proposal] of proposals) {
+      if (review && !(await this.accepted(path, proposal))) {
+        left.push({ path, reason: l10n.t('you chose not to accept the result') });
+        continue;
+      }
+      try {
+        await (proposal.kind === 'delete'
+          ? this.service.takeSide(root, path, proposal.side)
+          : this.service.resolve(root, path, proposal.text));
+        resolved.push(path);
+      } catch (error) {
+        log.error(`could not write the resolution of ${path}`, error);
+        left.push({ path, reason: error instanceof Error ? error.message : String(error) });
+      }
+    }
     if (resolved.length > 0) {
       if (this.opened !== undefined && resolved.includes(this.opened)) {
         this.close(this.opened);
@@ -166,65 +198,95 @@ export class MergeResolverController {
     this.report(root, resolved, left);
   }
 
-  /** Why a file was left in conflict, or `undefined` once the model's answer is written and staged. */
-  private async resolveOne(root: string, path: string, token: vscode.CancellationToken): Promise<string | undefined> {
+  /** Asks the model, and once more when a request fails: a model can decline one time and answer the next. */
+  private async ask(prompt: string, token: vscode.CancellationToken): Promise<string> {
+    try {
+      return await askLanguageModel(prompt, token);
+    } catch (error) {
+      if (error instanceof NoLanguageModelError || error instanceof AiDisabledError || token.isCancellationRequested) {
+        throw error;
+      }
+      log.warn('the model failed on a conflict; asking once more', error);
+      return askLanguageModel(prompt, token);
+    }
+  }
+
+  /** What the model would do with a file, or why it cannot be left to the model. Nothing is written. */
+  private async propose(root: string, path: string, token: vscode.CancellationToken): Promise<Proposal | { reason: string }> {
     const file = await this.service.load(root, path).catch((error) => {
       log.debug(`${path} cannot be read to merge it`, error);
       return undefined;
     });
     if (!file) {
-      return l10n.t('it cannot be read');
+      return { reason: l10n.t('it cannot be read') };
     }
     const base = await this.service.loadBase(root, path);
     if (conflictsOf(parseMergeDocument(file.text)).length === 0) {
-      return this.resolveWholeFile(root, path, file, base, token);
+      return this.proposeWholeFile(root, path, file, base, token);
     }
     const prompt = { path, text: file.text, ...(base === undefined ? {} : { base }), current: file.current, incoming: file.incoming };
     if (!fitsConflictPrompt(prompt)) {
-      return l10n.t('it is too large to send to the model');
+      return { reason: l10n.t('it is too large to send to the model') };
     }
-    const parsed = parseResolvedFile(await askLanguageModel(buildConflictPrompt(prompt), token), file.text);
+    const parsed = parseResolvedFile(await this.ask(buildConflictPrompt(prompt), token), file.text);
     if (!parsed.ok) {
       log.warn(`the model's answer for ${path} was refused: ${parsed.reason}`);
-      return parsed.reason === 'markers'
-        ? l10n.t('the model left conflict markers in it')
-        : l10n.t('the model did not return a file');
+      return {
+        reason: parsed.reason === 'markers' ? l10n.t('the model left conflict markers in it') : l10n.t('the model did not return a file'),
+      };
     }
-    await this.service.resolve(root, path, parsed.text);
-    return undefined;
+    return { kind: 'file', text: parsed.text, original: file.text };
   }
 
   /** A conflict with no markers: both sides changed the whole file, or one deleted it. Binary files are left alone. */
-  private async resolveWholeFile(
+  private async proposeWholeFile(
     root: string, path: string, file: MergeResolverFile, base: string | undefined, token: vscode.CancellationToken,
-  ): Promise<string | undefined> {
+  ): Promise<Proposal | { reason: string }> {
     const [current, incoming] = await Promise.all([
       file.currentExists ? this.service.loadStage(root, path, 2) : undefined,
       file.incomingExists ? this.service.loadStage(root, path, 3) : undefined,
     ]);
     if ((current === undefined && incoming === undefined) || isBinaryText(base, current, incoming)) {
-      return l10n.t('it is a binary file, or a submodule');
+      return { reason: l10n.t('it is a binary file, or a submodule') };
     }
     const prompt = buildWholeFilePrompt({
       path, ...(base === undefined ? {} : { base }), ...(current === undefined ? {} : { current }),
       ...(incoming === undefined ? {} : { incoming }), currentSide: file.current, incomingSide: file.incoming,
     });
     if (!fitsConflictPrompt({ text: (current ?? '') + (incoming ?? ''), ...(base === undefined ? {} : { base }) })) {
-      return l10n.t('it is too large to send to the model');
+      return { reason: l10n.t('it is too large to send to the model') };
     }
-    const reply = await askLanguageModel(prompt, token);
+    const reply = await this.ask(prompt, token);
     const deletedBy = current === undefined ? 'current' : incoming === undefined ? 'incoming' : undefined;
     if (deletedBy && isDeleteAnswer(reply)) {
-      await this.service.takeSide(root, path, deletedBy);
-      return undefined;
+      return { kind: 'delete', side: deletedBy };
     }
-    const parsed = parseResolvedFile(reply, current ?? incoming ?? '');
+    const kept = current ?? incoming ?? '';
+    const parsed = parseResolvedFile(reply, kept);
     if (!parsed.ok) {
       log.warn(`the model's answer for ${path} was refused: ${parsed.reason}`);
-      return l10n.t('the model did not return a file');
+      return { reason: l10n.t('the model did not return a file') };
     }
-    await this.service.resolve(root, path, parsed.text);
-    return undefined;
+    return { kind: 'file', text: parsed.text, original: kept };
+  }
+
+  /** Shows what the model made of a file next to what Git left, and asks whether to take it. */
+  private async accepted(path: string, proposal: Proposal): Promise<boolean> {
+    const accept = l10n.t('Accept');
+    if (proposal.kind === 'delete') {
+      const answer = await vscode.window.showInformationMessage(
+        l10n.t('The model decided {0} should be deleted, as the {1} side did. Delete it?', path, proposal.side === 'current' ? l10n.t('current') : l10n.t('incoming')),
+        accept, l10n.t('Skip'),
+      );
+      return answer === accept;
+    }
+    const [before, after] = await Promise.all([
+      vscode.workspace.openTextDocument({ content: proposal.original }),
+      vscode.workspace.openTextDocument({ content: proposal.text }),
+    ]);
+    await vscode.commands.executeCommand('vscode.diff', before.uri, after.uri, l10n.t('{0}: as Git left it ↔ resolved by AI', path));
+    const answer = await vscode.window.showInformationMessage(l10n.t('Accept the AI resolution of {0}?', path), accept, l10n.t('Skip'));
+    return answer === accept;
   }
 
   private report(root: string, resolved: readonly string[], left: readonly { path: string; reason: string }[]): void {

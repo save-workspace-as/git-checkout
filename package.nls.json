@@ -284,6 +284,8 @@
   "config.gitCheckout.graph.order.enum.topo": "Keep each branch's commits together.",
   "config.gitCheckout.leanBranching.stashOnSwitch.description": "When the working tree is dirty, stash before checkout or pull and pop afterward.",
   "config.gitCheckout.network.timeoutMs.description": "Timeout (ms) for fetch, pull, and push operations.",
+  "config.gitCheckout.ai.enabled.description": "Show the buttons and menu items that use a language model (writing commit messages, resolving conflicts, writing pull request descriptions, explaining commits and reviewing staged changes), and allow them to send code to it. Turn this off to hide them and send nothing. Open views pick the change up the next time they are shown.",
+  "config.gitCheckout.ai.reviewConflictResolutions.description": "Show what the language model made of each conflicted file next to what Git left, and ask before it is written and staged. Off, the result is staged at once and the notification offers to undo it.",
   "config.gitCheckout.autoFetch.enabled.description": "Fetch from the remotes of every open repository in the background, so the graph shows what others pushed. It never asks for a password, and it waits while the window is in the background or a merge or rebase is in progress.",
   "config.gitCheckout.autoFetch.intervalSeconds.description": "Seconds between background fetches.",
   "config.gitCheckout.watch.debounceMs.description": "Debounce window (ms) for coalescing Git watch events.",

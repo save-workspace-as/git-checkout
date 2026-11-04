@@ -78,4 +78,17 @@ describe('Review Staged Changes with AI', () => {
     await waitFor('the message', async () => (messages.some((message) => /Could not review the changes: quota used up/.test(message)) ? true : undefined));
     assert.equal(vscode.workspace.textDocuments.some((candidate) => candidate.getText().includes('Review of the staged changes')), false);
   });
+
+  it('does not ask the model, and says the setting is off, when the AI features are turned off', async () => {
+    stage();
+    const config = vscode.workspace.getConfiguration('gitCheckout');
+    await config.update('ai.enabled', false, vscode.ConfigurationTarget.Global);
+    try {
+      await ctx.api.sendPanelMessage({ type: 'changesReviewStaged' });
+      await waitFor('the message', async () => (messages.some((message) => /AI features are turned off/.test(message)) ? true : undefined));
+      assert.equal(prompts.length, 0);
+    } finally {
+      await config.update('ai.enabled', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
 });

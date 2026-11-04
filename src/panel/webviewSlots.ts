@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import { aiBodyAttribute } from '../shared/app/aiAttribute';
+import { aiEnabled } from '../core/languageModel';
 import { l10nBodyAttribute } from '../shared/app/l10nAttribute';
 import { autolinksBodyAttribute } from '../shared/history/autolinks';
 import { readAutolinks } from '../features/history/githubLinkHost';
@@ -178,7 +180,7 @@ export function viewHtml(
   <link rel="stylesheet" href="${styleUri}" />
   <link rel="stylesheet" id="vscode-codicon-stylesheet" href="${codiconUri}" nonce="${nonce}" />
 </head>
-<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}>
+<body${l10nBodyAttribute(vscode.l10n.bundle)}${autolinksBodyAttribute(readAutolinks())}${aiBodyAttribute(aiEnabled())}>
   <div id="root"${rootAttributes}></div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
 </body>

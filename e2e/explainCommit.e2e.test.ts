@@ -49,4 +49,17 @@ describe('Explain Commit with AI', () => {
     await waitFor('the message', async () => (messages.some((message) => /Could not explain the commit: quota used up/.test(message)) ? true : undefined));
     assert.equal(vscode.workspace.textDocuments.filter((candidate) => candidate.languageId === 'markdown').length, before);
   });
+
+  it('does not ask the model, and says the setting is off, when the AI features are turned off', async () => {
+    const config = vscode.workspace.getConfiguration('gitCheckout');
+    await config.update('ai.enabled', false, vscode.ConfigurationTarget.Global);
+    try {
+      const sha = commitFile('off.txt', 'x\n', 'feat: off');
+      await vscode.commands.executeCommand('gitCheckout.graph.explain', menuContext(sha));
+      await waitFor('the message', async () => (messages.some((message) => /AI features are turned off/.test(message)) ? true : undefined));
+      assert.equal(prompts.length, 0);
+    } finally {
+      await config.update('ai.enabled', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
 });

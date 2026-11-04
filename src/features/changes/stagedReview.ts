@@ -1,7 +1,7 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import type { GitCli } from '../../core/gitCli';
-import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
+import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import { showMarkdownBeside } from '../../core/markdownDocument';
 import { createLogger } from '../../log';
 import { buildReviewPrompt } from '../../shared/changes/reviewPrompt';
@@ -26,6 +26,10 @@ export async function reviewStagedChanges(cli: GitCli): Promise<void> {
         }
       } catch (error) {
         if (token.isCancellationRequested) {
+          return;
+        }
+        if (error instanceof AiDisabledError) {
+          void vscode.window.showInformationMessage(aiDisabledMessage());
           return;
         }
         if (error instanceof NoLanguageModelError) {
