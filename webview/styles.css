@@ -786,6 +786,11 @@ body.vscode-high-contrast-light {
   font-weight: 600;
 }
 
+/* Commits that are not in the checked-out branch's history are dimmed, so its own commits stand out. */
+.graph-row-off-head .graph-subject {
+  color: var(--vscode-disabledForeground);
+}
+
 .graph-row-reflog {
   color: var(--vscode-disabledForeground);
 }
@@ -964,6 +969,7 @@ body.vscode-high-contrast-light {
   color: var(--vscode-badge-foreground);
   background: var(--vscode-gitDecoration-addedResourceForeground);
   border-color: var(--vscode-gitDecoration-addedResourceForeground);
+  font-weight: 600;
 }
 
 .graph-col-author {

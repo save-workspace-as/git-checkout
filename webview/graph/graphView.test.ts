@@ -130,6 +130,19 @@ describe('commit graph', () => {
     assert.deepEqual(multi.shas, ['a'.repeat(40), 'c'.repeat(40)]);
   });
 
+  it('dims the commits outside the checked-out branch history, and nothing when it is not drawn', () => {
+    const { graph, rows } = mount();
+    const dimmed = () => rows().map((row) => row.classList.contains('graph-row-off-head'));
+    graph.handleHostMessage(page([
+      commit('t', ['b'], { refs: [{ kind: 'local', name: 'topic' }] }),
+      commit('a', ['b'], { refs: [{ kind: 'local', name: 'main', isHead: true }] }),
+      commit('b'),
+    ] as GraphCommitDto[]));
+    assert.deepEqual(dimmed(), [true, false, false]);
+    graph.handleHostMessage(page([commit('x', ['y']), commit('y')] as GraphCommitDto[]));
+    assert.deepEqual(dimmed(), [false, false]);
+  });
+
   it('lists the branches of a commit that has several, and a badge picks just its own', () => {
     const { graph, rows, contextOf } = mount();
     graph.handleHostMessage(meta({ compactBranchLabels: false }));
