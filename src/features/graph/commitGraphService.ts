@@ -36,6 +36,7 @@ import { gravatarUrl } from '../../core/gravatar';
 import type { GitHubAvatars } from './githubAvatars';
 import { labelStashCommits, parseStashList, STASH_LIST_ARGS } from '../stash/stashParser';
 import { RepositoryNotOpenError } from '../../core/repositoryNotOpenError';
+import { revisionArg } from '../../core/gitRevision';
 
 const log = createLogger('graph');
 
@@ -292,44 +293,54 @@ export class CommitGraphService {
         return;
       }
     }
-    let offset = 0;
+    // One git process for the whole scan: a `--skip` per chunk makes Git walk the history again each time, which on a
+    // large repository costs far more than the walk itself. The output is read as it arrives, in batches of
+    // SEARCH_CHUNK_SIZE commits, and the process is ended as soon as the search is cancelled.
+    const parser = new SearchRecordParser();
+    let scanned = 0;
     let total = 0;
-    for (;;) {
-      const result = await cli.execRead(
-        [
-          'log',
-          '-n',
-          String(SEARCH_CHUNK_SIZE),
-          `--skip=${offset}`,
-          order === 'topo' ? '--topo-order' : '--date-order',
-          // The rows the graph shows: with collapsed merges, first-parent history only.
-          ...(collapseMerges ? ['--first-parent'] : []),
-          '--pretty=format:%H%x00%an%x00%ae%x00%B%x01',
-          ...revision,
-        ],
-        { timeoutMs: SEARCH_READ_TIMEOUT_MS },
-      );
-      const records = parseSearchRecords(result.stdout);
-      const shas = records.flatMap((record, i) =>
-        (allowed ? allowed.has(record.sha) : true) && (trimmed ? commitMatchesQuery(record, trimmed) : true)
-          ? [{ sha: record.sha, index: offset + i }]
-          : [],
-      );
-      total += shas.length;
-      const done = records.length < SEARCH_CHUNK_SIZE;
-      if (isCancelled()) {
-        return;
+    let pending: SearchMatch[] = [];
+    const flush = (done: boolean): void => {
+      const matches = pending;
+      pending = [];
+      onBatch(matches, done);
+    };
+    /** Whether to go on: false once a batch was handed over and the search was cancelled meanwhile. */
+    const take = (records: SearchRecord[]): boolean => {
+      for (const record of records) {
+        if ((allowed ? allowed.has(record.sha) : true) && (trimmed ? commitMatchesQuery(record, trimmed) : true)) {
+          pending.push({ sha: record.sha, index: scanned });
+          total += 1;
+        }
+        scanned += 1;
+        if (scanned % SEARCH_CHUNK_SIZE === 0) {
+          flush(false);
+          if (isCancelled()) {
+            return false;
+          }
+        }
       }
-      onBatch(shas, done);
-      if (done) {
-        log.debug(`search matched ${total} commits`);
-        return;
-      }
-      if (isCancelled()) {
-        return;
-      }
-      offset += records.length;
+      return true;
+    };
+    await cli.execRead(
+      [
+        'log',
+        order === 'topo' ? '--topo-order' : '--date-order',
+        // The rows the graph shows: with collapsed merges, first-parent history only.
+        ...(collapseMerges ? ['--first-parent'] : []),
+        '--pretty=format:%H%x00%an%x00%ae%x00%B%x01',
+        ...revision,
+      ],
+      { timeoutMs: SEARCH_READ_TIMEOUT_MS, onStdout: (chunk) => !isCancelled() && take(parser.push(chunk)) },
+    );
+    if (isCancelled()) {
+      return;
     }
+    if (!take(parser.end())) {
+      return;
+    }
+    log.debug(`search matched ${total} of ${scanned} commits`);
+    flush(true);
   }
 
   /**
@@ -347,8 +358,8 @@ export class CommitGraphService {
       '--decorate=full',
       '--date=unix',
       `--pretty=format:${GRAPH_LOG_FORMAT}`,
-      `${mergeSha}^@`,
-      `^${mergeSha}^1`,
+      `${revisionArg(mergeSha)}^@`,
+      `^${revisionArg(mergeSha)}^1`,
     ]);
     return this.withAvatars(parseGitLog(result.stdout), display.gravatar);
   }
@@ -357,7 +368,7 @@ export class CommitGraphService {
   async loadCommit(repoRoot: string, sha: string): Promise<GraphCommitDto | undefined> {
     const cli = this.cliForRoot(repoRoot);
     const display = await this.graphDisplayFor(repoRoot, cli);
-    const result = await cli.execRead(['log', '-n', '1', '--decorate=full', '--date=unix', `--pretty=format:${GRAPH_LOG_FORMAT}`, sha, '--']);
+    const result = await cli.execRead(['log', '-n', '1', '--decorate=full', '--date=unix', `--pretty=format:${GRAPH_LOG_FORMAT}`, revisionArg(sha), '--']);
     return this.withAvatars(parseGitLog(result.stdout), display.gravatar)[0];
   }
 
@@ -376,7 +387,7 @@ export class CommitGraphService {
   /** Resolves a ref to its commit and whether that commit is in the current filter's history. */
   async resolveReveal(repoRoot: string, ref: string): Promise<{ sha: string; reachable: boolean }> {
     const cli = this.cliForRoot(repoRoot);
-    const sha = (await cli.execRead(['rev-parse', '--verify', `${ref}^{commit}`])).stdout.trim();
+    const sha = (await cli.execRead(['rev-parse', '--verify', `${revisionArg(ref)}^{commit}`])).stdout.trim();
     const filterRef = this.shownRef(repoRoot);
     if (filterRef === ALL_COMMITS_FILTER) {
       return { sha, reachable: true };
@@ -468,18 +479,30 @@ export class CommitGraphService {
       display.activeBranchOnly,
     );
     const extraRevs = revision === ALL_COMMITS_FILTER ? stashes.map((entry) => entry.sha) : [];
-    const result = await cli.execRead(
-      buildGraphLogArgs(
-        revision,
-        skip,
-        display.order,
-        extraRevs,
-        graphIncludesReflog(revision, display.showReflog),
-        limit,
-        { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags },
-        display.collapseMerges,
-      ),
-    );
+    let result: { stdout: string };
+    try {
+      result = await cli.execRead(
+        buildGraphLogArgs(
+          revision,
+          skip,
+          display.order,
+          extraRevs,
+          graphIncludesReflog(revision, display.showReflog),
+          limit,
+          { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags },
+          display.collapseMerges,
+        ),
+      );
+    } catch (error) {
+      if (append || graphState.filterRef === ALL_COMMITS_FILTER || !namesNoRevision(error)) {
+        throw error;
+      }
+      // The saved filter is a branch or tag that is gone, and would fail every load until someone picked another.
+      log.warn(`the graph filter '${graphState.filterRef}' no longer exists; showing all commits`, error);
+      this.setFilterRef(repoRoot, ALL_COMMITS_FILTER);
+      graphState.filterRef = ALL_COMMITS_FILTER;
+      return this.fetchPage(repoRoot, false, limit);
+    }
     const labelled = labelStashCommits(parseGitLog(result.stdout), stashes);
     const reflogOnly = graphIncludesReflog(revision, display.showReflog)
       ? await this.loadReflogOnlyShas(cli, extraRevs)
@@ -598,6 +621,14 @@ export class CommitGraphService {
   }
 }
 
+/** Whether Git failed because a revision it was given does not exist. */
+export function namesNoRevision(error: unknown): boolean {
+  return (
+    error instanceof GitCliError &&
+    /unknown revision|bad revision|ambiguous argument|not a valid object name|bad object/i.test(error.stderr)
+  );
+}
+
 /** A search hit and where it sits in the graph's order. */
 export interface SearchMatch {
   sha: string;
@@ -621,6 +652,30 @@ export function parseSearchRecords(output: string): SearchRecord[] {
     }
   }
   return records;
+}
+
+/** Reads the output of `git log --format=%H%x00%an%x00%ae%x00%B%x01` as it arrives, in pieces that can end anywhere. */
+export class SearchRecordParser {
+  private rest = '';
+
+  /** The commits that the output so far completed. */
+  push(chunk: string): SearchRecord[] {
+    const text = this.rest + chunk;
+    const end = text.lastIndexOf('\x01');
+    if (end < 0) {
+      this.rest = text;
+      return [];
+    }
+    this.rest = text.slice(end + 1);
+    return parseSearchRecords(text.slice(0, end + 1));
+  }
+
+  /** The last commit, once the output is over. */
+  end(): SearchRecord[] {
+    const text = this.rest;
+    this.rest = '';
+    return parseSearchRecords(text);
+  }
 }
 
 /** Whether a commit matches the way the graph search does: message, author, or a hash prefix. */

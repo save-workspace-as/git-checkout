@@ -1,6 +1,7 @@
 import { createLogger } from '../../log';
 import type { CommitTreePageDto, CommitTreeRevisionDto } from '../../shared/history/commitTreeProtocol';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
+import { revisionArg } from '../../core/gitRevision';
 
 const log = createLogger('commit-tree');
 
@@ -33,7 +34,7 @@ export class CommitTreeService {
 
   /** Every file at `revision`, and the commit it names. */
   async list(repoRoot: string, revision: string): Promise<CommitTreePageDto> {
-    const rev = revision.trim() || 'HEAD';
+    const rev = revisionArg(revision) || 'HEAD';
     const [paths, commit] = await Promise.all([this.loadPaths(repoRoot, rev), this.readCommit(repoRoot, rev)]);
     return { revision: rev, paths, ...(commit ? { commit } : {}) };
   }
@@ -43,7 +44,7 @@ export class CommitTreeService {
     try {
       const result = await this.cliRegistry
         .getOrCreate(repoRoot)
-        .execRead(['log', '-1', '--format=%H%x00%an%x00%ae%x00%at%x00%s', `${revision}^{commit}`]);
+        .execRead(['log', '-1', '--format=%H%x00%an%x00%ae%x00%at%x00%s', `${revisionArg(revision)}^{commit}`]);
       return parseRevisionCommit(result.stdout);
     } catch (error) {
       log.debug(`no commit at ${revision}`, error);
