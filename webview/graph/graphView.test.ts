@@ -130,6 +130,23 @@ describe('commit graph', () => {
     assert.deepEqual(multi.shas, ['a'.repeat(40), 'c'.repeat(40)]);
   });
 
+  it('lists the branches of a commit that has several, and a badge picks just its own', () => {
+    const { graph, rows, contextOf } = mount();
+    graph.handleHostMessage(meta({ compactBranchLabels: false }));
+    graph.handleHostMessage(page([
+      commit('a', ['b'], { refs: [{ kind: 'remote', name: 'origin/x' }, { kind: 'local', name: 'x' }, { kind: 'local', name: 'main', isHead: true }] }),
+      commit('b', [], { refs: [{ kind: 'local', name: 'only' }] }),
+    ] as GraphCommitDto[]));
+    const several = contextOf(rows()[0]);
+    assert.deepEqual(several.graphBranchChoices, [
+      { name: 'main', kind: 'local' }, { name: 'x', kind: 'local' }, { name: 'origin/x', kind: 'remote' },
+    ]);
+    assert.equal(several.graphBranch, 'main');
+    assert.equal(contextOf(rows()[1]).graphBranchChoices, undefined);
+    const badge = rows()[0].querySelectorAll('.graph-ref')[1] as El;
+    assert.deepEqual(JSON.parse(badge.getAttribute('data-vscode-context')!).graphBranchChoices, []);
+  });
+
   it('labels a branch badge so its menu acts on that branch, and marks the current one', () => {
     const { graph, rows } = mount();
     graph.handleHostMessage(meta({ compactBranchLabels: false }));

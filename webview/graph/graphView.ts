@@ -9,6 +9,7 @@ import { ACTION_ICONS, type ActionIcon } from '../../src/shared/app/actionIcons'
 import { githubLinkedText } from '../githubLinkText';
 import type {
   GraphCommitContext,
+  GraphBranchChoice,
   GraphRefContext,
   GraphCommitDto,
   GraphGeometry,
@@ -73,21 +74,21 @@ const REF_ICONS: Record<GraphRefDto['kind'], ActionIcon> = {
   stash: 'stash',
 };
 
-/** The branch a right-click on the row itself acts on: the checked-out one, else the first local, else a remote. */
-function defaultMenuBranch(refs: readonly GraphRefDto[]): { name: string; kind: 'local' | 'remote' } | undefined {
-  const local = refs.find((ref) => ref.kind === 'local' && ref.isHead) ?? refs.find((ref) => ref.kind === 'local');
-  if (local) {
-    return { name: local.name, kind: 'local' };
-  }
-  const remote = refs.find((ref) => ref.kind === 'remote');
-  return remote ? { name: remote.name, kind: 'remote' } : undefined;
+/** The branches a right-click on the row itself can act on: the checked-out one first, then the other local ones, then the remote ones. */
+function menuBranches(refs: readonly GraphRefDto[]): GraphBranchChoice[] {
+  const ofKind = (kind: 'local' | 'remote') => refs.filter((ref) => ref.kind === kind);
+  const local = ofKind('local');
+  return [...local.filter((ref) => ref.isHead), ...local.filter((ref) => !ref.isHead), ...ofKind('remote')].map((ref) => ({
+    name: ref.name,
+    kind: ref.kind as 'local' | 'remote',
+  }));
 }
 
 function refBadge(ref: GraphRefDto): TemplateResult {
   const current = ref.isHead === true || ref.kind === 'head';
   // A right-click on the badge points the Branch submenu at this branch; the row still supplies the commit.
   const context: GraphRefContext | undefined = ref.kind === 'local' || ref.kind === 'remote'
-    ? { graphBranch: ref.name, graphBranchKind: ref.kind, preventDefaultContextMenuItems: true }
+    ? { graphBranch: ref.name, graphBranchKind: ref.kind, graphBranchChoices: [], preventDefaultContextMenuItems: true }
     : undefined;
   return html`<span class=${classMap({ 'graph-ref': true, [`graph-ref-${ref.kind}`]: true, 'graph-ref-current': current })}
     title=${[current ? (ref.kind === 'head' ? l10n.t('Detached HEAD') : l10n.t('Current branch: {0}', ref.name)) : ref.name, ...(ref.remotes ?? [])].join('\n')}
@@ -338,7 +339,8 @@ export function mountGraphView(
     const stashSelector = commit.refs.find(
       (ref) => ref.kind === 'stash' && /^stash@\{\d+\}$/.test(ref.name),
     )?.name;
-    const branch = defaultMenuBranch(commit.refs);
+    const branches = menuBranches(commit.refs);
+    const branch = branches[0];
     const startRef = preferredStartRef(commit.refs);
     return {
       webviewSection: 'commit',
@@ -349,6 +351,7 @@ export function mountGraphView(
       preventDefaultContextMenuItems: true,
       ...(stashSelector ? { stashSelector } : {}),
       ...(branch ? { graphBranch: branch.name, graphBranchKind: branch.kind } : {}),
+      ...(branches.length > 1 ? { graphBranchChoices: branches } : {}),
       ...(startRef ? { graphStartRef: startRef } : {}),
     };
   }

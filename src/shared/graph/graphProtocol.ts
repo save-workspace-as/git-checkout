@@ -39,6 +39,11 @@ export interface GraphPageDto {
   collapseMerges: boolean;
 }
 
+export interface GraphBranchChoice {
+  name: string;
+  kind: 'local' | 'remote';
+}
+
 /** `data-vscode-context` on a graph row; VS Code passes it to `webview/context` commands. */
 export interface GraphCommitContext {
   webviewSection: 'commit';
@@ -52,6 +57,8 @@ export interface GraphCommitContext {
   /** The branch the Branch submenu acts on: the badge that was right-clicked, else the commit's own branch. */
   graphBranch?: string;
   graphBranchKind?: 'local' | 'remote';
+  /** The branches on this commit when there are several, so a Branch action can ask which one. A right-click on a badge empties it. */
+  graphBranchChoices?: GraphBranchChoice[];
   /** The commit's own name to start a branch from, when it has one: a branch, else a tag. */
   graphStartRef?: string;
   preventDefaultContextMenuItems: true;
@@ -61,6 +68,7 @@ export interface GraphCommitContext {
 export interface GraphRefContext {
   graphBranch: string;
   graphBranchKind: 'local' | 'remote';
+  graphBranchChoices: [];
   preventDefaultContextMenuItems: true;
 }
 

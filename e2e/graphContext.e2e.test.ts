@@ -121,6 +121,47 @@ describe('Graph context menu: Branch submenu', () => {
     assert.equal(gitIn(remote, 'rev-parse', 'main'), sha);
   });
 
+  it('Push…: asks which branch when the commit has two, then opens the Push modal on the pick', async () => {
+    git('branch', 'first-topic');
+    git('branch', 'second-topic');
+    let offered: string[] = [];
+    const restore = answer('showQuickPick', async (items) => {
+      const choices = items as { label: string; choice: { name: string } }[];
+      offered = choices.map((c) => c.choice.name);
+      return choices.find((c) => c.choice.name === 'second-topic');
+    });
+    try {
+      const context = menuContext(git('rev-parse', 'HEAD'), {
+        graphBranch: 'main',
+        graphBranchKind: 'local',
+        graphBranchChoices: [
+          { name: 'main', kind: 'local' }, { name: 'first-topic', kind: 'local' }, { name: 'second-topic', kind: 'local' },
+        ],
+      });
+      const command = vscode.commands.executeCommand('gitCheckout.graph.branch.push', context);
+      const state = await waitFor('Push modal', async () => ctx.api.operationFormState());
+      assert.deepEqual(offered, ['main', 'first-topic', 'second-topic']);
+      assert.equal(state.form.values.branch, 'second-topic');
+      await submitForm(ctx.api, command, 'Push', { remote: 'origin', branch: 'second-topic', tags: false, force: false });
+    } finally {
+      restore();
+    }
+  });
+
+  it('Push…: nothing happens when the branch picker is dismissed', async () => {
+    const restore = answer('showQuickPick', async () => undefined);
+    try {
+      await vscode.commands.executeCommand('gitCheckout.graph.branch.push', menuContext(git('rev-parse', 'HEAD'), {
+        graphBranch: 'main',
+        graphBranchKind: 'local',
+        graphBranchChoices: [{ name: 'main', kind: 'local' }, { name: 'other', kind: 'local' }],
+      }));
+      assert.equal(await ctx.api.operationFormState(), undefined);
+    } finally {
+      restore();
+    }
+  });
+
   it('Push…: a branch that is not checked out', async () => {
     git('branch', 'unpushed');
     const command = vscode.commands.executeCommand('gitCheckout.graph.branch.push', branchContext('unpushed'));
