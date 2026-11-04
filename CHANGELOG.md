@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.10.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.9.0...git-checkout-v0.10.0) (2026-11-04)
+
+
+### Features
+
+* **branches:** ask what to do with local changes and fast-forward when checking out ([#54](https://github.com/save-workspace-as/git-checkout/issues/54)) ([be4e33e](https://github.com/save-workspace-as/git-checkout/commit/be4e33e37d9fec42c3bd59780c7a6242be857bb9))
+* **changes:** review the staged changes with AI ([#47](https://github.com/save-workspace-as/git-checkout/issues/47)) ([6768bfc](https://github.com/save-workspace-as/git-checkout/commit/6768bfcf5c91ab009821f0bbb975e045a08f98b7))
+* **changes:** stage part of a new file, stash selected lines, and key shortcuts ([#44](https://github.com/save-workspace-as/git-checkout/issues/44)) ([ffca90f](https://github.com/save-workspace-as/git-checkout/commit/ffca90fba878fc26e41b15c6d8b728d3be581c02))
+* **conflicts:** AI on/off setting, review before staging, and one retry ([#49](https://github.com/save-workspace-as/git-checkout/issues/49)) ([0343143](https://github.com/save-workspace-as/git-checkout/commit/0343143114434b7b1169a9b6b78d56c9dc401255))
+* **conflicts:** resolve merge conflicts with AI ([#41](https://github.com/save-workspace-as/git-checkout/issues/41)) ([cdb9e51](https://github.com/save-workspace-as/git-checkout/commit/cdb9e51851c13727ab3c93e104d24a5e6310e581))
+* **graph:** ask which branch when a commit has several ([#50](https://github.com/save-workspace-as/git-checkout/issues/50)) ([c0308ca](https://github.com/save-workspace-as/git-checkout/commit/c0308caa89d54e709da3b782b62220df2dbf888f))
+* **graph:** dim commits outside the checked-out branch and bold its label ([#51](https://github.com/save-workspace-as/git-checkout/issues/51)) ([169e6c4](https://github.com/save-workspace-as/git-checkout/commit/169e6c4fd710f8e98e4262fc17430616d611136e))
+* **graph:** stream commit search from a single git log ([#40](https://github.com/save-workspace-as/git-checkout/issues/40)) ([89ef245](https://github.com/save-workspace-as/git-checkout/commit/89ef2455eee7b6827812679d83ce40c0ce12dfa6))
+* **history:** explain a commit with AI ([#46](https://github.com/save-workspace-as/git-checkout/issues/46)) ([4758087](https://github.com/save-workspace-as/git-checkout/commit/4758087f7c62e3337c20b0b5e522089f758e8465))
+* **pull-requests:** open a pull request with an AI-written description ([#45](https://github.com/save-workspace-as/git-checkout/issues/45)) ([9f08e99](https://github.com/save-workspace-as/git-checkout/commit/9f08e995c025b85c240c3748485745aa90f72f3c))
+
+
+### Bug Fixes
+
+* **diff:** use the editor's line height, tab width and font features in code views ([#52](https://github.com/save-workspace-as/git-checkout/issues/52)) ([5ca2b1f](https://github.com/save-workspace-as/git-checkout/commit/5ca2b1fd321031a9ae21e1123aa69f2ac49b30c6))
+
 ## [0.9.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.8.0...git-checkout-v0.9.0) (2026-11-03)
 
 
