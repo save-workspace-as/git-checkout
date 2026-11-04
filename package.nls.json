@@ -133,6 +133,8 @@
   "command.gitCheckout.graph.copyHashes.category": "Git Checkout",
   "command.gitCheckout.graph.copyPatch.title": "Copy as Patch",
   "command.gitCheckout.graph.copyPatch.category": "Git Checkout",
+  "command.gitCheckout.graph.explain.title": "Explain Commit with AI",
+  "command.gitCheckout.graph.explain.category": "Git Checkout",
   "command.gitCheckout.graph.archive.title": "Create Archive…",
   "command.gitCheckout.graph.archive.category": "Git Checkout",
   "command.gitCheckout.graph.savePatch.title": "Save as Patch…",

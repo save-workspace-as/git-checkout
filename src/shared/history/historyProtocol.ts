@@ -32,6 +32,8 @@ export type HistoryWebviewMessage =
   | { type: 'historyCherryPick'; sha: string }
   | { type: 'historyRevert'; sha: string }
   | { type: 'historyArchive'; ref: string }
+  /** Have the language model explain a commit. */
+  | { type: 'historyExplainCommit'; sha: string }
   | { type: 'historyRange'; op: 'squash' | 'drop' | 'cherryPick'; shas: string[] }
   | { type: 'historyCheckout'; sha: string }
   /** Checkout the branch whose badge was right-clicked, not just the commit it points at. */

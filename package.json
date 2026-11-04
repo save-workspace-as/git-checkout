@@ -466,6 +466,11 @@
         "title": "%command.gitCheckout.graph.copyPatch.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.explain.category%",
+        "command": "gitCheckout.graph.explain",
+        "title": "%command.gitCheckout.graph.explain.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.archive.category%",
         "command": "gitCheckout.graph.archive",
         "title": "%command.gitCheckout.graph.archive.title%"
@@ -2258,6 +2263,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.explain",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.graph.archive",
           "when": "false"
         },
@@ -4000,6 +4009,11 @@
         {
           "command": "gitCheckout.graph.copyPatch",
           "group": "8_patch@1",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
+          "command": "gitCheckout.graph.explain",
+          "group": "7_ai@1",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {

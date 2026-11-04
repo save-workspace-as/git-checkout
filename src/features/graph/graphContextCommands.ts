@@ -129,6 +129,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
       format: 'format-patch',
     }),
   },
+  'gitCheckout.graph.explain': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyExplainCommit', sha: c.sha }),
+  },
   'gitCheckout.graph.archive': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyArchive', ref: c.graphBranch ?? c.sha }),

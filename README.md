@@ -43,6 +43,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 ![A diff with two lines selected and the Stage and Discard buttons](docs/screenshots/13-stage-lines.png)
 
 - **Files, hunks or single lines:** stage, unstage or discard a whole file, one hunk, or only the lines you select in the diff. Drag over them, or click line numbers, then press **S** to stage or **U** to unstage the selection. Selected lines can be stashed too, and part of a new file can be staged.
+- **Explain a commit:** right-click a commit in the graph and choose **Explain Commit with AI**. A language model that VS Code provides, such as GitHub Copilot's, reads the message and the changes (a merge against its first parent) and opens a short Markdown explanation beside the graph.
 - **Commit, amend, commit and push:** one box for the message, with a hint when the subject runs long.
 - **Edit any commit's message:** right-click a commit and choose **Edit Commit Message…**. The commits after it are replayed with the same changes, authors and dates, and local changes are kept. It warns when a remote branch already has the commit.
 - **Diffs that open like files:** each change opens in a tab, with options for whitespace, wrapping, context, full file and side by side in the tab's title bar.
