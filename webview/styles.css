@@ -444,6 +444,66 @@ body {
   grid-template-columns: minmax(0, 1fr);
 }
 
+.code-viewer.split-scroll {
+  overflow-x: hidden;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Each side of a side-by-side diff scrolls on its own: the line numbers stay, the code slides inside its clip. */
+.commit-diff-code {
+  display: contents;
+}
+
+.split-scroll .commit-diff-line {
+  min-width: 0;
+}
+
+.split-scroll .commit-diff-code {
+  display: block;
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.split-scroll .commit-diff-code code {
+  display: block;
+  width: max-content;
+}
+
+.split-scroll .commit-diff-line[data-side='left'] code {
+  transform: translateX(calc(var(--split-x-left, 0) * -1px));
+}
+
+.split-scroll .commit-diff-line[data-side='right'] code {
+  transform: translateX(calc(var(--split-x-right, 0) * -1px));
+}
+
+/* The hunk header is one line across both sides. */
+.split-scroll .commit-diff-hunk {
+  overflow: hidden;
+}
+
+.split-scrollbars[hidden] {
+  display: none;
+}
+
+.split-scrollbars {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: var(--vscode-editor-background);
+}
+
+.split-scrollbar {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.split-scrollbar-track {
+  height: 1px;
+}
+
 .code-viewer:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);
   outline-offset: -1px;
@@ -509,6 +569,16 @@ body.vscode-high-contrast-light {
   min-width: max-content;
 }
 
+.commit-diff-meta {
+  display: flex;
+  flex: 0 0 auto;
+  /* The line numbers stay in view while the code scrolls sideways; the row's own color keeps the code from showing through. */
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--row-bg, var(--vscode-editor-background));
+}
+
 .commit-diff-lineno {
   flex: 0 0 auto;
   min-width: 6ch;
@@ -526,7 +596,8 @@ body.vscode-high-contrast-light {
 }
 
 .commit-diff-add {
-  background: color-mix(in srgb, var(--vscode-editorGutter-addedBackground) 14%, var(--vscode-editor-background));
+  --row-bg: color-mix(in srgb, var(--vscode-editorGutter-addedBackground) 14%, var(--vscode-editor-background));
+  background: var(--row-bg);
   box-shadow: inset 2px 0 0 var(--vscode-editorGutter-addedBackground);
 }
 
@@ -535,7 +606,8 @@ body.vscode-high-contrast-light {
 }
 
 .commit-diff-del {
-  background: color-mix(in srgb, var(--vscode-editorGutter-deletedBackground) 14%, var(--vscode-editor-background));
+  --row-bg: color-mix(in srgb, var(--vscode-editorGutter-deletedBackground) 14%, var(--vscode-editor-background));
+  background: var(--row-bg);
   box-shadow: inset 2px 0 0 var(--vscode-editorGutter-deletedBackground);
 }
 

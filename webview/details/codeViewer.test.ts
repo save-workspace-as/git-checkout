@@ -33,6 +33,8 @@ describe('shared read-only code viewer', () => {
     assert.equal(rows.length, 2);
     assert.equal(rows[0].querySelector('.commit-diff-lineno')!.textContent, '1');
     assert.equal(rows[1].querySelector('.commit-diff-lineno')!.textContent, '2');
+    // The numbers sit in one group that stays in view while the code scrolls sideways.
+    assert.equal(rows[0].querySelector('.commit-diff-lineno')!.parentElement!.className, 'commit-diff-meta');
     assert.match(all('code')[0].innerHTML, /hljs-keyword/);
     assert.match(all('code')[1].innerHTML, /hljs-comment/);
     assert.equal(container.tabIndex, 0);
@@ -115,6 +117,51 @@ describe('shared read-only code viewer', () => {
     assert.equal(container.style.getPropertyValue('--commit-token-keyword'), '#123456');
     viewer.setTokenColors({ ...colors, keyword: colors.foreground });
     assert.equal(container.style.getPropertyValue('--commit-token-keyword'), '');
+  });
+
+  it('scrolls the two sides of a side-by-side diff together, each with its own scroll bar', async () => {
+    const { viewer, container, all, one } = mount();
+    // jsdom has no layout: give each side 200px of room, the code of the old side 300px and of the new side 500px.
+    const size = (element: Element, props: Record<string, number>) => {
+      for (const [name, value] of Object.entries(props)) { Object.defineProperty(element, name, { configurable: true, value }); }
+    };
+    const diff = [
+      { kind: 'del' as const, text: 'const a = 1;', line: 1 },
+      { kind: 'add' as const, text: 'const b = 2;', line: 1 },
+    ];
+    await viewer.showDiff('app.ts', diff, false);
+    assert.equal(container.classList.contains('split-scroll'), false);
+    assert.equal(one('.split-scrollbars')!.hidden, true);
+    const split = { ...DEFAULT_COMMIT_DIFF_VIEW, sideBySide: true };
+    viewer.setOptions(split);
+    assert.equal(container.classList.contains('split-scroll'), true);
+    assert.equal(one('.split-scrollbars')!.hidden, false);
+    for (const line of all('.commit-diff-pair > .commit-diff-line[data-side]')) {
+      size(line.querySelector('.commit-diff-code')!, { clientWidth: 200 });
+      size(line.querySelector('code')!, { offsetWidth: line.dataset.side === 'left' ? 300 : 500 });
+    }
+    for (const bar of all('.split-scrollbar')) { size(bar, { clientWidth: 200 }); }
+    viewer.setOptions({ ...split, showInvisibles: true });
+    assert.deepEqual(all('.split-scrollbar-track').map((track) => track.style.width), ['300px', '500px']);
+    const x = (pane: string) => container.style.getPropertyValue(`--split-x-${pane}`);
+    // A sideways wheel moves both sides, a side with shorter lines stops at its own end, and the other goes on.
+    const wheel = (init: WheelEventInit) => { const event = new WheelEvent('wheel', { cancelable: true, bubbles: true, ...init }); container.dispatchEvent(event); return event; };
+    assert.equal(wheel({ deltaX: 60, deltaY: 0 }).defaultPrevented, true);
+    assert.deepEqual([x('left'), x('right')], ['60', '60']);
+    wheel({ deltaX: 900, deltaY: 0 });
+    assert.deepEqual([x('left'), x('right')], ['100', '300']);
+    // A mostly vertical wheel is left to scroll the diff up and down.
+    assert.equal(wheel({ deltaX: 5, deltaY: 80 }).defaultPrevented, false);
+    // Dragging either bar moves both sides.
+    const bar = all('.split-scrollbar')[1];
+    bar.scrollLeft = 40;
+    bar.dispatchEvent(new Event('scroll'));
+    assert.deepEqual([x('left'), x('right')], ['40', '40']);
+    assert.equal(all('.split-scrollbar')[0].scrollLeft, 40);
+    // Wrapped lines have nothing to scroll.
+    viewer.setOptions({ ...split, wrapLines: true });
+    assert.equal(one('.split-scrollbars')!.hidden, true);
+    assert.equal(x('left'), '');
   });
 
   it('retains inline and swapped side-by-side diff rendering and navigation', async () => {

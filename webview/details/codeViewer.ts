@@ -88,11 +88,24 @@ export function mountCodeViewer(
   selectionPopup.hidden = true;
   // A press on a button must not clear the selection it acts on.
   selectionPopup.addEventListener('mousedown', (event) => event.preventDefault());
+  // The scroll bars of a side-by-side diff are drawn once, after the lines, and stay at the bottom of the view.
+  const splitBars = document.createElement('div');
+  splitBars.className = 'split-scrollbars';
+  splitBars.hidden = true;
+  for (const pane of ['left', 'right']) {
+    const bar = document.createElement('div');
+    bar.className = 'split-scrollbar';
+    bar.dataset.pane = pane;
+    bar.setAttribute('aria-hidden', 'true');
+    bar.append(document.createElement('div'));
+    bar.firstElementChild!.className = 'split-scrollbar-track';
+    splitBars.append(bar);
+  }
   function hostElement(): HTMLElement {
     if (host.parentElement !== container) {
       host = document.createElement('div');
       host.className = 'code-viewer-content';
-      container.replaceChildren(host, selectionPopup);
+      container.replaceChildren(host, splitBars, selectionPopup);
     }
     return host;
   }
@@ -113,9 +126,9 @@ export function mountCodeViewer(
     return html`
       <div class="commit-diff-line commit-diff-${line.kind}" data-diff-nav=${lineMarks(line) ? '1' : nothing}
         data-line=${selectionActions && lineMarks(line) ? String(index) : nothing} data-side=${side ?? nothing}>
-        ${lineLead ? html`<span class="commit-diff-lead">${lineLead(index) ?? nothing}</span>` : nothing}<span class="commit-diff-lineno" aria-hidden="true">${line.line === undefined ? '' : String(line.line)}</span>${mode === 'diff' && options.changeMarks !== false
+        <span class="commit-diff-meta">${lineLead ? html`<span class="commit-diff-lead">${lineLead(index) ?? nothing}</span>` : nothing}<span class="commit-diff-lineno" aria-hidden="true">${line.line === undefined ? '' : String(line.line)}</span>${mode === 'diff' && options.changeMarks !== false
           ? html`<span class="commit-diff-gutter" aria-hidden="true">${line.kind === 'add' ? '+' : line.kind === 'del' ? '−' : ' '}</span>`
-          : nothing}<code>${codeOf(index)}</code>
+          : nothing}</span><span class="commit-diff-code"><code>${codeOf(index)}</code></span>
       </div>`;
   }
 
@@ -249,6 +262,72 @@ export function mountCodeViewer(
   });
   container.addEventListener('click', selectRowFromGutter);
 
+  /**
+   * A side-by-side diff scrolls sideways one pane at a time, as the editor's diff does: each side has its own scroll
+   * bar, and both sides move together so the same columns stay in view. Wrapped lines have nothing to scroll.
+   */
+  const splitScroll = (): boolean => ready && !message && mode === 'diff' && options.sideBySide && !options.wrapLines;
+  /** Where the sideways scroll is, and how far each side can go: a side with short lines stops before the other. */
+  let splitX = 0;
+  const splitMax = { left: 0, right: 0 };
+  const splitOffset = (pane: 'left' | 'right'): number => Math.min(splitX, splitMax[pane]);
+
+  function setSplitX(x: number): void {
+    splitX = Math.min(Math.max(0, x), Math.max(splitMax.left, splitMax.right));
+    for (const bar of splitBars.querySelectorAll<HTMLElement>('.split-scrollbar')) {
+      const pane = bar.dataset.pane === 'left' ? 'left' : 'right';
+      container.style.setProperty(`--split-x-${pane}`, String(splitOffset(pane)));
+      if (Math.round(bar.scrollLeft) !== Math.round(splitOffset(pane))) { bar.scrollLeft = splitOffset(pane); }
+    }
+  }
+
+  /** How far the longest line of each side reaches past its pane, and the scroll bars sized to it. */
+  function measureSplit(): void {
+    splitBars.hidden = !splitScroll();
+    if (!splitScroll()) {
+      container.style.removeProperty('--split-x-left');
+      container.style.removeProperty('--split-x-right');
+      splitX = 0;
+      splitMax.left = 0;
+      splitMax.right = 0;
+      return;
+    }
+    const reach = { left: 0, right: 0 };
+    for (const line of container.querySelectorAll<HTMLElement>('.commit-diff-pair > .commit-diff-line[data-side]')) {
+      const pane = line.dataset.side === 'left' ? 'left' : 'right';
+      const clip = line.querySelector<HTMLElement>('.commit-diff-code');
+      const code = clip?.querySelector('code');
+      if (clip && code) { reach[pane] = Math.max(reach[pane], code.offsetWidth - clip.clientWidth); }
+    }
+    splitMax.left = Math.max(0, Math.ceil(reach.left));
+    splitMax.right = Math.max(0, Math.ceil(reach.right));
+    for (const bar of splitBars.querySelectorAll<HTMLElement>('.split-scrollbar')) {
+      const track = bar.firstElementChild as HTMLElement | null;
+      if (track) { track.style.width = `${bar.clientWidth + splitMax[bar.dataset.pane === 'left' ? 'left' : 'right']}px`; }
+    }
+    setSplitX(splitX);
+  }
+
+  container.addEventListener('wheel', (event) => {
+    if (!splitScroll()) { return; }
+    const dx = event.shiftKey ? event.deltaY : event.deltaX;
+    if (dx === 0 || (!event.shiftKey && Math.abs(event.deltaY) > Math.abs(dx))) { return; }
+    event.preventDefault();
+    setSplitX(splitX + dx);
+  }, { passive: false });
+  // A scroll event does not bubble, so the bars are heard on the way down. A bar that was only moved to follow the other
+  // one is already where it should be, so it is not heard as a drag.
+  container.addEventListener('scroll', (event) => {
+    const bar = event.target;
+    if (bar instanceof HTMLElement && bar.classList.contains('split-scrollbar')) {
+      const pane = bar.dataset.pane === 'left' ? 'left' : 'right';
+      if (Math.round(bar.scrollLeft) !== Math.round(splitOffset(pane))) { setSplitX(bar.scrollLeft); }
+    }
+  }, true);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => measureSplit()).observe(container);
+  }
+
   function template(): TemplateResult {
     if (message || !ready) {
       return html`<div class=${message?.error ? 'code-viewer-error' : 'code-viewer-message'}
@@ -270,12 +349,14 @@ export function mountCodeViewer(
       container.style.setProperty('--code-line-height', `${editorLineHeight(fontSize, /Mac/.test(navigator.platform))}px`);
     }
     container.classList.toggle('wrap-lines', options.wrapLines);
+    container.classList.toggle('split-scroll', splitScroll());
     if (ready && mode === 'diff') {
       container.classList.toggle('show-invisibles', options.showInvisibles);
     }
     if (!ready && !message) { return; }
     if (ready) { navIndex = -1; }
     render(template(), hostElement());
+    measureSplit();
     // The selection survives drawing again, so its buttons are shown again for it.
     updateSelectionActions();
   }
@@ -312,6 +393,7 @@ export function mountCodeViewer(
     highlighted = [];
     ready = true;
     message = undefined;
+    if (!keepScroll) { splitX = 0; }
     const top = keepScroll ? container.scrollTop : 0;
     const left = keepScroll ? container.scrollLeft : 0;
     container.scrollTop = top;
