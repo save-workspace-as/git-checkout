@@ -90,4 +90,18 @@ describe('Open Pull Request with AI Description', () => {
     assert.deepEqual(opened, []);
     assert.equal(prompts.length, 0);
   });
+
+  it('opens the plain page, and says the setting is off, when the AI features are turned off', async () => {
+    const config = vscode.workspace.getConfiguration('gitCheckout');
+    await config.update('ai.enabled', false, vscode.ConfigurationTarget.Global);
+    try {
+      await run();
+      await waitFor('the page to open', async () => (opened.length > 0 ? true : undefined));
+      assert.equal(opened[0].toString(), 'https://github.com/octo/app/pull/new/speed');
+      assert.ok(messages.some((message) => /AI features are turned off/.test(message)));
+      assert.equal(prompts.length, 0);
+    } finally {
+      await config.update('ai.enabled', undefined, vscode.ConfigurationTarget.Global);
+    }
+  });
 });

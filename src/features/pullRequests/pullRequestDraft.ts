@@ -1,7 +1,7 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { getGitCliRegistry } from '../../core/gitCliRegistry';
-import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
+import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import { createLogger } from '../../log';
 import { pullRequestUrl } from '../../shared/history/githubReferences';
 import { buildPullRequestPrompt, canTravelInLink, linkableTitle, parsePullRequestText } from '../../shared/pullRequests/pullRequestPrompt';
@@ -42,6 +42,8 @@ export async function openPullRequestWithAi(repoRoot: string, branch: string): P
       } catch (error) {
         if (token.isCancellationRequested) {
           canceled = true;
+        } else if (error instanceof AiDisabledError) {
+          void vscode.window.showInformationMessage(aiDisabledMessage());
         } else if (error instanceof NoLanguageModelError) {
           void vscode.window.showInformationMessage(
             l10n.t('No language model is available. Sign in to GitHub Copilot or install a model provider to write pull request descriptions.'),

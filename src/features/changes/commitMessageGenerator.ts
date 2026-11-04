@@ -1,6 +1,7 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 
+import { aiDisabledMessage, aiEnabled } from '../../core/languageModel';
 import { createLogger } from '../../log';
 import { buildCommitPrompt, parseGeneratedMessage } from '../../shared/changes/commitMessagePrompt';
 
@@ -15,6 +16,10 @@ export async function generateCommitMessage(
   recentSubjects: readonly string[],
   token: vscode.CancellationToken,
 ): Promise<{ subject: string; description: string } | undefined> {
+  if (!aiEnabled()) {
+    void vscode.window.showInformationMessage(aiDisabledMessage());
+    return undefined;
+  }
   const models = await vscode.lm.selectChatModels();
   const model = models[0];
   if (!model) {

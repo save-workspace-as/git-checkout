@@ -2022,6 +2022,11 @@ vscode-button-group.hidden {
   display: none;
 }
 
+/* Buttons that use a language model go away when the person turned the AI features off. */
+body[data-ai="off"] .ai-action {
+  display: none;
+}
+
 /* The generate and review buttons sit in the form's footer as plain icons, like the clear button in a search box. */
 .changes .changes-generate,
 .changes .changes-review {
