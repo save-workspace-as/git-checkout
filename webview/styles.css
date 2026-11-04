@@ -490,6 +490,10 @@ body.vscode-high-contrast-light {
   font-family: var(--vscode-editor-font-family);
   font-size: var(--vscode-editor-font-size);
   font-weight: var(--vscode-editor-font-weight);
+  font-feature-settings: var(--vscode-editor-font-feature-settings, normal);
+  /* The editor's line height for this font size, set by the viewer; VS Code does not pass it to webviews. */
+  line-height: var(--code-line-height, normal);
+  tab-size: 4;
 }
 
 /* VS Code's webview stylesheet gives every <code> a gray inline box; in a viewer the line is the box. */

@@ -97,6 +97,17 @@ describe('shared read-only code viewer', () => {
     assert.equal(one('.code-viewer-error')?.getAttribute('role'), 'alert');
   });
 
+  it('gives the code the line height the editor has for its font size', async () => {
+    const { viewer, container } = mount();
+    container.style.setProperty('--vscode-editor-font-size', '14px');
+    await viewer.showFile('app.ts', 'const a = 1;');
+    // 14px: 21px on macOS, 19px elsewhere.
+    assert.match(container.style.getPropertyValue('--code-line-height'), /^(21|19)px$/);
+    container.style.setProperty('--vscode-editor-font-size', '20px');
+    await viewer.showFile('app.ts', 'const a = 1;');
+    assert.match(container.style.getPropertyValue('--code-line-height'), /^(30|27)px$/);
+  });
+
   it('updates and resets theme token colors on the same control', () => {
     const { viewer, container } = mount();
     const colors = editorTokenColorsFromRules([], undefined);
