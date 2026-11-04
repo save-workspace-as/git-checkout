@@ -365,6 +365,18 @@ describe('Changes tab diff and commit form', () => {
     assert.deepEqual(plain(posted.at(-1)), { type: 'changesActions', actions: [{ op: 'stage', path: 'new.txt' }] });
   });
 
+  it('reviews the staged changes with AI only when something is staged', () => {
+    const { posted, view, q } = mount();
+    const review = () => q('.changes-review');
+    assert.equal(review().hasAttribute('disabled'), true);
+    assert.equal(review().getAttribute('title'), 'Stage changes to review them');
+    view.applyHostMessage(snapshot([{ path: 'a.ts', group: 'staged', status: 'modified' }]));
+    assert.equal(review().hasAttribute('disabled'), false);
+    assert.equal(review().getAttribute('title'), 'Review the staged changes with AI');
+    review().click();
+    assert.deepEqual(plain(posted.at(-1)), { type: 'changesReviewStaged' });
+  });
+
   it('writes a commit message with AI only when something is staged, and fills the form', () => {
     const { posted, view, q } = mount();
     const generate = () => q('.changes-generate');

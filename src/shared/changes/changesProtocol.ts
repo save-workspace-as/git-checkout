@@ -104,6 +104,8 @@ export type ChangesWebviewMessage =
   | { type: 'changesCommit'; subject: string; description: string; amend: boolean; push?: boolean; pushForm?: boolean }
   | { type: 'changesAmend' }
   | { type: 'changesGenerateMessage' }
+  /** Have the language model review what is staged. */
+  | { type: 'changesReviewStaged' }
   | { type: 'changesOpenFile'; path: string }
   /** Resolve a conflicted file in the Merge modal, or in VS Code's merge editor. */
   | { type: 'changesMergeInCheckout'; path: string }

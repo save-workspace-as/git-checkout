@@ -486,6 +486,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
         panelManager.resolveConflictsWith(side, arg, selected),
       ),
     ),
+    vscode.commands.registerCommand('gitCheckout.changes.review', () => panelManager.runReviewStaged()),
     vscode.commands.registerCommand('gitCheckout.changes.resolve.ai', (arg?: unknown, selected?: unknown) =>
       panelManager.resolveConflictsWithAi(arg, selected),
     ),
