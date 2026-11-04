@@ -43,6 +43,7 @@ import type { CommitFileChangeDto } from '../shared/history/commitDetailsProtoco
 import { PathHistoryPanel } from '../features/history/pathHistoryPanel';
 import { BlameService } from '../features/history/blameService';
 import { openPullRequestPage } from '../features/history/githubLinkHost';
+import { explainCommit } from '../features/history/commitExplainer';
 import { openPullRequestWithAi } from '../features/pullRequests/pullRequestDraft';
 import { PathHistoryService } from '../features/history/pathHistoryService';
 import { type CommitFileAction } from '../features/history/commitFileActions';
@@ -967,6 +968,13 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'historyArchive':
         await this.operations.runArchive(message.ref);
         break;
+      case 'historyExplainCommit': {
+        const root = this.activeRepoRoot();
+        if (root) {
+          await explainCommit(root, message.sha);
+        }
+        break;
+      }
       case 'historyPatchExport':
         await this.operations.handleHistoryPatchExport(message.shas, message.op, message.format);
         break;
