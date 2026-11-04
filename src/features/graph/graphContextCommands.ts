@@ -52,6 +52,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyBranchAction', action: 'pullRequest', ref: c.graphBranch ?? '' }),
   },
+  'gitCheckout.graph.branch.pullRequestWithAi': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyBranchAction', action: 'pullRequestWithAi', ref: c.graphBranch ?? '' }),
+  },
   'gitCheckout.graph.branch.rename': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyBranchAction', action: 'rename', ref: c.graphBranch ?? '' }),

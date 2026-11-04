@@ -66,6 +66,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 
 - **A section in the sidebar:** for a repository on GitHub, **Pull Requests** lists the open ones as *Created by me*, *Waiting for my review* and *All open*, with a badge for how their checks stand.
 - **Check one out:** right-click a pull request to check it out (as the branch `pr/<number>`, through the same checkout as any branch), check it out in a worktree, review what it changes against its target branch, open it on GitHub, or copy its link.
+- **Start one with a written description:** right-click a local branch and choose **Open Pull Request with AI Description…**. A language model that VS Code provides, such as GitHub Copilot's, writes the title and description from the branch's commits and changes, and GitHub's new pull request page opens with them filled in. Without a model, the page opens as it does without AI.
 - **Quiet by default:** it uses your GitHub sign-in in VS Code, asks only for what a public repository needs and asks again for private ones, and can be turned off with `gitCheckout.pullRequests.enabled`.
 - **Open on GitHub:** right-click a file for Open File on GitHub and Copy GitHub Link to File (to the selected lines), or a commit in the graph for Open Commit on GitHub. In the sidebar, **Open Remote in Browser** works for SSH and HTTPS remotes alike, and for hosts other than GitHub.
 

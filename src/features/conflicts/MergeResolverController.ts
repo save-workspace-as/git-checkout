@@ -7,7 +7,7 @@ import type { MergeHostMessage, MergeWebviewMessage } from '../../shared/conflic
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 import { readActiveEditorTokenColors } from '../../panel/activeEditorTheme';
 import { editorTokenColorsFromRules } from '../../shared/diff/editorTokenColors';
-import { askLanguageModel, NoLanguageModelError, type ConflictModel } from './conflictModel';
+import { askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import type { MergeResolverFile } from './mergeResolverService';
 import { MergeResolverService } from './mergeResolverService';
 
@@ -23,14 +23,9 @@ export type MergeResolverContext = Pick<
 export class MergeResolverController {
   private resolver: MergeResolverService | undefined;
   private opened: string | undefined;
-  private model: ConflictModel = askLanguageModel;
 
   constructor(private readonly ctx: MergeResolverContext) {}
 
-  /** Replaces the language model, or puts VS Code's back (e2e only: the tests have no model to ask). */
-  useModel(model: ConflictModel | undefined): void {
-    this.model = model ?? askLanguageModel;
-  }
 
   /** Made on first use: the window sets up its Git CLIs after it has built its controllers. */
   private get service(): MergeResolverService {
@@ -188,7 +183,7 @@ export class MergeResolverController {
     if (!fitsConflictPrompt(prompt)) {
       return l10n.t('it is too large to send to the model');
     }
-    const parsed = parseResolvedFile(await this.model(buildConflictPrompt(prompt), token), file.text);
+    const parsed = parseResolvedFile(await askLanguageModel(buildConflictPrompt(prompt), token), file.text);
     if (!parsed.ok) {
       log.warn(`the model's answer for ${path} was refused: ${parsed.reason}`);
       return parsed.reason === 'markers'
@@ -217,7 +212,7 @@ export class MergeResolverController {
     if (!fitsConflictPrompt({ text: (current ?? '') + (incoming ?? ''), ...(base === undefined ? {} : { base }) })) {
       return l10n.t('it is too large to send to the model');
     }
-    const reply = await this.model(prompt, token);
+    const reply = await askLanguageModel(prompt, token);
     const deletedBy = current === undefined ? 'current' : incoming === undefined ? 'incoming' : undefined;
     if (deletedBy && isDeleteAnswer(reply)) {
       await this.service.takeSide(root, path, deletedBy);

@@ -43,6 +43,7 @@ import type { CommitFileChangeDto } from '../shared/history/commitDetailsProtoco
 import { PathHistoryPanel } from '../features/history/pathHistoryPanel';
 import { BlameService } from '../features/history/blameService';
 import { openPullRequestPage } from '../features/history/githubLinkHost';
+import { openPullRequestWithAi } from '../features/pullRequests/pullRequestDraft';
 import { PathHistoryService } from '../features/history/pathHistoryService';
 import { type CommitFileAction } from '../features/history/commitFileActions';
 import {
@@ -1357,10 +1358,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     await openRemoteInBrowser(this.activeRepoRoot(), remote);
   }
 
-  async runOpenPullRequest(branchName: string): Promise<void> {
+  async runOpenPullRequest(branchName: string, withAi = false): Promise<void> {
     const root = this.activeRepoRoot();
     if (root) {
-      await openPullRequestPage(root, branchName);
+      await (withAi ? openPullRequestWithAi(root, branchName) : openPullRequestPage(root, branchName));
     }
   }
 
@@ -1407,10 +1408,6 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   resolveConflictsWith(side: 'incoming' | 'current', arg: unknown, selected?: unknown): Promise<void> {
     return this.changes.resolveConflictsWith(side, arg, selected);
-  }
-
-  seedConflictModel(model: ((prompt: string) => Promise<string>) | undefined): void {
-    this.merge.useModel(model);
   }
 
   resolveConflictsWithAi(arg?: unknown, selected?: unknown): Promise<void> {

@@ -40,6 +40,7 @@ const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
   { label: l10n.t('Copy GitHub Link to File'), command: 'gitCheckout.remote.copyFileLink' },
   { label: l10n.t('Open Repository on GitHub'), command: 'gitCheckout.remote.openRepository' },
   { label: l10n.t('Open Pull Request on GitHub…'), command: 'gitCheckout.sidebar.openPullRequest', target: 'localBranch' },
+  { label: l10n.t('Open Pull Request with AI Description…'), command: 'gitCheckout.sidebar.openPullRequestWithAi', target: 'localBranch' },
   { label: l10n.t('Prune Remote Branches…'), command: 'gitCheckout.pruneRemote' },
   { label: l10n.t('Pull…'), command: 'gitCheckout.pull' },
   { label: l10n.t('Push…'), command: 'gitCheckout.push' },

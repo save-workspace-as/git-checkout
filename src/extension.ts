@@ -1,5 +1,6 @@
 import { platformCommandIds } from './shared/app/platformCommands';
 import { keepEverythingActive } from './core/whenActive';
+import { seedLanguageModel } from './core/languageModel';
 import { pretendWindowFocused, trackWindowFocus } from './panel/windowFocus';
 import './installL10n';
 import * as l10n from '@vscode/l10n';
@@ -78,8 +79,8 @@ export interface GitCheckoutApi {
   fileBlame(): Map<number, string> | undefined;
   /** Sets what the Pull Requests section shows for a repository, as if GitHub had answered (e2e only). */
   seedPullRequests(repoRoot: string, state: PullRequestState): void;
-  /** Answers conflict prompts with `model` instead of a language model; `undefined` goes back to VS Code's (e2e only). */
-  seedConflictModel(model: ((prompt: string) => Promise<string>) | undefined): void;
+  /** Answers every AI prompt with `model` instead of a language model; `undefined` goes back to VS Code's (e2e only). */
+  seedLanguageModel(model: ((prompt: string) => Promise<string>) | undefined): void;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -557,7 +558,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     lineBlame: () => lineBlame.currentLine(),
     fileBlame: () => fileBlame.columnText(),
     seedPullRequests: (repoRoot, state) => pullRequests.seed(repoRoot, state),
-    seedConflictModel: (model) => panelManager.seedConflictModel(model),
+    seedLanguageModel,
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

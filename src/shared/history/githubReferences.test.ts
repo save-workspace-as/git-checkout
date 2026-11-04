@@ -127,4 +127,30 @@ describe('pullRequestUrl', () => {
       'https://github.com/acme/app/pull/new/feature/new%20thing',
     );
   });
+
+  describe('with a title and a description', () => {
+    const repo = { host: 'github.com', owner: 'acme', repo: 'app' };
+
+    it('starts the page with both, encoded', () => {
+      assert.equal(
+        pullRequestUrl(repo, 'feat/x', { title: 'Add x & y', body: 'Line 1\n- two' }),
+        'https://github.com/acme/app/pull/new/feat/x?quick_pull=1&title=Add%20x%20%26%20y&body=Line%201%0A-%20two',
+      );
+    });
+
+    it('is the plain page without a title', () => {
+      assert.equal(pullRequestUrl(repo, 'feat/x', { title: '', body: 'text' }), 'https://github.com/acme/app/pull/new/feat/x');
+    });
+
+    it('cuts a description that is too long for an address, and keeps the title', () => {
+      const url = pullRequestUrl(repo, 'feat/x', { title: 'Big', body: 'word '.repeat(5_000) });
+      assert.ok(url.length <= 7_000, `${url.length} characters`);
+      assert.match(url, /title=Big&body=word/);
+      assert.match(decodeURIComponent(url), /…$/);
+    });
+
+    it('falls back to the plain page when even the title is too long', () => {
+      assert.equal(pullRequestUrl(repo, 'b', { title: 'x'.repeat(8_000), body: '' }), 'https://github.com/acme/app/pull/new/b');
+    });
+  });
 });

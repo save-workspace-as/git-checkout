@@ -231,8 +231,28 @@ function isGitHubName(value: string): boolean {
   return /^[A-Za-z0-9_.-]+$/.test(value) && !value.includes('..') && value !== '.' && value !== '..';
 }
 
-/** The page that starts a pull request for a branch. GitHub offers the base and fills in the title. */
-export function pullRequestUrl(repo: GitHubRepository, branch: string): string {
+/** Longest address of the page that starts a pull request; GitHub refuses much longer ones. */
+const MAX_PULL_REQUEST_URL = 7_000;
+
+/**
+ * The page that starts a pull request for a branch. GitHub offers the base and fills in the title, unless `text`
+ * gives a title and a description, which the page then starts with. A description too long for the address is cut.
+ */
+export function pullRequestUrl(repo: GitHubRepository, branch: string, text?: { title: string; body: string }): string {
   const name = branch.split('/').map(encodeURIComponent).join('/');
-  return `https://${repo.host}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/pull/new/${name}`;
+  const page = `https://${repo.host}/${encodeURIComponent(repo.owner)}/${encodeURIComponent(repo.repo)}/pull/new/${name}`;
+  if (!text || !text.title) {
+    return page;
+  }
+  const withBody = (body: string): string => `${page}?quick_pull=1&title=${encodeURIComponent(text.title)}&body=${encodeURIComponent(body)}`;
+  let body = text.body;
+  let url = withBody(body);
+  while (url.length > MAX_PULL_REQUEST_URL && body.length > 0) {
+    body = `${body.slice(0, Math.max(0, Math.floor(body.length * 0.8) - 1)).trimEnd()}…`;
+    url = withBody(body);
+    if (body === '…') {
+      break;
+    }
+  }
+  return url.length > MAX_PULL_REQUEST_URL ? page : url;
 }
