@@ -19,7 +19,7 @@ import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
-import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, mergeForm, rebaseForm, resetForm, undoOperationForm } from '../../panel/operationForms';
+import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, fixupForm, mergeForm, rebaseForm, resetForm, squashIntoParentForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('history');
@@ -318,6 +318,72 @@ export class HistoryOperationsController {
         }
         await this.ctx.sync.runSyncOp(l10n.t('Edit Commit Message'), (repoRoot, token) =>
           this.ctx.historyService.rewordCommit(repoRoot, sha, message, { cancellationToken: token }),
+        );
+        return true;
+      },
+    });
+  }
+
+  /** Folds the staged changes into a commit of the checked-out branch. */
+  async runFixup(sha: string): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    const problem = await this.ctx.historyService.rewriteProblem(root, sha);
+    if (problem) {
+      void vscode.window.showWarningMessage(problem);
+      return;
+    }
+    if (!(await this.ctx.workingTreeService.hasStagedChanges(root))) {
+      void vscode.window.showWarningMessage(l10n.t('Stage the changes to fold into the commit first.'));
+      return;
+    }
+    const info = await this.ctx.historyService.commitMessageInfo(root, sha);
+    await this.ctx.operationForm.show(fixupForm(sha, info.subject, info.pushedTo), {
+      validate: () => ({}),
+      submit: async () => {
+        await this.ctx.sync.runSyncOp(l10n.t('Fixup'), (repoRoot, token) =>
+          this.ctx.historyService.fixupCommit(repoRoot, sha, { cancellationToken: token }),
+        );
+        return true;
+      },
+    });
+  }
+
+  /** Melts a commit of the checked-out branch into its parent. */
+  async runSquashIntoParent(sha: string): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    const problem = await this.ctx.historyService.rewriteProblem(root, sha);
+    if (problem) {
+      void vscode.window.showWarningMessage(problem);
+      return;
+    }
+    const [parent] = await this.ctx.historyService.getParents(root, sha);
+    if (!parent) {
+      void vscode.window.showWarningMessage(l10n.t('The first commit of the history has no parent to squash into.'));
+      return;
+    }
+    const [info, parentInfo] = await Promise.all([
+      this.ctx.historyService.commitMessageInfo(root, sha),
+      this.ctx.historyService.commitMessageInfo(root, parent),
+    ]);
+    await this.ctx.operationForm.show(squashIntoParentForm(sha, info.subject, parent, parentInfo.subject, parentInfo.message, parentInfo.pushedTo), {
+      validate: (values) => {
+        const errors: Record<string, string> = {};
+        if (!String(values.message ?? '').trim()) {
+          errors.message = l10n.t('Enter a commit message.');
+        }
+        return errors;
+      },
+      submit: async (values) => {
+        await this.ctx.sync.runSyncOp(l10n.t('Squash into Parent'), (repoRoot, token) =>
+          this.ctx.historyService.squashIntoParent(repoRoot, sha, String(values.message ?? ''), { cancellationToken: token }),
         );
         return true;
       },

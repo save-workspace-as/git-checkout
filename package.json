@@ -349,6 +349,16 @@
         "title": "%command.gitCheckout.graph.compareWithRef.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.fixup.category%",
+        "command": "gitCheckout.graph.fixup",
+        "title": "%command.gitCheckout.graph.fixup.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.squashIntoParent.category%",
+        "command": "gitCheckout.graph.squashIntoParent",
+        "title": "%command.gitCheckout.graph.squashIntoParent.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.showHiddenBranches.category%",
         "command": "gitCheckout.graph.showHiddenBranches",
         "title": "%command.gitCheckout.graph.showHiddenBranches.title%"
@@ -2812,6 +2822,14 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.fixup",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.squashIntoParent",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.graph.branch.hide",
           "when": "false"
         },
@@ -4058,6 +4076,16 @@
           "command": "gitCheckout.bisect.skip",
           "group": "3_bisect@3",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && gitCheckout.bisectActive"
+        },
+        {
+          "command": "gitCheckout.graph.fixup",
+          "group": "1_history@6",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
+          "command": "gitCheckout.graph.squashIntoParent",
+          "group": "1_history@7",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
           "command": "gitCheckout.graph.interactiveRebase",
