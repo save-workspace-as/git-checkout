@@ -74,6 +74,20 @@ export function applyStashForm(stash: StashEntryDto): OperationFormDefinition {
   };
 }
 
+export function branchFromStashForm(stash: StashEntryDto): OperationFormDefinition {
+  return {
+    title: l10n.t('Create Branch from Stash'),
+    submitLabel: l10n.t('Create'),
+    values: { stash: `${stash.selector} ${stash.message}`, name: '' },
+    fields: [
+      { id: 'stash', type: 'text', label: l10n.t('Stash'), readOnly: true,
+        description: l10n.t('The stash entry to apply. It is dropped once the branch has it.') },
+      { id: 'name', type: 'text', label: l10n.t('Branch name'), required: true, replaceWhitespace: '-',
+        description: l10n.t('The new branch starts at the commit the stash was made on, and is checked out.') },
+    ],
+  };
+}
+
 export function renameStashForm(stash: StashEntryDto): OperationFormDefinition {
   return {
     title: l10n.t('Rename Stash'),

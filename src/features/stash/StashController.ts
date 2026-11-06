@@ -3,12 +3,13 @@ import * as vscode from 'vscode';
 import { GitCliError } from '../../core/gitCliError';
 import { parseStashCreateArg } from './stashOptions';
 import { createLogger } from '../../log';
+import { validateBranchName } from '../branches/branchCreate';
 import type { OperationFormDefinition, OperationFormValues } from '../../shared/forms/operationForm';
 import { type StashEntryDto } from '../../shared/stash/stashProtocol';
 import { type WorkingCopyPatchAction } from '../../shared/changes/workingCopyProtocol';
 import { createPatchInForm } from '../history/patchHost';
 import { confirmStashClear, confirmStashDrop, confirmStashPop, openStashPatch, createStashInForm, promptStashMessage } from './stashHost';
-import { applyStashForm, deleteStashForm, renameStashForm } from '../../panel/operationForms';
+import { applyStashForm, branchFromStashForm, deleteStashForm, renameStashForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('stash');
@@ -73,6 +74,29 @@ export class StashController {
         await this.ctx.stashService.drop(repoRoot, [selector]);
       }
     });
+  }
+
+  /** Opens the Create Branch from Stash form: a branch at the commit the stash was made on, with the stash applied. */
+  async runBranchFromStash(selector: string): Promise<void> {
+    const found = await this.findStash(selector);
+    if (!found) {
+      return;
+    }
+    const { root, stash } = found;
+    await this.ctx.operationForm.show(branchFromStashForm(stash), {
+      validate: (values) => {
+        const errors: Record<string, string> = {};
+        const problem = validateBranchName(String(values.name ?? ''));
+        if (problem) {
+          errors.name = problem;
+        }
+        return errors;
+      },
+      submit: (values) => this.runStashAtRoot(
+        l10n.t('Creating branch from stash'), root, () => this.ctx.stashService.branchFrom(root, stash.selector, String(values.name)),
+      ),
+    });
+    void this.ctx.reloadGraphOnHeadChange();
   }
 
   runRenameStash(selector: string): Promise<void> {

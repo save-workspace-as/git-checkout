@@ -364,6 +364,11 @@
         "title": "%command.gitCheckout.graph.split.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.stashBranch.category%",
+        "command": "gitCheckout.graph.stashBranch",
+        "title": "%command.gitCheckout.graph.stashBranch.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.showHiddenBranches.category%",
         "command": "gitCheckout.graph.showHiddenBranches",
         "title": "%command.gitCheckout.graph.showHiddenBranches.title%"
@@ -2839,6 +2844,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.stashBranch",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.graph.branch.hide",
           "when": "false"
         },
@@ -4124,6 +4133,11 @@
         {
           "command": "gitCheckout.graph.stashPop",
           "group": "2_stash@2",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && stashSelector"
+        },
+        {
+          "command": "gitCheckout.graph.stashBranch",
+          "group": "2_stash@4",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && stashSelector"
         },
         {
