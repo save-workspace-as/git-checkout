@@ -549,5 +549,8 @@
   "view.gitCheckout.changes.name": "Changes",
   "view.gitCheckout.sidebar.name": "Repository",
   "command.gitCheckout.changes.toggle.title": "Stage or Unstage",
-  "command.gitCheckout.changes.toggle.category": "Git Checkout"
+  "command.gitCheckout.changes.toggle.category": "Git Checkout",
+  "submenu.gitCheckout.graph.historyMenu.label": "Rewrite History",
+  "submenu.gitCheckout.graph.copyMenu.label": "Copy",
+  "submenu.gitCheckout.graph.exportMenu.label": "Export"
 }
