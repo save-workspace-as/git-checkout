@@ -43,6 +43,11 @@ import { revisionArg } from '../../core/gitRevision';
 const log = createLogger('graph');
 
 export const GRAPH_PAGE_SIZE = 80;
+/**
+ * Pages after the first. A page costs Git a walk from the newest commit whatever its size (about 100 ms on a repository
+ * with 170 000 commits, and 130 ms for 2000 of them), so fewer, larger pages load history faster while scrolling.
+ */
+export const GRAPH_MORE_PAGE_SIZE = GRAPH_PAGE_SIZE * 3;
 
 export const GRAPH_LOG_FORMAT = '%H%x00%P%x00%s%x00%an%x00%ae%x00%at%x00%D%x00';
 
@@ -289,26 +294,26 @@ export class CommitGraphService {
     const { order, collapseMerges } = await this.graphDisplayFor(repoRoot, cli);
     const revision = this.logRevisionArgs(this.shownRef(repoRoot));
     // The filters are applied by Git to a list of hashes; the scan below still walks the whole graph,
-    // so a match keeps the row it has in the graph.
+    // so a match keeps the row it has in the graph. The two read the history side by side, since each costs
+    // seconds on a large repository, and the scan holds its records until the list is there.
     let allowed: Set<string> | undefined;
-    if (filters) {
-      try {
-        allowed = new Set(
-          (await cli.execRead(
-            ['log', '--format=%H', ...filters.args, ...revision, ...(filters.path ? ['--', filters.path] : [])],
-            { timeoutMs: SEARCH_READ_TIMEOUT_MS },
-          )).stdout.split(/\r?\n/).filter(Boolean),
-        );
-      } catch (error) {
-        if (!parsed.regex) {
-          throw error;
-        }
-        // A pattern that is still being typed, such as an open parenthesis, is not a regular expression yet.
-        log.debug('search pattern was rejected by git', error);
-        onBatch([], true);
-        return;
-      }
-    }
+    let rejected = false;
+    const filtering = filters
+      ? cli.execRead(
+        ['log', '--format=%H', ...filters.args, ...revision, ...(filters.path ? ['--', filters.path] : [])],
+        { timeoutMs: SEARCH_READ_TIMEOUT_MS },
+      ).then(
+        (result) => { allowed = new Set(result.stdout.split(/\r?\n/).filter(Boolean)); },
+        (error: unknown) => {
+          if (!parsed.regex) {
+            throw error;
+          }
+          // A pattern that is still being typed, such as an open parenthesis, is not a regular expression yet.
+          log.debug('search pattern was rejected by git', error);
+          rejected = true;
+        },
+      )
+      : undefined;
     // One git process for the whole scan: a `--skip` per chunk makes Git walk the history again each time, which on a
     // large repository costs far more than the walk itself. The output is read as it arrives, in batches of
     // SEARCH_CHUNK_SIZE commits, and the process is ended as soon as the search is cancelled.
@@ -316,29 +321,47 @@ export class CommitGraphService {
     let scanned = 0;
     let total = 0;
     let pending: SearchMatch[] = [];
+    let failed = false;
     const flush = (done: boolean): void => {
       const matches = pending;
       pending = [];
       onBatch(matches, done);
     };
-    /** Whether to go on: false once a batch was handed over and the search was cancelled meanwhile. */
-    const take = (records: SearchRecord[]): boolean => {
-      for (const record of records) {
-        if ((allowed ? allowed.has(record.sha) : true) && (trimmed ? commitMatchesQuery(record, trimmed) : true)) {
-          pending.push({ sha: record.sha, index: scanned });
-          total += 1;
-        }
-        scanned += 1;
-        if (scanned % SEARCH_CHUNK_SIZE === 0) {
-          flush(false);
-          if (isCancelled()) {
-            return false;
-          }
+    /** Counts one commit of the scan, in graph order; false once a batch was handed over and the search was cancelled meanwhile. */
+    const count = (sha: string, textMatches: boolean): boolean => {
+      if ((allowed ? allowed.has(sha) : true) && textMatches) {
+        pending.push({ sha, index: scanned });
+        total += 1;
+      }
+      scanned += 1;
+      if (scanned % SEARCH_CHUNK_SIZE === 0) {
+        flush(false);
+        if (isCancelled()) {
+          return false;
         }
       }
       return true;
     };
-    await cli.execRead(
+    // Until the list from the filters is there, the scan keeps what each commit says of the text.
+    let filterReady = filtering === undefined;
+    const held: { sha: string; textMatches: boolean }[] = [];
+    const release = (): boolean => {
+      filterReady = true;
+      return held.splice(0).every((entry) => count(entry.sha, entry.textMatches));
+    };
+    const take = (records: SearchRecord[]): boolean => {
+      for (const record of records) {
+        const textMatches = trimmed ? commitMatchesQuery(record, trimmed) : true;
+        if (!filterReady) {
+          held.push({ sha: record.sha, textMatches });
+        } else if (!count(record.sha, textMatches)) {
+          return false;
+        }
+      }
+      return true;
+    };
+    const listed = filtering?.then(() => { if (!rejected) { release(); } }, (error: unknown) => { failed = true; throw error; });
+    const scan = cli.execRead(
       [
         'log',
         order === 'topo' ? '--topo-order' : '--date-order',
@@ -347,8 +370,13 @@ export class CommitGraphService {
         '--pretty=format:%H%x00%an%x00%ae%x00%B%x01',
         ...revision,
       ],
-      { timeoutMs: SEARCH_READ_TIMEOUT_MS, onStdout: (chunk) => !isCancelled() && take(parser.push(chunk)) },
+      { timeoutMs: SEARCH_READ_TIMEOUT_MS, onStdout: (chunk) => !isCancelled() && !failed && !rejected && take(parser.push(chunk)) },
     );
+    await Promise.all([scan, listed]);
+    if (rejected) {
+      onBatch([], true);
+      return;
+    }
     if (isCancelled()) {
       return;
     }
@@ -459,7 +487,7 @@ export class CommitGraphService {
     return this.fetchPage(repoRoot, false, Math.max(GRAPH_PAGE_SIZE, Math.ceil(depth / GRAPH_PAGE_SIZE) * GRAPH_PAGE_SIZE));
   }
 
-  async loadMore(repoRoot: string, limit = GRAPH_PAGE_SIZE): Promise<GraphPageDto> {
+  async loadMore(repoRoot: string, limit = GRAPH_MORE_PAGE_SIZE): Promise<GraphPageDto> {
     const current = this.stateByRepo.get(repoRoot);
     if (!current) {
       return this.loadInitial(repoRoot);
