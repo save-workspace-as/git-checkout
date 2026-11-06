@@ -2,6 +2,7 @@ import * as l10n from '@vscode/l10n';
 import type * as vscode from 'vscode';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import type { GitExecOptions } from '../../core/gitCli';
+import { writeTempRebaseTodo } from '../rebase/sequenceEditor';
 import { createLogger } from '../../log';
 import { lastUndoableOperation, parseReflog, type UndoableOperation } from './undoOperation';
 import {
@@ -188,6 +189,30 @@ export class HistoryService {
     await this.cliRegistry.runWrite(repoRoot, async () => {
       await cli.execWrite(['rebase', '-i', '--autosquash', '--autostash', ...(parents.length === 0 ? ['--root'] : [parents[0]])], execOpts);
     });
+  }
+
+  /**
+   * Starts splitting `sha` into several commits: replays the branch from its parent, stops at the commit, and puts its
+   * changes back in the working tree, unstaged. The person commits them in parts and continues the rebase, which
+   * replays the later commits. The working tree must be clean, since the rebase refuses to start over changes.
+   */
+  async startSplit(repoRoot: string, sha: string, options?: HistoryRunOptions): Promise<void> {
+    const cli = this.cli(repoRoot);
+    const full = (await cli.execRead(['rev-parse', '--verify', `${sha}^{commit}`])).stdout.trim();
+    const [parent] = await this.getParents(repoRoot, full);
+    if (!parent) {
+      throw new Error(l10n.t('The first commit of the history cannot be split.'));
+    }
+    const hashes = (await cli.execRead(['rev-list', '--reverse', `${parent}..HEAD`])).stdout.split(/\r?\n/).filter(Boolean);
+    const { sequenceEditor, cleanup } = writeTempRebaseTodo(hashes.map((hash) => `${hash === full ? 'edit' : 'pick'} ${hash}`).join('\n') + '\n');
+    try {
+      await this.cliRegistry.runWrite(repoRoot, async () => {
+        await cli.execWrite(['rebase', '-i', parent], { ...this.execOptions(options?.cancellationToken), env: { GIT_SEQUENCE_EDITOR: sequenceEditor } });
+        await cli.execWrite(['reset', '-q', 'HEAD^'], this.execOptions(options?.cancellationToken));
+      });
+    } finally {
+      cleanup();
+    }
   }
 
   /**

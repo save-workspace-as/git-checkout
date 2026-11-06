@@ -66,4 +66,34 @@ describe('Graph context menu: Fixup and Squash into Parent', () => {
     }
     assert.deepEqual(messages, ['The first commit of the history has no parent to squash into.']);
   });
+
+  it('Split Commit…: takes the commit apart in the middle of a rebase, and the rest follows once it is committed in parts', async () => {
+    writeFileSync(join(repoRoot(), 'd.txt'), 'd\n');
+    writeFileSync(join(repoRoot(), 'e.txt'), 'e\n');
+    git('add', 'd.txt', 'e.txt');
+    git('commit', '-m', 'both');
+    const both = git('rev-parse', 'HEAD');
+    commitFile('f.txt', 'f\n', 'after');
+    const command = vscode.commands.executeCommand('gitCheckout.graph.split', menuContext(both));
+    await submitForm(ctx.api, command, 'Split Commit');
+    assert.equal(git('status', '--porcelain').split('\n').sort().join('|'), '?? d.txt|?? e.txt');
+    git('add', 'd.txt');
+    git('commit', '-m', 'only d');
+    git('add', 'e.txt');
+    git('commit', '-m', 'only e');
+    git('rebase', '--continue');
+    assert.equal(git('log', '--format=%s', '-4'), 'after\nonly e\nonly d\nthird');
+  });
+
+  it('Split Commit…: asks to commit or stash first when the working tree has changes', async () => {
+    writeFileSync(join(repoRoot(), 'b.txt'), 'edited\n');
+    const messages: string[] = [];
+    const restore = answer('showWarningMessage', async (message) => { messages.push(String(message)); return undefined; });
+    try {
+      await vscode.commands.executeCommand('gitCheckout.graph.split', menuContext(second));
+    } finally {
+      restore();
+    }
+    assert.deepEqual(messages, ['Commit or stash your changes before splitting a commit.']);
+  });
 });
