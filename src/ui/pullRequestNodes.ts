@@ -1,6 +1,6 @@
 import * as l10n from '@vscode/l10n';
 import type { PullRequestState } from '../features/pullRequests/PullRequestStore';
-import type { PullRequestCategory, PullRequestDto } from '../shared/pullRequests/pullRequests';
+import { groupPullRequests, PULL_REQUEST_GROUPS, type PullRequestCategory, type PullRequestDto, type PullRequestGroup } from '../shared/pullRequests/pullRequests';
 import { SIDEBAR_CONTEXT, type SidebarNode } from './sidebarTreeModel';
 
 export const PULL_REQUEST_COMMANDS = {
@@ -14,11 +14,14 @@ export const PULL_REQUEST_COMMANDS = {
   copyLink: 'gitCheckout.pullRequests.copyLink',
 } as const;
 
-const CATEGORIES: { key: PullRequestCategory; label: () => string; expandWhenNotEmpty: boolean }[] = [
-  { key: 'createdByMe', label: () => l10n.t('Created by me'), expandWhenNotEmpty: true },
-  { key: 'reviewRequested', label: () => l10n.t('Waiting for my review'), expandWhenNotEmpty: true },
-  { key: 'allOpen', label: () => l10n.t('All open'), expandWhenNotEmpty: false },
-];
+const GROUPS: Record<PullRequestGroup, { label: () => string; icon: string }> = {
+  readyToMerge: { label: () => l10n.t('Ready to merge'), icon: 'git-merge' },
+  blocked: { label: () => l10n.t('Blocked'), icon: 'error' },
+  followUp: { label: () => l10n.t('Requires follow-up'), icon: 'comment-discussion' },
+  needsReview: { label: () => l10n.t('Needs your review'), icon: 'eye' },
+  waitingForReview: { label: () => l10n.t('Waiting for review'), icon: 'watch' },
+  draft: { label: () => l10n.t('Draft'), icon: 'git-pull-request-draft' },
+};
 
 const message = (id: string, label: string, tooltip?: string): SidebarNode => ({
   id: `message:pullRequests:${id}`,
@@ -128,22 +131,28 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
         { ...message('error', l10n.t('Could not load pull requests'), state.message), icon: { id: 'warning' } },
         action('retry', l10n.t('Try again'), PULL_REQUEST_COMMANDS.refresh, l10n.t('Read the pull requests again.')),
       ]);
-    case 'ready':
+    case 'ready': {
+      const groups = groupPullRequests(state.lists);
+      const folder = (key: PullRequestCategory, label: string, icon: string, pulls: PullRequestDto[], expanded: boolean): SidebarNode => ({
+        id: `pullRequests:${key}`,
+        kind: 'folder',
+        label,
+        description: String(pulls.length),
+        contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
+        icon: { id: icon },
+        expanded,
+        children: pulls.map((pull) => pullRequestNode(pull, key)),
+      });
+      // A group with nothing in it is left out; All open stays, as the place to browse.
       return section(
-        CATEGORIES.map(({ key, label, expandWhenNotEmpty }) => {
-          const pulls = state.lists[key];
-          return {
-            id: `pullRequests:${key}`,
-            kind: 'folder',
-            label: label(),
-            description: String(pulls.length),
-            contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
-            icon: { id: key === 'createdByMe' ? 'account' : key === 'reviewRequested' ? 'eye' : 'list-flat' },
-            expanded: expandWhenNotEmpty && pulls.length > 0,
-            children: pulls.map((pull) => pullRequestNode(pull, key)),
-          } satisfies SidebarNode;
-        }),
+        [
+          ...PULL_REQUEST_GROUPS.filter((group) => groups[group].length > 0).map((group) =>
+            folder(group, GROUPS[group].label(), GROUPS[group].icon, groups[group], true),
+          ),
+          folder('allOpen', l10n.t('All open'), 'list-flat', state.lists.allOpen, false),
+        ],
         String(state.lists.allOpen.length),
       );
+    }
   }
 }
