@@ -52,6 +52,14 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyCompare', sha: c.sha, mode: 'ref' }),
   },
+  'gitCheckout.graph.fixup': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyFixup', sha: c.sha }),
+  },
+  'gitCheckout.graph.squashIntoParent': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historySquashIntoParent', sha: c.sha }),
+  },
   'gitCheckout.graph.branch.hide': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyHideBranch', name: c.graphBranch ?? '', remote: c.graphBranchKind === 'remote' }),

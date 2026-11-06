@@ -137,13 +137,11 @@ export class HistoryService {
   }
 
   /**
-   * What the Edit Commit Message form needs: the whole message, and why the commit cannot be edited when it cannot.
-   * Only a commit of the checked-out branch can change, and rewriting through a merge commit would flatten it.
+   * Why a commit cannot be rewritten in place: only a commit of the checked-out branch can, and replaying the commits
+   * after it through a merge commit would flatten the merge.
    */
-  async commitMessageInfo(repoRoot: string, sha: string): Promise<CommitMessageInfo> {
+  async rewriteBlocker(repoRoot: string, sha: string): Promise<'notOnBranch' | 'followedByMerge' | undefined> {
     const cli = this.cli(repoRoot);
-    const message = (await cli.execRead(['show', '-s', '--format=%B', sha, '--'])).stdout.replace(/\s+$/, '');
-    const subject = message.split('\n', 1)[0] ?? '';
     const onBranch = await cli.execRead(['merge-base', '--is-ancestor', sha, 'HEAD'], { showErrorToast: false }).then(
       () => true,
       (error: unknown) => {
@@ -153,11 +151,85 @@ export class HistoryService {
       },
     );
     if (!onBranch) {
-      return { message, subject, pushedTo: [], problem: l10n.t('Only a commit of the checked-out branch can be edited. Check out the branch that has it first.') };
+      return 'notOnBranch';
     }
     const parents = await this.getParents(repoRoot, sha);
     const merges = (await cli.execRead(['rev-list', '--merges', '--count', 'HEAD', '--not', ...parents])).stdout.trim();
-    if (merges !== '0') {
+    return merges !== '0' ? 'followedByMerge' : undefined;
+  }
+
+  /** The reason the fixup and squash commands cannot rewrite `sha`, in words for a person, or undefined when they can. */
+  async rewriteProblem(repoRoot: string, sha: string): Promise<string | undefined> {
+    switch (await this.rewriteBlocker(repoRoot, sha)) {
+      case 'notOnBranch':
+        return l10n.t('Only a commit of the checked-out branch can be rewritten. Check out the branch that has it first.');
+      case 'followedByMerge':
+        return l10n.t('This commit is followed by a merge commit, which rewriting would flatten. Use Interactive Rebase instead.');
+      default:
+        return undefined;
+    }
+  }
+
+  /**
+   * Folds the staged changes into `sha`: commits them as a fixup of it, then replays the branch with the fixup melted
+   * into the commit. The commit keeps its message, author and date; the commits after it are replayed, and changes that
+   * are not staged are set aside and put back. A conflict stops the rebase for the person to resolve.
+   */
+  async fixupCommit(repoRoot: string, sha: string, options?: HistoryRunOptions): Promise<void> {
+    const cli = this.cli(repoRoot);
+    const full = (await cli.execRead(['rev-parse', '--verify', `${sha}^{commit}`])).stdout.trim();
+    const commitArgs = ['commit', `--fixup=${full}`];
+    if (this.settings.gitSkipHooks()) {
+      commitArgs.push('--no-verify');
+    }
+    await this.runWrite(repoRoot, commitArgs, options);
+    const parents = await this.getParents(repoRoot, full);
+    const execOpts: GitExecOptions = { ...this.execOptions(options?.cancellationToken), env: { GIT_SEQUENCE_EDITOR: 'true' } };
+    await this.cliRegistry.runWrite(repoRoot, async () => {
+      await cli.execWrite(['rebase', '-i', '--autosquash', '--autostash', ...(parents.length === 0 ? ['--root'] : [parents[0]])], execOpts);
+    });
+  }
+
+  /**
+   * Melts `sha` into its parent as one commit with `message`, which keeps the parent's author and date, then replays
+   * the commits after it with the same trees, so nothing can conflict.
+   */
+  async squashIntoParent(repoRoot: string, sha: string, message: string, options?: HistoryRunOptions): Promise<void> {
+    if (!message.trim() || message.includes('\0')) {
+      throw new Error(l10n.t('Enter a non-empty commit message without null characters.'));
+    }
+    const cli = this.cli(repoRoot);
+    const full = (await cli.execRead(['rev-parse', '--verify', `${sha}^{commit}`])).stdout.trim();
+    const [parent] = await this.getParents(repoRoot, full);
+    if (!parent) {
+      throw new Error(l10n.t('The first commit of the history has no parent to squash into.'));
+    }
+    const [author, grandparents] = await Promise.all([
+      cli.execRead(['show', '-s', '--format=%an%x00%ae%x00%aI', parent, '--']),
+      this.getParents(repoRoot, parent),
+    ]);
+    const [name, email, date] = author.stdout.trim().split('\0');
+    const created = await cli.execWriteWithInput(
+      ['commit-tree', `${full}^{tree}`, ...grandparents.flatMap((grandparent) => ['-p', grandparent])],
+      message.endsWith('\n') ? message : `${message}\n`,
+      { env: { GIT_AUTHOR_NAME: name, GIT_AUTHOR_EMAIL: email, GIT_AUTHOR_DATE: date }, cancellationToken: options?.cancellationToken },
+    );
+    await this.runWrite(repoRoot, ['rebase', '--autostash', '--onto', created.stdout.trim(), full], options);
+  }
+
+  /**
+   * What the Edit Commit Message form needs: the whole message, and why the commit cannot be edited when it cannot.
+   * Only a commit of the checked-out branch can change, and rewriting through a merge commit would flatten it.
+   */
+  async commitMessageInfo(repoRoot: string, sha: string): Promise<CommitMessageInfo> {
+    const cli = this.cli(repoRoot);
+    const message = (await cli.execRead(['show', '-s', '--format=%B', sha, '--'])).stdout.replace(/\s+$/, '');
+    const subject = message.split('\n', 1)[0] ?? '';
+    const blocker = await this.rewriteBlocker(repoRoot, sha);
+    if (blocker === 'notOnBranch') {
+      return { message, subject, pushedTo: [], problem: l10n.t('Only a commit of the checked-out branch can be edited. Check out the branch that has it first.') };
+    }
+    if (blocker === 'followedByMerge') {
       return { message, subject, pushedTo: [], problem: l10n.t('This commit is followed by a merge commit, which editing would flatten. Use Interactive Rebase instead.') };
     }
     const remotes = (await cli.execRead(['branch', '-r', '--contains', sha, '--format=%(refname:short)'])).stdout
