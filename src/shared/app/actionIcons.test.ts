@@ -42,6 +42,7 @@ const COMMAND_ACTIONS: Record<string, ActionIcon> = {
   'gitCheckout.searchCommits': 'search',
   'gitCheckout.pullRequests.refresh': 'refresh',
   'gitCheckout.sidebar.search': 'search',
+  'gitCheckout.sidebar.filterBranches': 'filterBranches',
   'gitCheckout.sidebar.createBranch': 'branch',
   'gitCheckout.sidebar.createTag': 'tag',
   'gitCheckout.sidebar.createStash': 'stash',

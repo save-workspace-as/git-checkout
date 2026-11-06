@@ -23,6 +23,7 @@ export const SIDEBAR_COMMANDS = {
   showAllCommits: 'gitCheckout.sidebar.showAllCommits',
   search: 'gitCheckout.sidebar.search',
   clearSearch: 'gitCheckout.sidebar.clearSearch',
+  filterBranches: 'gitCheckout.sidebar.filterBranches',
   checkout: 'gitCheckout.sidebar.checkout',
   checkoutTag: 'gitCheckout.sidebar.checkoutTag',
   checkoutAsWorktree: 'gitCheckout.sidebar.checkoutAsWorktree',

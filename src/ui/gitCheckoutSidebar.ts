@@ -8,6 +8,7 @@ import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { changeCountBadge, parseCountBadgeMode } from './changeCountBadge';
 import { parseAddRemoteArg } from '../features/sync/addRemote';
+import { filterBranches, loadBranchActivity, type BranchFilter } from '../features/branches/branchFilter';
 import { parseBranchCreateArg } from '../features/branches/branchCreate';
 import { parseBranchRenameArg } from '../features/branches/branchRename';
 import type { GitExtensionService } from '../core/gitExtensionService';
@@ -80,7 +81,14 @@ class SidebarSource {
         return undefined;
       }
       const pullRequests = this.pullRequests && pullRequestSection(this.pullRequests.peek(root));
-      const sections = buildSidebarTree(data.snapshot, data.stashes, data.worktrees, data.submodules, pullRequests);
+      const filter = this.panel.branchFilter();
+      const activity = await loadBranchActivity(this.panel.cliRegistry.getOrCreate(root), filter);
+      const snapshot = filterBranches(data.snapshot, filter, activity, Math.floor(Date.now() / 1000));
+      const sections = buildSidebarTree(snapshot, data.stashes, data.worktrees, data.submodules, pullRequests);
+      const branches = sections.find((node) => node.id === 'section:branches');
+      if (branches && filter !== 'all') {
+        branches.description = `${branchFilterLabel(filter)} · ${snapshot.branches.length + snapshot.remoteBranches.length}`;
+      }
       const nodes = withSidebarSearch(sections, this.search.query);
       for (const node of nodes) {
         assignRepoRoot(node, root);
@@ -410,6 +418,13 @@ export function registerGitCheckoutSidebar(
     [SIDEBAR_COMMANDS.clearSearch]: () => {
       setSearchQuery('');
     },
+    [SIDEBAR_COMMANDS.filterBranches]: async (arg?: unknown) => {
+      const picked = isBranchFilter(arg) ? arg : await pickBranchFilter(panel.branchFilter());
+      if (picked && picked !== panel.branchFilter()) {
+        await panel.setBranchFilter(picked);
+        refreshAll();
+      }
+    },
     [SIDEBAR_COMMANDS.checkout]: (node) =>
       node?.ref ? panel.runCheckout(node.ref, node.kind === 'branch') : undefined,
     [SIDEBAR_COMMANDS.checkoutTag]: withRef((ref) => panel.runCheckout(ref, false)),
@@ -601,4 +616,30 @@ async function promptSidebarSearch(
     return;
   }
   setQuery(value);
+}
+
+const BRANCH_FILTERS: { filter: BranchFilter; label: () => string; description: () => string }[] = [
+  { filter: 'all', label: () => l10n.t('All branches'), description: () => l10n.t('Every branch') },
+  { filter: 'mine', label: () => l10n.t('Yours'), description: () => l10n.t('Branches with your commits that the default branch does not have') },
+  { filter: 'active', label: () => l10n.t('Active'), description: () => l10n.t('Changed in the last three months') },
+  { filter: 'stale', label: () => l10n.t('Stale'), description: () => l10n.t('Not changed for three months') },
+];
+
+function isBranchFilter(value: unknown): value is BranchFilter {
+  return BRANCH_FILTERS.some((entry) => entry.filter === value);
+}
+
+function branchFilterLabel(filter: BranchFilter): string {
+  return BRANCH_FILTERS.find((entry) => entry.filter === filter)?.label() ?? '';
+}
+
+async function pickBranchFilter(current: BranchFilter): Promise<BranchFilter | undefined> {
+  const items = BRANCH_FILTERS.map((entry) => ({
+    label: entry.label(),
+    description: entry.filter === current ? l10n.t('Current') : undefined,
+    detail: entry.description(),
+    filter: entry.filter,
+  }));
+  const picked = await vscode.window.showQuickPick(items, { title: l10n.t('Filter Branches'), placeHolder: l10n.t('Show which branches?') });
+  return picked?.filter;
 }

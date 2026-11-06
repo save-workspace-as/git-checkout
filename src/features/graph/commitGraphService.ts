@@ -12,12 +12,15 @@ import {
 } from '../../shared/graph/graphProtocol';
 import type { StashEntryDto } from '../../shared/stash/stashProtocol';
 import { COMMIT_GRAPH_HEADER_BYTES, objectsSizeKiB, wantsCommitGraph, LARGE_REPOSITORY_KIB, type CommitGraphState } from './commitGraphFile';
+import { loadBranchActivity, MAX_FILTERED_REFS, refsFilteredOut, type BranchFilter } from '../branches/branchFilter';
 import { sameWorktreePath } from '../worktrees/worktreeParser';
 import { graphLogRevision } from '../../shared/graph/activeBranchGraph';
 import {
     getCollapseMerges,
     getFilterRef,
+    getBranchFilter,
     getHiddenRefs,
+    setBranchFilter,
     setCollapseMerges,
     setFilterRef,
     setHiddenRefs,
@@ -138,6 +141,8 @@ export function defaultStartRef(filterRef: string, headRef: string | null): stri
 interface RepoGraphState {
   filterRef: string;
   skip: number;
+  /** Branches the branch filter leaves out, read with the first page so the later pages hide the same ones. */
+  filteredOut: string[];
 }
 
 export class CommitGraphService {
@@ -185,6 +190,15 @@ export class CommitGraphService {
   /** The refs hidden from the graph of `repoRoot`, as full names. */
   hiddenRefs(repoRoot: string): string[] {
     return getHiddenRefs(this.context, repoRoot);
+  }
+
+  /** Which branches the sidebar and the graph of `repoRoot` list. */
+  branchFilter(repoRoot: string): BranchFilter {
+    return getBranchFilter(this.context, repoRoot);
+  }
+
+  setBranchFilter(repoRoot: string, filter: BranchFilter): void {
+    setBranchFilter(this.context, repoRoot, filter);
   }
 
   /** Hides `refs` from the graph of `repoRoot`, or shows them again. */
@@ -549,6 +563,9 @@ export class CommitGraphService {
     // How the graph is shown and which stashes it carries are separate reads.
     const display = await this.graphDisplayFor(repoRoot, cli);
     const stashes = display.showStashes ? await this.loadStashEntries(cli) : [];
+    if (!append) {
+      graphState.filteredOut = await this.branchesFilteredOut(repoRoot, cli);
+    }
     const revision = graphLogRevision(
       graphState.filterRef,
       this.resolveHeadRef(repoRoot),
@@ -565,7 +582,7 @@ export class CommitGraphService {
           extraRevs,
           graphIncludesReflog(revision, display.showReflog),
           limit,
-          { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags, refs: getHiddenRefs(this.context, repoRoot) },
+          { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags, refs: [...getHiddenRefs(this.context, repoRoot), ...graphState.filteredOut] },
           display.collapseMerges,
         ),
       );
@@ -692,8 +709,28 @@ export class CommitGraphService {
     return graphIncludesReflog(revision, this.isShowReflog()) ? ['--reflog', revision] : [revision];
   }
 
+  /** The branches the branch filter leaves out of the graph, by full name. Too many to name, and none are left out. */
+  private async branchesFilteredOut(repoRoot: string, cli: GitCli): Promise<string[]> {
+    const filter = this.branchFilter(repoRoot);
+    if (filter === 'all') {
+      return [];
+    }
+    try {
+      const activity = await loadBranchActivity(cli, filter);
+      const refs = refsFilteredOut(filter, activity, Math.floor(Date.now() / 1000), this.resolveHeadRef(repoRoot));
+      if (refs.length > MAX_FILTERED_REFS) {
+        log.warn(`${refs.length} branches are left out by the '${filter}' filter, too many to hide from the graph by name`);
+        return [];
+      }
+      return refs;
+    } catch (error) {
+      log.warn('could not apply the branch filter to the graph', error);
+      return [];
+    }
+  }
+
   private freshState(repoRoot: string): RepoGraphState {
-    return { filterRef: this.getFilterRef(repoRoot), skip: 0 };
+    return { filterRef: this.getFilterRef(repoRoot), skip: 0, filteredOut: [] };
   }
 }
 

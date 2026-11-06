@@ -1,4 +1,5 @@
 import type { ExtensionContext } from 'vscode';
+import type { BranchFilter } from '../branches/branchFilter';
 
 // Renamed from graph.filterByRepo so filters written by the old follow-HEAD default are dropped.
 const FILTER_KEY = 'gitCheckout.graph.filter';
@@ -43,4 +44,21 @@ export function setHiddenRefs(context: ExtensionContext, repoRoot: string, refs:
     delete map[repoRoot];
   }
   void context.workspaceState.update(HIDDEN_REFS_KEY, map);
+}
+
+const BRANCH_FILTER_KEY = 'gitCheckout.branchFilter';
+
+/** Which branches the sidebar and the graph of `repoRoot` list. */
+export function getBranchFilter(context: ExtensionContext, repoRoot: string): BranchFilter {
+  return context.workspaceState.get<Record<string, BranchFilter>>(BRANCH_FILTER_KEY, {})[repoRoot] ?? 'all';
+}
+
+export function setBranchFilter(context: ExtensionContext, repoRoot: string, filter: BranchFilter): void {
+  const map = { ...context.workspaceState.get<Record<string, BranchFilter>>(BRANCH_FILTER_KEY, {}) };
+  if (filter === 'all') {
+    delete map[repoRoot];
+  } else {
+    map[repoRoot] = filter;
+  }
+  void context.workspaceState.update(BRANCH_FILTER_KEY, map);
 }

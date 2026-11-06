@@ -37,6 +37,7 @@ export const ACTION_ICONS = {
   olderCommit: 'chevron-left',
   newerCommit: 'chevron-right',
   search: 'search',
+  filterBranches: 'filter',
   refresh: 'refresh',
   addRemote: 'globe',
   worktree: 'worktree',

@@ -87,10 +87,10 @@ describe('sidebar manifest contributions', () => {
     assert.equal(view?.when, undefined);
   });
 
-  it('puts search on a button of the Repository view, outside the three dots, where it filters', () => {
+  it('puts search and the branch filter on buttons of the Repository view, outside the three dots', () => {
     const titleMenu = contributes.menus['view/title'] as MenuEntry[];
     const buttons = (view: string) => titleMenu.filter((entry) => new RegExp(`^view == ${view.replaceAll('.', '\\.')}( |$)`).test(entry.when ?? '') && entry.group?.startsWith('navigation')).map((entry) => entry.command);
-    assert.deepEqual(buttons('gitCheckout.sidebar'), [SIDEBAR_COMMANDS.search, SIDEBAR_COMMANDS.clearSearch]);
+    assert.deepEqual(buttons('gitCheckout.sidebar'), [SIDEBAR_COMMANDS.search, SIDEBAR_COMMANDS.clearSearch, SIDEBAR_COMMANDS.filterBranches]);
     assert.deepEqual(buttons(REPOSITORIES_VIEW_ID), []);
   });
 
