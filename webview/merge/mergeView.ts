@@ -267,26 +267,32 @@ export function mountMergeView(
   /** The pane the person scrolled drives the others, so they do not chase each other. */
   let driver: 'incoming' | 'current' | 'result' | undefined;
 
-  /** Keeps the three panes on the same lines: scrolling any one moves the others up or down, never sideways. */
+  /** Keeps the three panes on the same lines and columns: scrolling any one moves the others, up or down and sideways. */
   function syncScroll(source: 'incoming' | 'current' | 'result', element: HTMLElement): void {
     const code = container.querySelector<HTMLElement>('.merge-editor-code');
     if (source === 'result' && code) {
       code.style.transform = `translate(${-element.scrollLeft}px, ${-element.scrollTop}px)`;
     }
-    const row = rowHeight();
-    const line = lineHeight();
-    if (!state || row === 0 || line === 0 || (driver !== undefined && driver !== source)) { return; }
+    if (!state || (driver !== undefined && driver !== source)) { return; }
     const panes = ['incoming', 'current'].map((side) => container.querySelector<HTMLElement>(`.merge-pane-${side}`)!);
     const input = container.querySelector<HTMLTextAreaElement>('.merge-editor-input')!;
-    const map = state.manual === undefined ? resultLineMap(state.document, state.choices, state.rows) : state.rows.map((_, index) => index);
     driver = source;
-    if (source === 'result') {
-      const at = Math.max(0, map.findIndex((mapped) => mapped >= Math.floor(element.scrollTop / line)));
-      for (const other of panes) { other.scrollTop = at * row + (element.scrollTop % line) * (row / line); }
-    } else {
-      const at = Math.min(state.rows.length - 1, Math.floor(element.scrollTop / row));
-      for (const other of panes) { if (other !== element) { other.scrollTop = element.scrollTop; } }
-      input.scrollTop = (map[at] ?? at) * line + (element.scrollTop % row) * (line / row);
+    // A pane with shorter lines stops at its own end while the others go on.
+    for (const other of [...panes, input]) {
+      if (other !== element && other.scrollLeft !== element.scrollLeft) { other.scrollLeft = element.scrollLeft; }
+    }
+    const row = rowHeight();
+    const line = lineHeight();
+    if (row !== 0 && line !== 0) {
+      const map = state.manual === undefined ? resultLineMap(state.document, state.choices, state.rows) : state.rows.map((_, index) => index);
+      if (source === 'result') {
+        const at = Math.max(0, map.findIndex((mapped) => mapped >= Math.floor(element.scrollTop / line)));
+        for (const other of panes) { other.scrollTop = at * row + (element.scrollTop % line) * (row / line); }
+      } else {
+        const at = Math.min(state.rows.length - 1, Math.floor(element.scrollTop / row));
+        for (const other of panes) { if (other !== element) { other.scrollTop = element.scrollTop; } }
+        input.scrollTop = (map[at] ?? at) * line + (element.scrollTop % row) * (line / row);
+      }
     }
     requestAnimationFrame(() => { driver = undefined; });
   }
