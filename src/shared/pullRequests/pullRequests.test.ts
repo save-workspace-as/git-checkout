@@ -1,12 +1,12 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { isFromFork, parsePullRequestLists, pullRequestBranch, pullRequestsQuery } from './pullRequests';
+import { groupOf, groupPullRequests, isFromFork, parsePullRequestLists, pullRequestBranch, pullRequestsQuery } from './pullRequests';
 
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
 const node = (over: Record<string, unknown> = {}) => ({
   number: 12, title: 'Fix it', url: 'https://github.com/octo/app/pull/12', isDraft: false, updatedAt: '2026-10-30T10:00:00Z',
-  headRefName: 'fix-it', baseRefName: 'main', reviewDecision: 'APPROVED', commits: { nodes: [{ commit: { statusCheckRollup: { state: 'SUCCESS' } } }] }, author: { login: 'ada' }, headRepository: { nameWithOwner: 'octo/app' }, ...over,
+  headRefName: 'fix-it', baseRefName: 'main', reviewDecision: 'APPROVED', mergeable: 'MERGEABLE', commits: { nodes: [{ commit: { statusCheckRollup: { state: 'SUCCESS' } } }] }, author: { login: 'ada' }, headRepository: { nameWithOwner: 'octo/app' }, ...over,
 });
 
 describe('pullRequestsQuery', () => {
@@ -36,8 +36,15 @@ describe('parsePullRequestLists', () => {
     assert.deepEqual(lists?.allOpen.map((pull) => pull.number), [12, 13]);
     assert.deepEqual(lists?.createdByMe[0], {
       number: 12, title: 'Fix it', author: 'ada', isDraft: false, headRef: 'fix-it', headRepository: 'octo/app', baseRef: 'main',
-      reviewDecision: 'APPROVED', checks: 'success', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/12',
+      reviewDecision: 'APPROVED', checks: 'success', mergeable: 'mergeable', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/12',
     });
+  });
+
+  it('reads whether it merges cleanly, and takes anything else as unknown', () => {
+    const mergeable = (value: unknown) => parsePullRequestLists({ data: { createdByMe: { nodes: [node({ mergeable: value })] } } })?.createdByMe[0].mergeable;
+    assert.equal(mergeable('CONFLICTING'), 'conflicting');
+    assert.equal(mergeable('UNKNOWN'), 'unknown');
+    assert.equal(mergeable(undefined), 'unknown');
   });
 
   it('copes with a deleted author or fork, and drops what is not a pull request', () => {
@@ -62,5 +69,55 @@ describe('pull request branch and forks', () => {
     const pull = parsePullRequestLists({ data: { allOpen: { nodes: [node(), node({ headRepository: { nameWithOwner: 'Someone/app' } }), node({ headRepository: null })] } } })!.allOpen;
     assert.deepEqual(pull.map((entry) => isFromFork(entry, repo)), [false, true, false]);
     assert.equal(isFromFork({ ...pull[0], headRepository: 'OCTO/App' }, repo), false, 'names compare without regard to case');
+  });
+});
+
+describe('groupOf', () => {
+  const base = { number: 1, title: 't', author: 'ada', isDraft: false, headRef: 'h', headRepository: 'octo/app', baseRef: 'main', reviewDecision: null, checks: null, mergeable: 'mergeable', updatedAt: '2026-10-30T10:00:00Z', url: 'u' } as const;
+  const group = (over: Partial<Parameters<typeof groupOf>[0]>, mine = true) => groupOf({ ...base, ...over }, mine);
+
+  it('puts a draft in Draft, mine or not', () => {
+    assert.equal(group({ isDraft: true }), 'draft');
+    assert.equal(group({ isDraft: true, checks: 'failure' }, false), 'draft');
+  });
+
+  it('asks you to review what someone else opened', () => {
+    assert.equal(group({ reviewDecision: 'REVIEW_REQUIRED' }, false), 'needsReview');
+  });
+
+  it('blocks your pull request for conflicts or failed checks, before anything else', () => {
+    assert.equal(group({ mergeable: 'conflicting', reviewDecision: 'APPROVED' }), 'blocked');
+    assert.equal(group({ checks: 'failure', reviewDecision: 'CHANGES_REQUESTED' }), 'blocked');
+  });
+
+  it('asks for a follow-up when a reviewer requested changes', () => {
+    assert.equal(group({ reviewDecision: 'CHANGES_REQUESTED', checks: 'success' }), 'followUp');
+  });
+
+  it('is ready to merge when approved, or needing no review, and the checks are not running', () => {
+    assert.equal(group({ reviewDecision: 'APPROVED', checks: 'success' }), 'readyToMerge');
+    assert.equal(group({ reviewDecision: null, checks: null }), 'readyToMerge');
+    assert.equal(group({ reviewDecision: null, mergeable: 'unknown' }), 'readyToMerge');
+  });
+
+  it('waits for reviewers, or for checks that are still running', () => {
+    assert.equal(group({ reviewDecision: 'REVIEW_REQUIRED' }), 'waitingForReview');
+    assert.equal(group({ reviewDecision: 'APPROVED', checks: 'pending' }), 'waitingForReview');
+  });
+});
+
+describe('groupPullRequests', () => {
+  const make = (number: number, updatedAt: string, over: object = {}) =>
+    ({ number, title: 't', author: 'ada', isDraft: false, headRef: 'h', headRepository: null, baseRef: 'main', reviewDecision: null, checks: null, mergeable: 'mergeable', updatedAt, url: 'u', ...over }) as const;
+
+  it('lists each pull request once, newest change first, with the ones you opened treated as yours', () => {
+    const groups = groupPullRequests({
+      createdByMe: [make(1, '2026-10-01T00:00:00Z'), make(2, '2026-10-03T00:00:00Z')],
+      reviewRequested: [make(2, '2026-10-03T00:00:00Z'), make(3, '2026-10-02T00:00:00Z')],
+      allOpen: [],
+    });
+    assert.deepEqual(groups.readyToMerge.map((pull) => pull.number), [2, 1]);
+    assert.deepEqual(groups.needsReview.map((pull) => pull.number), [3]);
+    assert.deepEqual(groups.blocked, []);
   });
 });

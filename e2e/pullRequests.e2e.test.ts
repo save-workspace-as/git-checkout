@@ -18,11 +18,11 @@ describe('Pull requests in the sidebar', () => {
 
   const pull = (over: Record<string, unknown> = {}) => ({
     number: 7, title: 'Speed up blame', author: 'ada', isDraft: false, headRef: 'speed', headRepository: 'octo/app', baseRef: 'main',
-    reviewDecision: null, checks: 'failure', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/7', ...over,
+    reviewDecision: null, checks: 'failure', mergeable: 'mergeable', updatedAt: '2026-10-30T10:00:00Z', url: 'https://github.com/octo/app/pull/7', ...over,
   });
   const seed = (pulls = [pull()]) => ctx.api.seedPullRequests(repoRoot(), {
     kind: 'ready', remote: 'origin', repo: { host: 'github.com', owner: 'octo', repo: 'app' },
-    lists: { createdByMe: [], reviewRequested: [], allOpen: pulls },
+    lists: { createdByMe: pulls, reviewRequested: [], allOpen: pulls },
   });
   const pullNode = async (): Promise<SidebarNode> =>
     waitFor('the pull request row', async () => (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'pullRequest' && node.ref === '7'));
@@ -55,7 +55,7 @@ describe('Pull requests in the sidebar', () => {
     rmSync(remote, { recursive: true, force: true });
   });
 
-  it('lists the pull requests after the remotes, by category', async () => {
+  it('lists the pull requests after the remotes, by what each needs', async () => {
     const node = await pullNode();
     assert.equal(node.label, 'Speed up blame');
     assert.equal(node.description, '#7 by ada');
@@ -63,7 +63,8 @@ describe('Pull requests in the sidebar', () => {
     const labels = tree.map((entry) => entry.label);
     assert.equal(labels[labels.indexOf('Remotes') + 1], 'Pull Requests');
     const categories = tree.find((entry) => entry.label === 'Pull Requests')!.children.map((child) => child.label);
-    assert.deepEqual(categories, ['Created by me', 'Waiting for my review', 'All open']);
+    // The seeded pull request is mine and its checks failed.
+    assert.deepEqual(categories, ['Blocked', 'All open']);
   });
 
   it('reviews a pull request against its target branch without touching any branch', async () => {
