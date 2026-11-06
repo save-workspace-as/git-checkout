@@ -43,4 +43,5 @@ export type StashWebviewMessage =
   | { type: 'stashApply'; selector: string }
   | { type: 'stashPop'; selector: string }
   | { type: 'stashDrop'; selector: string }
+  | { type: 'stashBranch'; selector: string }
   | { type: 'stashWorkingCopyPath'; path: string };

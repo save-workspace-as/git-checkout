@@ -1082,6 +1082,11 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
           await this.runPopStash(message.selector);
         }
         break;
+      case 'stashBranch':
+        if (message.selector) {
+          await this.stash.runBranchFromStash(message.selector);
+        }
+        break;
       case 'stashDrop':
         if (message.selector) {
           await this.runDropStashes([message.selector]);

@@ -406,6 +406,8 @@
   "command.gitCheckout.graph.squashIntoParent.category": "Git Checkout",
   "command.gitCheckout.graph.split.title": "Split Commit…",
   "command.gitCheckout.graph.split.category": "Git Checkout",
+  "command.gitCheckout.graph.stashBranch.title": "Create Branch from Stash…",
+  "command.gitCheckout.graph.stashBranch.category": "Git Checkout",
   "command.gitCheckout.graph.branch.hide.title": "Hide Branch",
   "command.gitCheckout.graph.branch.hide.category": "Git Checkout",
   "command.gitCheckout.graph.showHiddenBranches.title": "Show Hidden Branches…",
