@@ -16,6 +16,33 @@ function status(repoRoot: string, cli: { execRead(args: string[]): Promise<{ std
 }
 
 describe('StashService integration', () => {
+  it('creates a branch where the stash was made, applies it there and drops it, and refuses a bad name', async () => {
+    const repo = initTempRepository();
+    try {
+      const file = join(repo.repoRoot, 'notes.txt');
+      writeFileSync(file, 'base\n');
+      runGit(repo.repoRoot, ['add', 'notes.txt']);
+      runGit(repo.repoRoot, ['commit', '-m', 'base']);
+      const base = (await repo.cli.execRead(['rev-parse', 'HEAD'])).stdout.trim();
+      const svc = new StashService(mockCliRegistry(repo.repoRoot, repo.cli));
+      writeFileSync(file, 'stashed\n');
+      await svc.create(repo.repoRoot, { mode: 'all', message: 'wip', includeUntracked: false });
+      writeFileSync(join(repo.repoRoot, 'later.txt'), 'later\n');
+      runGit(repo.repoRoot, ['add', 'later.txt']);
+      runGit(repo.repoRoot, ['commit', '-m', 'later']);
+
+      await assert.rejects(svc.branchFrom(repo.repoRoot, 'stash@{0}', '--bad'), /without spaces or options/);
+      await svc.branchFrom(repo.repoRoot, 'stash@{0}', 'from-stash');
+
+      assert.equal((await repo.cli.execRead(['branch', '--show-current'])).stdout.trim(), 'from-stash');
+      assert.equal((await repo.cli.execRead(['rev-parse', 'HEAD'])).stdout.trim(), base);
+      assert.equal(readFileSync(file, 'utf8'), 'stashed\n');
+      assert.deepEqual(await svc.list(repo.repoRoot), []);
+    } finally {
+      repo.cleanup();
+    }
+  });
+
   it('renames the newest stash without leaving a duplicate or dropping its neighbors', async () => {
     const repo = initTempRepository();
     try {

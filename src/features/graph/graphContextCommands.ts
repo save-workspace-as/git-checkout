@@ -204,6 +204,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     selection: 'single',
     toMessage: (c) => ({ type: 'stashPop', selector: c.stashSelector ?? '' }),
   },
+  'gitCheckout.graph.stashBranch': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'stashBranch', selector: c.stashSelector ?? '' }),
+  },
   'gitCheckout.graph.stashDrop': {
     selection: 'single',
     toMessage: (c) => ({ type: 'stashDrop', selector: c.stashSelector ?? '' }),
