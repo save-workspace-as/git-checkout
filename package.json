@@ -329,6 +329,16 @@
         "title": "%command.gitCheckout.graph.showAllBranches.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.showHiddenBranches.category%",
+        "command": "gitCheckout.graph.showHiddenBranches",
+        "title": "%command.gitCheckout.graph.showHiddenBranches.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.branch.hide.category%",
+        "command": "gitCheckout.graph.branch.hide",
+        "title": "%command.gitCheckout.graph.branch.hide.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.showReflog.category%",
         "command": "gitCheckout.graph.showReflog",
         "icon": "$(book)",
@@ -2766,6 +2776,14 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.branch.hide",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.showHiddenBranches",
+          "when": "gitCheckout.graph.hasHiddenRefs"
+        },
+        {
           "command": "gitCheckout.file.showInFinder.windows",
           "when": "false"
         },
@@ -3073,6 +3091,11 @@
           "command": "gitCheckout.graph.showAllMerges",
           "group": "3_view@1",
           "when": "activeWebviewPanelId == 'gitCheckout.main' && gitCheckout.graph.collapseMerges && !gitCheckout.bisectActive"
+        },
+        {
+          "command": "gitCheckout.graph.showHiddenBranches",
+          "group": "3_view@3",
+          "when": "activeWebviewPanelId == 'gitCheckout.main' && gitCheckout.graph.hasHiddenRefs && !gitCheckout.bisectActive"
         },
         {
           "command": "gitCheckout.graph.showReflog",
@@ -4229,6 +4252,11 @@
         {
           "command": "gitCheckout.graph.deleteBranch",
           "group": "2_manage@2",
+          "when": "graphBranch"
+        },
+        {
+          "command": "gitCheckout.graph.branch.hide",
+          "group": "2_manage@3",
           "when": "graphBranch"
         },
         {

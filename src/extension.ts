@@ -412,6 +412,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     vscode.commands.registerCommand('gitCheckout.graph.showAllMerges', () => {
       void panelManager.showAllMerges();
     }),
+    vscode.commands.registerCommand('gitCheckout.graph.showHiddenBranches', () => {
+      void panelManager.showHiddenGraphBranches();
+    }),
     vscode.commands.registerCommand('gitCheckout.graph.showReflog', () => {
       void panelManager.showReflogCommits();
     }),

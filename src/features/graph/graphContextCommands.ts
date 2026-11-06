@@ -36,6 +36,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
       remote: c.graphBranchKind === 'remote',
     }),
   },
+  'gitCheckout.graph.branch.hide': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyHideBranch', name: c.graphBranch ?? '', remote: c.graphBranchKind === 'remote' }),
+  },
   'gitCheckout.graph.branch.fastForward': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyBranchAction', action: 'fastForward', ref: c.graphBranch ?? '' }),
@@ -183,6 +187,7 @@ const BRANCH_ACTIONS: Record<string, 'any' | 'local'> = {
   'gitCheckout.graph.checkoutRef': 'any',
   'gitCheckout.graph.deleteBranch': 'any',
   'gitCheckout.graph.branch.copyName': 'any',
+  'gitCheckout.graph.branch.hide': 'any',
   'gitCheckout.graph.branch.fastForward': 'local',
   'gitCheckout.graph.branch.pull': 'local',
   'gitCheckout.graph.branch.push': 'local',
