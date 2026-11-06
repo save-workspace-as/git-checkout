@@ -14,6 +14,7 @@ import {
     STASH_LIST_ARGS,
     stashDropOrder,
 } from './stashParser';
+import { validateBranchName } from '../branches/branchCreate';
 import { assertRepoRelativePath } from '../changes/workingCopyModel';
 
 const log = createLogger('stash');
@@ -83,6 +84,17 @@ export class StashService {
     const target = assertStashSelector(selector);
     await this.apply(repoRoot, target, true);
     await this.drop(repoRoot, [target]);
+  }
+
+  /** Creates a branch at the commit the stash was made on, checks it out, applies the stash there and drops it. */
+  async branchFrom(repoRoot: string, selector: string, name: string): Promise<void> {
+    const target = assertStashSelector(selector);
+    const problem = validateBranchName(name);
+    if (problem) {
+      throw new Error(problem);
+    }
+    log.info(`branch ${name} from ${target}`);
+    await this.write(repoRoot, ['stash', 'branch', name.trim(), target]);
   }
 
   async drop(repoRoot: string, selectors: readonly string[]): Promise<void> {

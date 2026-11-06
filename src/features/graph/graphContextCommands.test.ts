@@ -121,6 +121,7 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
     assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.fixup'].toMessage(context), { type: 'historyFixup', sha: 'aaa' });
     assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.squashIntoParent'].toMessage(context), { type: 'historySquashIntoParent', sha: 'aaa' });
     assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.split'].toMessage(context), { type: 'historySplit', sha: 'aaa' });
+    assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.stashBranch'].toMessage({ ...context, stashSelector: 'stash@{1}' }), { type: 'stashBranch', selector: 'stash@{1}' });
   });
 
   describe('which branch a Branch action acts on', () => {
