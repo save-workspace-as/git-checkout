@@ -1,15 +1,15 @@
 ---
-name: gh-stack
-description: >
-  Manages stacked PRs and splits multi-part work into reviewable branches with gh-stack.
-  Use for stack creation, viewing, edits, push, submit, sync, rebase, merge, or checkout;
-  when asked to split or isolate work for review; whenever a user mentions a stack,
-  branch layers, dependent PRs, or gh stack; or when a stack is checked out.
+description: |
+    Manages stacked PRs and splits multi-part work into reviewable branches with gh-stack. Use for stack creation, viewing, edits, push, submit, sync, rebase, merge, or checkout; when asked to split or isolate work for review; whenever a user mentions a stack, branch layers, dependent PRs, or gh stack; or when a stack is checked out.
 metadata:
-  author: github
-  version: "0.2.0"
+    author: github
+    github-path: skills/gh-stack
+    github-ref: refs/tags/v0.3.0
+    github-repo: https://github.com/github/gh-stack
+    github-tree-sha: 1f58c48379bc9fcab68e8a37cb41aad3ad937419
+    version: 0.2.0
+name: gh-stack
 ---
-
 # gh-stack
 
 `gh stack` is a [GitHub CLI](https://cli.github.com/) extension for stacked branches and pull
