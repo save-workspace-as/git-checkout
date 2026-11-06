@@ -1,14 +1,15 @@
 import { readdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-export type NodeTestKind = 'unit' | 'integration';
+export type NodeTestKind = 'unit' | 'integration' | 'perf';
 
 export function isNodeTestFile(fileName: string, kind: NodeTestKind): boolean {
   if (!fileName.endsWith('.test.ts')) {
     return false;
   }
   const integration = fileName.endsWith('.integration.test.ts');
-  return kind === 'integration' ? integration : !integration;
+  const perf = fileName.endsWith('.perf.test.ts');
+  return kind === 'integration' ? integration : kind === 'perf' ? perf : !integration && !perf;
 }
 
 /** Paths are relative to `root` and sorted so the runner is stable. */

@@ -7,7 +7,7 @@ import { describe, it } from 'node:test';
 import { filterTestFiles, listNodeTestFiles, splitTestArgs } from './nodeTestFiles';
 
 describe('listNodeTestFiles', () => {
-  it('lists unit and integration tests separately', () => {
+  it('lists unit, integration and perf tests separately', () => {
     const root = mkdtempSync(join(tmpdir(), 'node-test-files-'));
     try {
       mkdirSync(join(root, 'nested'));
@@ -15,6 +15,7 @@ describe('listNodeTestFiles', () => {
       writeFileSync(join(root, 'note.ts'), '');
       writeFileSync(join(root, 'nested', 'b.integration.test.ts'), '');
       writeFileSync(join(root, 'nested', 'c.test.ts'), '');
+      writeFileSync(join(root, 'nested', 'd.perf.test.ts'), '');
 
       assert.deepEqual(listNodeTestFiles(root, 'unit'), [
         join(root, 'a.test.ts'),
@@ -22,6 +23,9 @@ describe('listNodeTestFiles', () => {
       ]);
       assert.deepEqual(listNodeTestFiles(root, 'integration'), [
         join(root, 'nested', 'b.integration.test.ts'),
+      ]);
+      assert.deepEqual(listNodeTestFiles(root, 'perf'), [
+        join(root, 'nested', 'd.perf.test.ts'),
       ]);
     } finally {
       rmSync(root, { recursive: true, force: true });
