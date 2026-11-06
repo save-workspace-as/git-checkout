@@ -4081,11 +4081,6 @@
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
-          "command": "gitCheckout.graph.editMessage",
-          "group": "1_history@5",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
           "command": "gitCheckout.bisect.good",
           "group": "3_bisect@1",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && gitCheckout.bisectActive"
@@ -4099,36 +4094,6 @@
           "command": "gitCheckout.bisect.skip",
           "group": "3_bisect@3",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && gitCheckout.bisectActive"
-        },
-        {
-          "command": "gitCheckout.graph.fixup",
-          "group": "1_history@6",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.squashIntoParent",
-          "group": "1_history@7",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.split",
-          "group": "1_history@8",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.interactiveRebase",
-          "group": "1_history@5",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.copyHash",
-          "group": "9_copy@1",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.copySubject",
-          "group": "9_copy@2",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
           "command": "gitCheckout.graph.stashApply",
@@ -4151,11 +4116,6 @@
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && stashSelector"
         },
         {
-          "command": "gitCheckout.graph.copyPatch",
-          "group": "8_patch@1",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
           "submenu": "gitCheckout.graph.compareMenu",
           "group": "3_compare",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
@@ -4164,16 +4124,6 @@
           "command": "gitCheckout.graph.explain",
           "group": "7_ai@1",
           "when": "(webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single') && config.gitCheckout.ai.enabled"
-        },
-        {
-          "command": "gitCheckout.graph.savePatch",
-          "group": "8_patch@2",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
-        },
-        {
-          "command": "gitCheckout.graph.archive",
-          "group": "8_patch@3",
-          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
           "command": "gitCheckout.graph.cherryPickRange",
@@ -4236,13 +4186,23 @@
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single' && graphBranch"
         },
         {
+          "submenu": "gitCheckout.graph.historyMenu",
+          "group": "1_history@5",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
+          "submenu": "gitCheckout.graph.copyMenu",
+          "group": "9_copy@1",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
           "command": "gitCheckout.graph.openOnGitHub",
           "group": "2_remote@1",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
-          "command": "gitCheckout.graph.copyGitHubLink",
-          "group": "2_remote@2",
+          "submenu": "gitCheckout.graph.exportMenu",
+          "group": "9_copy@2",
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         }
       ],
@@ -4385,6 +4345,56 @@
           "group": "3_copy@1",
           "when": "graphBranch"
         }
+      ],
+      "gitCheckout.graph.historyMenu": [
+        {
+          "command": "gitCheckout.graph.editMessage",
+          "group": "1_history@1"
+        },
+        {
+          "command": "gitCheckout.graph.interactiveRebase",
+          "group": "1_history@2"
+        },
+        {
+          "command": "gitCheckout.graph.fixup",
+          "group": "1_history@3"
+        },
+        {
+          "command": "gitCheckout.graph.squashIntoParent",
+          "group": "1_history@4"
+        },
+        {
+          "command": "gitCheckout.graph.split",
+          "group": "1_history@5"
+        }
+      ],
+      "gitCheckout.graph.copyMenu": [
+        {
+          "command": "gitCheckout.graph.copyHash",
+          "group": "1_copy@1"
+        },
+        {
+          "command": "gitCheckout.graph.copySubject",
+          "group": "1_copy@2"
+        },
+        {
+          "command": "gitCheckout.graph.copyGitHubLink",
+          "group": "1_copy@3"
+        },
+        {
+          "command": "gitCheckout.graph.copyPatch",
+          "group": "1_copy@4"
+        }
+      ],
+      "gitCheckout.graph.exportMenu": [
+        {
+          "command": "gitCheckout.graph.savePatch",
+          "group": "1_export@1"
+        },
+        {
+          "command": "gitCheckout.graph.archive",
+          "group": "1_export@2"
+        }
       ]
     },
     "views": {
@@ -4481,6 +4491,18 @@
       {
         "id": "gitCheckout.graph.branchMenu",
         "label": "%submenu.gitCheckout.graph.branchMenu.label%"
+      },
+      {
+        "id": "gitCheckout.graph.historyMenu",
+        "label": "%submenu.gitCheckout.graph.historyMenu.label%"
+      },
+      {
+        "id": "gitCheckout.graph.copyMenu",
+        "label": "%submenu.gitCheckout.graph.copyMenu.label%"
+      },
+      {
+        "id": "gitCheckout.graph.exportMenu",
+        "label": "%submenu.gitCheckout.graph.exportMenu.label%"
       }
     ]
   },
