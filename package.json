@@ -4525,6 +4525,8 @@
     "test:integration": "tsx src/dev/runNodeTests.ts integration",
     "sync:repo-menu": "tsx src/dev/syncRepositoryMenu.ts",
     "l10n:export": "tsx src/dev/exportL10n.ts",
+    "perf": "tsx src/dev/perfBench.ts",
+    "test:perf": "tsx src/dev/runNodeTests.ts perf",
     "test:unit": "tsx src/dev/runNodeTests.ts unit",
     "vscode:prepublish": "npm run compile",
     "watch": "npm run compile:extension -- --watch & npm run compile:webview -- --watch",

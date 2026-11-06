@@ -4,12 +4,12 @@ import { createRequire } from 'node:module';
 import { filterTestFiles, listNodeTestFiles, splitTestArgs, type NodeTestKind } from './nodeTestFiles';
 
 function isNodeTestKind(value: string | undefined): value is NodeTestKind {
-  return value === 'unit' || value === 'integration';
+  return value === 'unit' || value === 'integration' || value === 'perf';
 }
 
 const [kind, ...rest] = process.argv.slice(2);
 if (!isNodeTestKind(kind)) {
-  console.error('Usage: runNodeTests.ts <unit|integration> [file-filter...] [--test-name-pattern <regex>]');
+  console.error('Usage: runNodeTests.ts <unit|integration|perf> [file-filter...] [--test-name-pattern <regex>]');
   process.exit(1);
 }
 
