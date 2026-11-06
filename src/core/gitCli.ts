@@ -199,6 +199,15 @@ export class GitCli {
     return this.queue.runRead(() => this.spawnGit(args, readOptions, DEFAULT_READ_TIMEOUT_MS));
   }
 
+  /**
+   * A read that takes text on its standard input, such as `git blame --contents -` or `git apply --check`. It runs as a
+   * read does, beside other reads, rather than as a write, which would hold every other read back until it ends.
+   */
+  async execReadWithInput(args: string[], input: string, options?: GitExecOptions): Promise<GitExecResult> {
+    const readOptions = { ...options, env: { GIT_OPTIONAL_LOCKS: '0', ...options?.env } };
+    return this.queue.runRead(() => this.spawnGit(args, readOptions, DEFAULT_READ_TIMEOUT_MS, input));
+  }
+
   async execWrite(args: string[], options?: GitExecOptions): Promise<GitExecResult> {
     if (options?.concurrent) {
       return this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true);

@@ -182,6 +182,37 @@ describe('GitCli concurrent writes', { skip: process.platform === 'win32' }, () 
   });
 });
 
+describe('GitCli.execReadWithInput', { skip: process.platform === 'win32' }, () => {
+  /** A `git` that answers with what it was given on standard input after a pause, and `status` at once. */
+  function withSlowEcho<T>(run: (cli: GitCli) => Promise<T>): Promise<T> {
+    const dir = mkdtempSync(join(tmpdir(), 'git-checkout-fake-git-'));
+    const script = join(dir, 'git');
+    writeFileSync(script, '#!/bin/sh\ncase " $* " in *" blame "*) sleep 1; cat;; *) printf other;; esac\n');
+    chmodSync(script, 0o755);
+    return run(new GitCli(script, dir, new GitOperationQueue())).finally(() => rmSync(dir, { recursive: true, force: true }));
+  }
+
+  it('hands the text to git, and leaves the other reads of the repository free while it runs', async () => {
+    await withSlowEcho(async (cli) => {
+      const blame = cli.execReadWithInput(['blame', '--contents', '-'], 'typed text');
+      const start = Date.now();
+      await cli.execRead(['status']);
+      assert.ok(Date.now() - start < 500, 'a read waited for the one with input');
+      assert.equal((await blame).stdout, 'typed text');
+    });
+  });
+
+  it('does not hold the reads of the repository back the way a write with input does', async () => {
+    await withSlowEcho(async (cli) => {
+      const write = cli.execWriteWithInput(['blame', '--contents', '-'], 'typed text');
+      const start = Date.now();
+      await cli.execRead(['status']);
+      assert.ok(Date.now() - start >= 800, 'a write is expected to hold the reads back');
+      await write;
+    });
+  });
+});
+
 describe('GitCli.execRead with onStdout', { skip: process.platform === 'win32' }, () => {
   /** A CLI whose `git` is the shell script `body`, run in a folder of its own. */
   async function withScript<T>(body: string, run: (cli: GitCli, dir: string) => Promise<T>): Promise<T> {

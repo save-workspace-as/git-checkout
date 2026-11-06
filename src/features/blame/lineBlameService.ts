@@ -48,7 +48,7 @@ export class LineBlameService {
       const args = ['blame', '--porcelain', ...extra, ...(contents === undefined ? [] : ['--contents', '-']), '--', path.replace(/\\/g, '/')];
       return contents === undefined
         ? cli.execRead(args, { showErrorToast: false })
-        : cli.execWriteWithInput(args, contents, { showErrorToast: false });
+        : cli.execReadWithInput(args, contents, { showErrorToast: false });
     };
     const ignore = ignoreRevsArgs(repoRoot, this.ignoreRevs());
     let stdout: string;
