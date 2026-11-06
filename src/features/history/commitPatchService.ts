@@ -58,7 +58,7 @@ export class CommitPatchService {
     try {
       detectPatchApplyKind(patchText);
       const cli = this.cliRegistry.getOrCreate(repoRoot);
-      await cli.execWriteWithInput(PATCH_CHECK_ARGS, patchText, { showErrorToast: false });
+      await cli.execReadWithInput(PATCH_CHECK_ARGS, patchText, { showErrorToast: false });
       return undefined;
     } catch (error) {
       log.debug('patch does not apply', error);
