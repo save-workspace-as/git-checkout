@@ -62,10 +62,9 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
       contributes.menus.commandPalette.filter((m) => m.when === 'false').map((m) => m.command),
     );
     const menu = contributes.menus['webview/context'];
-    const branchMenu = [
-      ...(contributes.menus['gitCheckout.graph.branchMenu'] ?? []),
-      ...(contributes.menus['gitCheckout.graph.compareMenu'] ?? []),
-    ];
+    const branchMenu = ['branch', 'compare', 'history', 'copy', 'export'].flatMap(
+      (name) => contributes.menus[`gitCheckout.graph.${name}Menu`] ?? [],
+    );
     for (const [id, command] of Object.entries(GRAPH_CONTEXT_COMMANDS)) {
       assert.ok(declared.has(id), `${id} not declared`);
       assert.ok(hidden.has(id), `${id} not hidden from the palette`);
@@ -115,6 +114,15 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
     const entries = contributes.menus['gitCheckout.graph.compareMenu'];
     assert.deepEqual(entries.map((m) => m.command), ['Head', 'MergeBase', 'Upstream', 'Ref'].map((n) => `gitCheckout.graph.compareWith${n}`));
     assert.equal(entries.find((m) => m.command === 'gitCheckout.graph.compareWithUpstream')?.when, 'graphBranchKind == local');
+  });
+
+  it('keeps the single-commit menu short by grouping history rewrites, copies and exports into submenus', () => {
+    const ids = (name: string) => (contributes.menus[`gitCheckout.graph.${name}Menu`] ?? []).map((m) => m.command.replace('gitCheckout.graph.', ''));
+    assert.deepEqual(ids('history'), ['editMessage', 'interactiveRebase', 'fixup', 'squashIntoParent', 'split']);
+    assert.deepEqual(ids('copy'), ['copyHash', 'copySubject', 'copyGitHubLink', 'copyPatch']);
+    assert.deepEqual(ids('export'), ['savePatch', 'archive']);
+    const top = contributes.menus['webview/context'].filter((m) => /graphSelection == 'single'/.test(m.when ?? '') && /webviewSection == 'commit'/.test(m.when ?? '') && !/stashSelector|bisect/.test(m.when ?? ''));
+    assert.ok(top.length <= 16, `${top.length} entries in the single-commit menu`);
   });
 
   it('folds staged changes into a commit, and squashes it into its parent', () => {
