@@ -322,4 +322,17 @@ describe('merge view', () => {
     assert.equal(one('.merge-error').textContent!.trim().startsWith('Could not write the file.'), true);
     assert.equal(all('.merge-panes').length, 0, 'the message takes the place of the merge');
   });
+
+  it('moves the two sides and the result sideways together', () => {
+    const { all, one } = mount();
+    const [incoming, current] = all('.merge-pane');
+    const input = one('.merge-editor-input');
+    incoming.scrollLeft = 120;
+    incoming.dispatchEvent(new Event('scroll'));
+    assert.equal(current.scrollLeft, 120);
+    assert.equal(input.scrollLeft, 120);
+    // A browser tells the text area its scroll moved; the colored copy of the result follows it.
+    input.dispatchEvent(new Event('scroll'));
+    assert.match(one('.merge-editor-code').style.transform, /translate\(-120px/);
+  });
 });
