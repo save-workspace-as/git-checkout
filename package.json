@@ -329,6 +329,26 @@
         "title": "%command.gitCheckout.graph.showAllBranches.title%"
       },
       {
+        "category": "%command.gitCheckout.graph.compareWithHead.category%",
+        "command": "gitCheckout.graph.compareWithHead",
+        "title": "%command.gitCheckout.graph.compareWithHead.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.compareWithMergeBase.category%",
+        "command": "gitCheckout.graph.compareWithMergeBase",
+        "title": "%command.gitCheckout.graph.compareWithMergeBase.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.compareWithUpstream.category%",
+        "command": "gitCheckout.graph.compareWithUpstream",
+        "title": "%command.gitCheckout.graph.compareWithUpstream.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.compareWithRef.category%",
+        "command": "gitCheckout.graph.compareWithRef",
+        "title": "%command.gitCheckout.graph.compareWithRef.title%"
+      },
+      {
         "category": "%command.gitCheckout.graph.showHiddenBranches.category%",
         "command": "gitCheckout.graph.showHiddenBranches",
         "title": "%command.gitCheckout.graph.showHiddenBranches.title%"
@@ -2776,6 +2796,22 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.compareWithHead",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithMergeBase",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithUpstream",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithRef",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.graph.branch.hide",
           "when": "false"
         },
@@ -4059,6 +4095,11 @@
           "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
         },
         {
+          "submenu": "gitCheckout.graph.compareMenu",
+          "group": "3_compare",
+          "when": "webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single'"
+        },
+        {
           "command": "gitCheckout.graph.explain",
           "group": "7_ai@1",
           "when": "(webviewId == 'gitCheckout.main' && webviewSection == 'commit' && graphSelection == 'single') && config.gitCheckout.ai.enabled"
@@ -4213,6 +4254,25 @@
           "group": "1@2"
         }
       ],
+      "gitCheckout.graph.compareMenu": [
+        {
+          "command": "gitCheckout.graph.compareWithHead",
+          "group": "1_compare@1"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithMergeBase",
+          "group": "1_compare@2"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithUpstream",
+          "group": "1_compare@3",
+          "when": "graphBranchKind == local"
+        },
+        {
+          "command": "gitCheckout.graph.compareWithRef",
+          "group": "1_compare@4"
+        }
+      ],
       "gitCheckout.graph.branchMenu": [
         {
           "command": "gitCheckout.graph.checkoutRef",
@@ -4352,6 +4412,10 @@
       {
         "id": "gitCheckout.file.resetMenu",
         "label": "%submenu.gitCheckout.file.resetMenu.label%"
+      },
+      {
+        "id": "gitCheckout.graph.compareMenu",
+        "label": "%submenu.gitCheckout.graph.compareMenu.label%"
       },
       {
         "id": "gitCheckout.graph.branchMenu",

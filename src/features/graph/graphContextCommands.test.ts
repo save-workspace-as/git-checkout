@@ -62,7 +62,10 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
       contributes.menus.commandPalette.filter((m) => m.when === 'false').map((m) => m.command),
     );
     const menu = contributes.menus['webview/context'];
-    const branchMenu = contributes.menus['gitCheckout.graph.branchMenu'] ?? [];
+    const branchMenu = [
+      ...(contributes.menus['gitCheckout.graph.branchMenu'] ?? []),
+      ...(contributes.menus['gitCheckout.graph.compareMenu'] ?? []),
+    ];
     for (const [id, command] of Object.entries(GRAPH_CONTEXT_COMMANDS)) {
       assert.ok(declared.has(id), `${id} not declared`);
       assert.ok(hidden.has(id), `${id} not hidden from the palette`);
@@ -96,6 +99,22 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
     assert.equal(when('gitCheckout.graph.deleteBranch'), 'graphBranch');
     const commit = menu.find((m) => m.command === 'gitCheckout.graph.checkout')?.when ?? '';
     assert.doesNotMatch(commit, /graphBranch/);
+  });
+
+  it('compares a commit with HEAD, the merge base, the upstream of its branch, or a picked ref', () => {
+    const message = (id: string, extra: Partial<GraphCommitContext> = {}) => GRAPH_CONTEXT_COMMANDS[id].toMessage({ ...context, ...extra });
+    assert.deepEqual(message('gitCheckout.graph.compareWithHead'), { type: 'historyCompare', sha: 'aaa', mode: 'head' });
+    assert.deepEqual(message('gitCheckout.graph.compareWithMergeBase'), { type: 'historyCompare', sha: 'aaa', mode: 'mergeBase' });
+    assert.deepEqual(message('gitCheckout.graph.compareWithRef'), { type: 'historyCompare', sha: 'aaa', mode: 'ref' });
+    assert.deepEqual(message('gitCheckout.graph.compareWithUpstream', { graphBranch: 'topic', graphBranchKind: 'local' }), { type: 'historyCompare', sha: 'aaa', mode: 'upstream', branch: 'topic' });
+  });
+
+  it('puts the compare actions in one Compare with submenu, Upstream for local branches only', () => {
+    const submenu = contributes.menus['webview/context'].find((m) => (m as { submenu?: string }).submenu === 'gitCheckout.graph.compareMenu');
+    assert.match(submenu?.when ?? '', /graphSelection == 'single'/);
+    const entries = contributes.menus['gitCheckout.graph.compareMenu'];
+    assert.deepEqual(entries.map((m) => m.command), ['Head', 'MergeBase', 'Upstream', 'Ref'].map((n) => `gitCheckout.graph.compareWith${n}`));
+    assert.equal(entries.find((m) => m.command === 'gitCheckout.graph.compareWithUpstream')?.when, 'graphBranchKind == local');
   });
 
   describe('which branch a Branch action acts on', () => {
