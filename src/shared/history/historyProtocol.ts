@@ -39,6 +39,8 @@ export type HistoryWebviewMessage =
   /** Checkout the branch whose badge was right-clicked, not just the commit it points at. */
   | { type: 'historyCheckoutRef'; ref: string; local: boolean }
   | { type: 'historyDeleteBranch'; name: string; remote: boolean }
+  /** Show what changed between the commit and HEAD, where they diverged, the upstream of its branch, or a ref to pick. */
+  | { type: 'historyCompare'; sha: string; mode: 'head' | 'mergeBase' | 'upstream' | 'ref'; branch?: string }
   /** Leave the branch whose badge was right-clicked out of the graph. */
   | { type: 'historyHideBranch'; name: string; remote: boolean }
   /** An action on the branch whose badge was right-clicked. */

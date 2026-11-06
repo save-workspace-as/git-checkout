@@ -1023,6 +1023,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
           );
         }
         break;
+      case 'historyCompare':
+        await this.operations.runCompare(message.sha, message.mode, message.branch);
+        break;
       case 'historyHideBranch':
         if (message.name) {
           await this.graph.hideBranch(message.name, message.remote);

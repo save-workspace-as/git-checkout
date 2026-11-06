@@ -7,6 +7,8 @@ import type { ResetMode } from './historyService';
 import { createLogger } from '../../log';
 import type { CommitPatchFormat, PatchExportOp } from '../../shared/patches/patchProtocol';
 import { promptCheckoutRef } from '../branches/checkoutHost';
+import { resolveCompare, type CompareMode } from './compareTargets';
+import { ACTION_ICONS } from '../../shared/app/actionIcons';
 import type { LocalChangesMode } from '../branches/checkoutService';
 import { runCommitFlow } from '../changes/commitHost';
 import { executeGitFlow } from '../gitflow/gitFlowHost';
@@ -48,6 +50,7 @@ export type HistoryOperationsContext = Pick<
   | 'reloadGraphOnHeadChange'
   | 'repoOperationService'
   | 'submoduleService'
+  | 'showCommitRange'
   | 'sync'
   | 'workingTreeService'
 >;
@@ -124,6 +127,38 @@ export class HistoryOperationsController {
         return true;
       },
     });
+  }
+
+  /** Shows what changed between a commit and another one: HEAD, where the two diverged, the upstream of its branch, or a ref picked from a list. */
+  async runCompare(sha: string, mode: CompareMode, branch?: string): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    let target = mode === 'upstream' ? branch : undefined;
+    if (mode === 'ref') {
+      target = await this.pickCompareRef(root);
+      if (!target) {
+        return;
+      }
+    }
+    const resolved = await resolveCompare(this.ctx.cliRegistry.getOrCreate(root), mode, sha, target);
+    if (!resolved.ok) {
+      void vscode.window.showWarningMessage(resolved.message);
+      return;
+    }
+    await this.ctx.showCommitRange(resolved.base, resolved.head);
+  }
+
+  private async pickCompareRef(root: string): Promise<string | undefined> {
+    const snapshot = await this.ctx.refsService.loadSnapshot(root);
+    const items = [
+      ...snapshot.branches.map((ref) => ({ label: `$(${ACTION_ICONS.branch}) ${ref.name}`, description: l10n.t('local'), name: ref.name })),
+      ...snapshot.remoteBranches.map((ref) => ({ label: `$(${ACTION_ICONS.remoteBranch}) ${ref.name}`, description: l10n.t('remote'), name: ref.name })),
+      ...snapshot.tags.map((ref) => ({ label: `$(${ACTION_ICONS.tag}) ${ref.name}`, description: l10n.t('tag'), name: ref.name })),
+    ];
+    return (await vscode.window.showQuickPick(items, { placeHolder: l10n.t('Select a branch or tag to compare with') }))?.name;
   }
 
   async runMergeRef(ref: string): Promise<void> {

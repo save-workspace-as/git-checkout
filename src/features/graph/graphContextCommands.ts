@@ -36,6 +36,22 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
       remote: c.graphBranchKind === 'remote',
     }),
   },
+  'gitCheckout.graph.compareWithHead': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyCompare', sha: c.sha, mode: 'head' }),
+  },
+  'gitCheckout.graph.compareWithMergeBase': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyCompare', sha: c.sha, mode: 'mergeBase' }),
+  },
+  'gitCheckout.graph.compareWithUpstream': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyCompare', sha: c.sha, mode: 'upstream', ...(c.graphBranch ? { branch: c.graphBranch } : {}) }),
+  },
+  'gitCheckout.graph.compareWithRef': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyCompare', sha: c.sha, mode: 'ref' }),
+  },
   'gitCheckout.graph.branch.hide': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyHideBranch', name: c.graphBranch ?? '', remote: c.graphBranchKind === 'remote' }),
