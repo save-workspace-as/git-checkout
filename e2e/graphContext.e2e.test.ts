@@ -485,4 +485,21 @@ describe('Graph context menu: commit menu', () => {
     await submitForm(ctx.api, drop, 'Drop Stash');
     assert.equal(git('stash', 'list'), '');
   });
+
+  it('Create Branch from Stash…: starts a branch where the stash was made, applies the stash there and drops it', async () => {
+    const base = git('rev-parse', 'HEAD');
+    writeFileSync(join(repoRoot(), 'stashed.txt'), 'stashed\n');
+    git('add', 'stashed.txt');
+    git('stash', 'push', '-m', 'work in progress');
+    commitFile('later.txt', 'later\n', 'a later commit');
+    const stash = { ...menuContext(git('rev-parse', 'stash@{0}')), stashSelector: 'stash@{0}' };
+
+    const command = vscode.commands.executeCommand('gitCheckout.graph.stashBranch', stash);
+    await submitForm(ctx.api, command, 'Create Branch from Stash', { name: 'from-stash' });
+
+    assert.equal(git('branch', '--show-current'), 'from-stash');
+    assert.equal(git('rev-parse', 'HEAD'), base);
+    assert.equal(git('status', '--porcelain'), 'A  stashed.txt');
+    assert.equal(git('stash', 'list'), '');
+  });
 });
