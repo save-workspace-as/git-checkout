@@ -8,6 +8,7 @@ const DEFAULT_AUTO_FETCH_SECONDS = 180;
 export interface GitCheckoutSettingsReader {
   leanBranchingStashOnSwitch(): boolean;
   gitSkipHooks(): boolean;
+  gitWriteCommitGraph(): boolean;
   networkTimeoutMs(): number;
   watchDebounceMs(): number;
   autoFetchEnabled(): boolean;
@@ -32,6 +33,7 @@ export interface GitCheckoutSettingsReader {
 export const defaultGitCheckoutSettings: GitCheckoutSettingsReader = {
   leanBranchingStashOnSwitch: () => false,
   gitSkipHooks: () => false,
+  gitWriteCommitGraph: () => true,
   networkTimeoutMs: () => DEFAULT_NETWORK_TIMEOUT_MS,
   watchDebounceMs: () => DEFAULT_WATCH_DEBOUNCE_MS,
   autoFetchEnabled: () => false,
@@ -62,6 +64,7 @@ export function createWorkspaceGitCheckoutSettings(): GitCheckoutSettingsReader 
     leanBranchingStashOnSwitch: () =>
       config().get<boolean>('leanBranching.stashOnSwitch', false),
     gitSkipHooks: () => config().get<boolean>('git.skipHooks', false),
+    gitWriteCommitGraph: () => config().get<boolean>('git.writeCommitGraph', true),
     networkTimeoutMs: () =>
       config().get<number>('network.timeoutMs', DEFAULT_NETWORK_TIMEOUT_MS),
     watchDebounceMs: () =>
