@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { closeSync, existsSync, openSync, readSync } from 'node:fs';
+import { join } from 'node:path';
 import { graphSearchGitArgs, parseGraphSearchQuery } from '../../shared/graph/searchQuery';
 import type * as vscode from 'vscode';
 import { createLogger } from '../../log';
@@ -9,6 +11,7 @@ import {
     type GraphPageDto,
 } from '../../shared/graph/graphProtocol';
 import type { StashEntryDto } from '../../shared/stash/stashProtocol';
+import { COMMIT_GRAPH_HEADER_BYTES, objectsSizeKiB, wantsCommitGraph, LARGE_REPOSITORY_KIB, type CommitGraphState } from './commitGraphFile';
 import { sameWorktreePath } from '../worktrees/worktreeParser';
 import { graphLogRevision } from '../../shared/graph/activeBranchGraph';
 import {
@@ -124,6 +127,7 @@ export const SEARCH_CHUNK_SIZE = 2000;
 /** How many commits of a merged-in branch an expanded merge shows. */
 const MERGE_SIDE_LIMIT = 500;
 const SEARCH_READ_TIMEOUT_MS = 120_000;
+const COMMIT_GRAPH_WRITE_TIMEOUT_MS = 30 * 60_000;
 const HASH_PREFIX = /^[0-9a-f]{4,64}$/i;
 const HASH_FULL = /^[0-9a-f]{40,64}$/i;
 
@@ -149,6 +153,34 @@ export class CommitGraphService {
     private readonly cliRegistry: GitCliRegistry,
     private readonly settings: GitCheckoutSettingsReader = defaultGitCheckoutSettings,
   ) {}
+
+  private readonly commitGraphChecked = new Set<string>();
+
+  /**
+   * On a large repository without a commit-graph file that has changed paths, writes one in the background, once per
+   * session: Git then walks history, lists a file's history and blames several times faster (on a clone of VS Code a first
+   * page of the graph takes 0.1 s with the file and over 1 s without, and blame of a file 0.5 s against 1.4 s). It is the
+   * file `git gc` writes, and the `gitCheckout.git.writeCommitGraph` setting turns this off. Reads go on while it is written.
+   */
+  async maintainCommitGraph(repoRoot: string, largeKiB = LARGE_REPOSITORY_KIB): Promise<void> {
+    if (!this.settings.gitWriteCommitGraph() || this.commitGraphChecked.has(repoRoot)) {
+      return;
+    }
+    this.commitGraphChecked.add(repoRoot);
+    try {
+      const cli = this.cliForRoot(repoRoot);
+      const sizeKiB = objectsSizeKiB((await cli.execRead(['count-objects', '-v'])).stdout);
+      const { commonDir } = await cli.resolveGitDirectories();
+      if (!wantsCommitGraph(sizeKiB, readCommitGraphState(join(commonDir, 'objects', 'info')), largeKiB)) {
+        return;
+      }
+      log.info(`writing the commit-graph file of ${repoRoot} (${Math.round(sizeKiB / 1024)} MB of objects)`);
+      await cli.execWrite(['commit-graph', 'write', '--reachable', '--changed-paths'], { concurrent: true, timeoutMs: COMMIT_GRAPH_WRITE_TIMEOUT_MS });
+      log.info(`wrote the commit-graph file of ${repoRoot}`);
+    } catch (error) {
+      log.warn('could not write the commit-graph file', error);
+    }
+  }
 
   /** The refs hidden from the graph of `repoRoot`, as full names. */
   hiddenRefs(repoRoot: string): string[] {
@@ -733,4 +765,23 @@ export function commitMatchesQuery(record: SearchRecord, query: string): boolean
     record.message.toLowerCase().includes(needle) ||
     `${record.author} <${record.email}>`.toLowerCase().includes(needle)
   );
+}
+
+/** What `objects/info` holds of a commit-graph: one file (with the start of it read), a chain of files, or nothing. */
+function readCommitGraphState(infoDir: string): CommitGraphState {
+  if (existsSync(join(infoDir, 'commit-graphs', 'commit-graph-chain'))) {
+    return { kind: 'chain' };
+  }
+  const file = join(infoDir, 'commit-graph');
+  if (!existsSync(file)) {
+    return { kind: 'none' };
+  }
+  const header = new Uint8Array(COMMIT_GRAPH_HEADER_BYTES);
+  const fd = openSync(file, 'r');
+  try {
+    const read = readSync(fd, header, 0, header.length, 0);
+    return { kind: 'file', header: header.subarray(0, read) };
+  } finally {
+    closeSync(fd);
+  }
 }
