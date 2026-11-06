@@ -115,3 +115,45 @@ describe('HistoryService squash into the parent', () => {
     }
   });
 });
+
+describe('HistoryService split a commit', () => {
+  it('stops at the commit with its changes unstaged, and the rebase continues once they are committed in parts', async () => {
+    const { repo, service, read, commit } = await setUp();
+    try {
+      await commit('a.txt', 'a\n', 'first', 1);
+      // One commit that holds two files.
+      writeFileSync(join(repo.repoRoot, 'b.txt'), 'b\n');
+      writeFileSync(join(repo.repoRoot, 'c.txt'), 'c\n');
+      runGit(repo.repoRoot, ['add', 'b.txt', 'c.txt']);
+      await repo.cli.execWrite(['commit', '-m', 'second']);
+      const middle = await read('rev-parse', 'HEAD');
+      await commit('d.txt', 'd\n', 'last', 3);
+
+      await service.startSplit(repo.repoRoot, middle);
+
+      assert.equal(await read('status', '--porcelain'), '?? b.txt\n?? c.txt');
+      assert.equal(await read('log', '-1', '--format=%s'), 'first');
+      runGit(repo.repoRoot, ['add', 'b.txt']);
+      await repo.cli.execWrite(['commit', '-m', 'second-b']);
+      runGit(repo.repoRoot, ['add', 'c.txt']);
+      await repo.cli.execWrite(['commit', '-m', 'second-c']);
+      await repo.cli.execWrite(['rebase', '--continue']);
+
+      assert.equal(await read('log', '--format=%s'), 'last\nsecond-c\nsecond-b\nfirst');
+      assert.equal(await read('status', '--porcelain'), '');
+    } finally {
+      repo.cleanup();
+    }
+  });
+
+  it('refuses the first commit, which has no parent to replay from', async () => {
+    const { repo, service, commit } = await setUp();
+    try {
+      await commit('a.txt', 'a\n', 'first', 1);
+      const root = (await repo.cli.execRead(['rev-list', '--max-parents=0', 'HEAD'])).stdout.trim();
+      await assert.rejects(service.startSplit(repo.repoRoot, root), /cannot be split/);
+    } finally {
+      repo.cleanup();
+    }
+  });
+});

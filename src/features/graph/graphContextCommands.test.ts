@@ -120,6 +120,7 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
   it('folds staged changes into a commit, and squashes it into its parent', () => {
     assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.fixup'].toMessage(context), { type: 'historyFixup', sha: 'aaa' });
     assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.squashIntoParent'].toMessage(context), { type: 'historySquashIntoParent', sha: 'aaa' });
+    assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.split'].toMessage(context), { type: 'historySplit', sha: 'aaa' });
   });
 
   describe('which branch a Branch action acts on', () => {

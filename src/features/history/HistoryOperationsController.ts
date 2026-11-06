@@ -19,7 +19,7 @@ import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
-import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, fixupForm, mergeForm, rebaseForm, resetForm, squashIntoParentForm, undoOperationForm } from '../../panel/operationForms';
+import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, fixupForm, mergeForm, rebaseForm, resetForm, splitCommitForm, squashIntoParentForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('history');
@@ -347,6 +347,40 @@ export class HistoryOperationsController {
         await this.ctx.sync.runSyncOp(l10n.t('Fixup'), (repoRoot, token) =>
           this.ctx.historyService.fixupCommit(repoRoot, sha, { cancellationToken: token }),
         );
+        return true;
+      },
+    });
+  }
+
+  /** Takes a commit of the checked-out branch apart: its changes come back unstaged, in the middle of a rebase that stops there. */
+  async runSplit(sha: string): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root || !this.ctx.graphReady()) {
+      void vscode.window.showWarningMessage(l10n.t('No Git repository is open.'));
+      return;
+    }
+    const problem = await this.ctx.historyService.rewriteProblem(root, sha);
+    if (problem) {
+      void vscode.window.showWarningMessage(problem);
+      return;
+    }
+    const [parent] = await this.ctx.historyService.getParents(root, sha);
+    if (!parent) {
+      void vscode.window.showWarningMessage(l10n.t('The first commit of the history cannot be split.'));
+      return;
+    }
+    if ((await this.ctx.workingTreeService.getStatus(root)).dirty) {
+      void vscode.window.showWarningMessage(l10n.t('Commit or stash your changes before splitting a commit.'));
+      return;
+    }
+    const info = await this.ctx.historyService.commitMessageInfo(root, sha);
+    await this.ctx.operationForm.show(splitCommitForm(sha, info.subject, info.pushedTo), {
+      validate: () => ({}),
+      submit: async () => {
+        await this.ctx.sync.runSyncOp(l10n.t('Split Commit'), (repoRoot, token) =>
+          this.ctx.historyService.startSplit(repoRoot, sha, { cancellationToken: token }),
+        );
+        void vscode.window.showInformationMessage(l10n.t('Stage part of the changes and commit them, repeat for the rest, then continue the rebase.'));
         return true;
       },
     });

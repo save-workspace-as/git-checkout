@@ -404,6 +404,8 @@
   "command.gitCheckout.graph.fixup.category": "Git Checkout",
   "command.gitCheckout.graph.squashIntoParent.title": "Squash into Parent…",
   "command.gitCheckout.graph.squashIntoParent.category": "Git Checkout",
+  "command.gitCheckout.graph.split.title": "Split Commit…",
+  "command.gitCheckout.graph.split.category": "Git Checkout",
   "command.gitCheckout.graph.branch.hide.title": "Hide Branch",
   "command.gitCheckout.graph.branch.hide.category": "Git Checkout",
   "command.gitCheckout.graph.showHiddenBranches.title": "Show Hidden Branches…",

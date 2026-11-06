@@ -43,6 +43,8 @@ export type HistoryWebviewMessage =
   | { type: 'historyFixup'; sha: string }
   /** Melt the commit into its parent. */
   | { type: 'historySquashIntoParent'; sha: string }
+  /** Take the commit apart, to commit its changes again in parts. */
+  | { type: 'historySplit'; sha: string }
   /** Show what changed between the commit and HEAD, where they diverged, the upstream of its branch, or a ref to pick. */
   | { type: 'historyCompare'; sha: string; mode: 'head' | 'mergeBase' | 'upstream' | 'ref'; branch?: string }
   /** Leave the branch whose badge was right-clicked out of the graph. */

@@ -1026,6 +1026,9 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
       case 'historyFixup':
         await this.operations.runFixup(message.sha);
         break;
+      case 'historySplit':
+        await this.operations.runSplit(message.sha);
+        break;
       case 'historySquashIntoParent':
         await this.operations.runSquashIntoParent(message.sha);
         break;
