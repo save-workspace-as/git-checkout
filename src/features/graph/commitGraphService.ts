@@ -14,8 +14,10 @@ import { graphLogRevision } from '../../shared/graph/activeBranchGraph';
 import {
     getCollapseMerges,
     getFilterRef,
+    getHiddenRefs,
     setCollapseMerges,
     setFilterRef,
+    setHiddenRefs,
 } from './graphFilterPreferences';
 import {
     defaultGitCheckoutSettings,
@@ -91,6 +93,8 @@ export interface HiddenGraphRefs {
   stashes?: boolean;
   remoteBranches?: boolean;
   tags?: boolean;
+  /** Full names of single refs, such as `refs/heads/topic`, that a person hid. */
+  refs?: readonly string[];
 }
 
 function hiddenRefPatterns(hide: HiddenGraphRefs): string[] {
@@ -98,6 +102,7 @@ function hiddenRefPatterns(hide: HiddenGraphRefs): string[] {
     ...(hide.stashes ? ['refs/stash'] : []),
     ...(hide.remoteBranches ? ['refs/remotes/*'] : []),
     ...(hide.tags ? ['refs/tags/*'] : []),
+    ...(hide.refs ?? []),
   ];
 }
 
@@ -139,6 +144,17 @@ export class CommitGraphService {
     private readonly cliRegistry: GitCliRegistry,
     private readonly settings: GitCheckoutSettingsReader = defaultGitCheckoutSettings,
   ) {}
+
+  /** The refs hidden from the graph of `repoRoot`, as full names. */
+  hiddenRefs(repoRoot: string): string[] {
+    return getHiddenRefs(this.context, repoRoot);
+  }
+
+  /** Hides `refs` from the graph of `repoRoot`, or shows them again. */
+  setRefsHidden(repoRoot: string, refs: readonly string[], hidden: boolean): void {
+    const rest = getHiddenRefs(this.context, repoRoot).filter((ref) => !refs.includes(ref));
+    setHiddenRefs(this.context, repoRoot, hidden ? [...rest, ...refs] : rest);
+  }
 
   /** The branch checked out in `repoRoot`; the only repository's when none is named. */
   resolveHeadRef(repoRoot?: string): string | null {
@@ -489,7 +505,7 @@ export class CommitGraphService {
           extraRevs,
           graphIncludesReflog(revision, display.showReflog),
           limit,
-          { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags },
+          { stashes: !display.showStashes, remoteBranches: !display.showRemoteBranches, tags: !display.showTags, refs: getHiddenRefs(this.context, repoRoot) },
           display.collapseMerges,
         ),
       );

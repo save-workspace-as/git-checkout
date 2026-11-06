@@ -215,6 +215,14 @@ describe('buildGraphLogArgs', () => {
     }
   });
 
+  it('leaves single hidden refs out of the walk and their labels off the commits', () => {
+    const args = buildGraphLogArgs(ALL_COMMITS_FILTER, 0, 'date', [], false, 50, { refs: ['refs/heads/topic', 'refs/remotes/origin/old'] });
+    for (const ref of ['refs/heads/topic', 'refs/remotes/origin/old']) {
+      assert.ok(args.includes(`--decorate-refs-exclude=${ref}`), ref);
+      assert.ok(args.includes(`--exclude=${ref}`), ref);
+    }
+  });
+
   it('hides only the kinds that were asked for, and does not exclude from a walk of one branch', () => {
     const tagsOnly = buildGraphLogArgs(ALL_COMMITS_FILTER, 0, 'date', [], false, GRAPH_PAGE_SIZE, { tags: true });
     assert.deepEqual(tagsOnly.filter((arg) => arg.includes('refs/')), ['--decorate-refs-exclude=refs/tags/*', '--exclude=refs/tags/*']);

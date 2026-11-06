@@ -3,7 +3,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 
-import { commitFile } from './graphMenu';
+import { answer, commitFile, menuContext } from './graphMenu';
 import { bindExtension, git, readyTree, repoRoot, waitFor } from './harness';
 
 describe('Graph visibility settings', () => {
@@ -66,6 +66,30 @@ describe('Graph visibility settings', () => {
     assert.ok((await labels()).includes('tag:v-seed'));
     await set('showRemoteBranches', true);
     await settled('remote branches to return', async () => (await subjects()).includes('only-remote'));
+  });
+
+  it('hides a branch from the graph with its commits, and shows it again from the list of hidden ones', async () => {
+    await seed();
+    const context = menuContext(git('rev-parse', 'origin/side'), { graphBranch: 'origin/side', graphBranchKind: 'remote' });
+    await vscode.commands.executeCommand('gitCheckout.graph.branch.hide', context);
+    await settled('the branch and its commits to leave', async () => {
+      const commits = await ctx.api.graphCommits();
+      return !commits.some((commit) => commit.refs.includes('remote:origin/side') || commit.subject === 'only-remote');
+    });
+    assert.ok((await labels()).includes('tag:v-seed'), 'other labels stay');
+    let offered: string[] = [];
+    const restore = answer('showQuickPick', async (items) => {
+      const choices = items as { label: string }[];
+      offered = choices.map((choice) => choice.label);
+      return choices;
+    });
+    try {
+      await vscode.commands.executeCommand('gitCheckout.graph.showHiddenBranches');
+    } finally {
+      restore();
+    }
+    assert.deepEqual(offered, ['origin/side']);
+    await settled('the branch to return', async () => (await subjects()).includes('only-remote'));
   });
 
   it('leaves stashes out, and brings them back', async () => {

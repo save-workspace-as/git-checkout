@@ -1023,6 +1023,11 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
           );
         }
         break;
+      case 'historyHideBranch':
+        if (message.name) {
+          await this.graph.hideBranch(message.name, message.remote);
+        }
+        break;
       case 'historyNewBranch':
         await this.runRefsMutate({ op: 'branchCreate', startRef: message.startRef ?? message.sha });
         break;
@@ -1532,6 +1537,10 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   runQuickSync(kind: 'fetch' | 'pull' | 'push'): Promise<void> {
     return this.sync.runQuick(kind);
+  }
+
+  showHiddenGraphBranches(): Promise<void> {
+    return this.graph.showHiddenBranches();
   }
 
   showReflogCommits(): Promise<void> {

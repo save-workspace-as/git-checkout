@@ -1,3 +1,4 @@
+import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { graphIncludesReflog } from './commitGraphService';
 import { graphRefresher } from './graphRefresh';
@@ -66,6 +67,54 @@ export class GraphController {
     );
   }
 
+  /** Leaves a branch out of the graph until it is shown again. */
+  async hideBranch(name: string, remote: boolean): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    if (!root) {
+      return;
+    }
+    log.info(`hiding ${remote ? 'remote' : 'local'} branch ${name} from the graph`);
+    this.ctx.graphService.setRefsHidden(root, [`${remote ? 'refs/remotes' : 'refs/heads'}/${name}`], true);
+    await this.refreshAfterHiddenRefsChange();
+  }
+
+  /** Asks which of the hidden branches to show again, and shows them. */
+  async showHiddenBranches(): Promise<void> {
+    const root = this.ctx.activeRepoRoot();
+    const hidden = root ? this.ctx.graphService.hiddenRefs(root) : [];
+    if (!root || hidden.length === 0) {
+      void vscode.window.showInformationMessage(l10n.t('No branches are hidden from the graph.'));
+      return;
+    }
+    const picked = await vscode.window.showQuickPick(
+      hidden.map((ref) => ({
+        label: ref.replace(/^refs\/(heads|remotes)\//, ''),
+        description: ref.startsWith('refs/remotes/') ? l10n.t('remote') : l10n.t('local'),
+        ref,
+      })),
+      { canPickMany: true, placeHolder: l10n.t('Select the branches to show in the graph again') },
+    );
+    if (!picked || picked.length === 0) {
+      return;
+    }
+    this.ctx.graphService.setRefsHidden(root, picked.map((item) => item.ref), false);
+    await this.refreshAfterHiddenRefsChange();
+  }
+
+  syncHiddenRefsContext(): Thenable<unknown> {
+    const root = this.ctx.activeRepoRoot();
+    return vscode.commands.executeCommand(
+      'setContext',
+      'gitCheckout.graph.hasHiddenRefs',
+      root !== null && this.ctx.graphService.hiddenRefs(root).length > 0,
+    );
+  }
+
+  private async refreshAfterHiddenRefsChange(): Promise<void> {
+    void this.syncHiddenRefsContext();
+    await this.sendGraphInitial();
+  }
+
   async showReflogCommits(): Promise<void> {
     await this.setShowReflog(true);
   }
@@ -109,6 +158,7 @@ export class GraphController {
       void this.syncGraphCollapseMergesContext();
       void this.syncGraphShowReflogContext();
       void this.syncGraphActiveBranchOnlyContext();
+      void this.syncHiddenRefsContext();
       await this.postGraphMeta(root);
       const page = keepDepth > 0
         ? await this.ctx.graphService.loadInitialThrough(root, keepDepth)
