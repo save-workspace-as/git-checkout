@@ -204,6 +204,42 @@ export function editCommitMessageForm(sha: string, subject: string, message: str
   };
 }
 
+/** Fixup: the commit that receives the staged changes. */
+export function fixupForm(sha: string, subject: string, pushedTo: readonly string[]): OperationFormDefinition {
+  return {
+    title: l10n.t('Fixup'),
+    submitLabel: l10n.t('Fixup'),
+    ...(pushedTo.length > 0
+      ? { notice: { kind: 'warning' as const, message: l10n.t("'{0}' already has this commit. Folding changes into it rewrites history, so the branch needs a force push.", pushedTo[0]) } }
+      : {}),
+    values: { commit: `${sha.slice(0, 7)} ${subject}` },
+    fields: [
+      { id: 'commit', type: 'text', label: l10n.t('Fold into'), readOnly: true,
+        description: l10n.t('The commit that receives the staged changes. Its message, author and date stay the same.') },
+    ],
+  };
+}
+
+/** Squash into Parent: the commit, the parent it melts into, and the message of the one commit that results. */
+export function squashIntoParentForm(sha: string, subject: string, parent: string, parentSubject: string, message: string, pushedTo: readonly string[]): OperationFormDefinition {
+  return {
+    title: l10n.t('Squash into Parent'),
+    submitLabel: l10n.t('Squash'),
+    ...(pushedTo.length > 0
+      ? { notice: { kind: 'warning' as const, message: l10n.t("'{0}' already has this commit. Squashing it rewrites history, so the branch needs a force push.", pushedTo[0]) } }
+      : {}),
+    values: { commit: `${sha.slice(0, 7)} ${subject}`, parent: `${parent.slice(0, 7)} ${parentSubject}`, message },
+    fields: [
+      { id: 'commit', type: 'text', label: l10n.t('Squash'), readOnly: true,
+        description: l10n.t('The commit that melts into its parent.') },
+      { id: 'parent', type: 'text', label: l10n.t('Into'), readOnly: true,
+        description: l10n.t('Its parent. The result keeps this commit’s author and date.') },
+      { id: 'message', type: 'text', label: l10n.t('Message'), multiline: true, required: true,
+        description: l10n.t('The subject, then a blank line, then the body.') },
+    ],
+  };
+}
+
 export function rebaseForm(
   source: string,
   target: string,

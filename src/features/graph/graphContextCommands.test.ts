@@ -117,6 +117,11 @@ describe('GRAPH_CONTEXT_COMMANDS', () => {
     assert.equal(entries.find((m) => m.command === 'gitCheckout.graph.compareWithUpstream')?.when, 'graphBranchKind == local');
   });
 
+  it('folds staged changes into a commit, and squashes it into its parent', () => {
+    assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.fixup'].toMessage(context), { type: 'historyFixup', sha: 'aaa' });
+    assert.deepEqual(GRAPH_CONTEXT_COMMANDS['gitCheckout.graph.squashIntoParent'].toMessage(context), { type: 'historySquashIntoParent', sha: 'aaa' });
+  });
+
   describe('which branch a Branch action acts on', () => {
     const two = [{ name: 'a', kind: 'local' as const }, { name: 'origin/a', kind: 'remote' as const }];
     const three = [...two, { name: 'b', kind: 'local' as const }];
