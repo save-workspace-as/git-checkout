@@ -9,7 +9,7 @@ import { buildSidebarTree, treeItemSpec, withSidebarSearch } from './sidebarTree
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
 const pull = (number: number, over: Partial<PullRequestDto> = {}): PullRequestDto => ({
   number, title: `Change ${number}`, author: 'ada', isDraft: false, headRef: `branch-${number}`, headRepository: 'octo/app', baseRef: 'main',
-  reviewDecision: null, checks: null, updatedAt: '2026-10-30T10:00:00Z', url: `https://github.com/octo/app/pull/${number}`, ...over,
+  reviewDecision: null, checks: null, mergeable: 'mergeable', updatedAt: '2026-10-30T10:00:00Z', url: `https://github.com/octo/app/pull/${number}`, ...over,
 });
 const ready = (lists: Partial<Record<'createdByMe' | 'reviewRequested' | 'allOpen', PullRequestDto[]>>): PullRequestState => ({
   kind: 'ready', repo, remote: 'origin', lists: { createdByMe: [], reviewRequested: [], allOpen: [], ...lists },
@@ -37,23 +37,35 @@ describe('pullRequestSection', () => {
     assert.equal(commandOf({ kind: 'loading' }), undefined);
   });
 
-  it('lists the three categories, open the ones with something in them, and count them', () => {
-    const section = pullRequestSection(ready({ createdByMe: [pull(1)], allOpen: [pull(1), pull(2), pull(3)] }))!;
+  it('groups what needs you by the next step, leaves out empty groups, and keeps All open to browse', () => {
+    const section = pullRequestSection(
+      ready({
+        createdByMe: [pull(1), pull(2, { checks: 'failure' }), pull(3, { reviewDecision: 'CHANGES_REQUESTED' }), pull(4, { reviewDecision: 'REVIEW_REQUIRED' })],
+        reviewRequested: [pull(5, { author: 'bob' })],
+        allOpen: [pull(1), pull(2), pull(3), pull(4), pull(5), pull(6)],
+      }),
+    )!;
     assert.equal(section.label, 'Pull Requests');
-    assert.equal(section.description, '3');
+    assert.equal(section.description, '6');
     assert.deepEqual(section.children.map((child) => [child.label, child.description, treeItemSpec(child).collapsible]), [
-      ['Created by me', '1', 'expanded'],
-      ['Waiting for my review', '0', 'none'],
-      ['All open', '3', 'collapsed'],
+      ['Ready to merge', '1', 'expanded'],
+      ['Blocked', '1', 'expanded'],
+      ['Requires follow-up', '1', 'expanded'],
+      ['Needs your review', '1', 'expanded'],
+      ['Waiting for review', '1', 'expanded'],
+      ['All open', '6', 'collapsed'],
     ]);
-    assert.deepEqual(section.children[1].children, []);
-    assert.equal(section.children[1].description, '0');
-    assert.deepEqual(section.children[2].children.map((child) => child.ref), ['1', '2', '3']);
+    assert.deepEqual(section.children.map((child) => child.children.map((row) => row.ref)), [['1'], ['2'], ['3'], ['5'], ['4'], ['1', '2', '3', '4', '5', '6']]);
   });
 
-  it('keeps the rows of one pull request in two categories apart', () => {
+  it('shows only All open when nothing involves you', () => {
+    const section = pullRequestSection(ready({ allOpen: [pull(1)] }))!;
+    assert.deepEqual(section.children.map((child) => child.label), ['All open']);
+  });
+
+  it('keeps the rows of one pull request in two groups apart', () => {
     const section = pullRequestSection(ready({ createdByMe: [pull(1)], allOpen: [pull(1)] }))!;
-    const ids = section.children.flatMap((category) => category.children.map((child) => child.id));
+    const ids = section.children.flatMap((group) => group.children.map((child) => child.id));
     assert.equal(new Set(ids).size, ids.length);
   });
 });

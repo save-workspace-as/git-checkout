@@ -2,6 +2,9 @@ import type { GitHubRepository } from '../history/githubReferences';
 
 export type PullRequestChecks = 'success' | 'failure' | 'pending';
 
+/** Whether the change merges cleanly into its base, as GitHub last worked it out. */
+export type PullRequestMergeable = 'mergeable' | 'conflicting' | 'unknown';
+
 /** An open pull request, as the sidebar lists it. */
 export interface PullRequestDto {
   number: number;
@@ -17,25 +20,26 @@ export interface PullRequestDto {
   reviewDecision: string | null;
   /** How the checks on the latest commit stand, when it has any. */
   checks: PullRequestChecks | null;
+  mergeable: PullRequestMergeable;
   /** ISO time of the last change. */
   updatedAt: string;
   url: string;
 }
 
-/** The three lists the sidebar shows, newest change first. */
+/** The three searches behind the sidebar, newest change first. */
 export interface PullRequestLists {
   createdByMe: PullRequestDto[];
   reviewRequested: PullRequestDto[];
   allOpen: PullRequestDto[];
 }
 
-export type PullRequestCategory = keyof PullRequestLists;
+export type PullRequestCategory = keyof PullRequestLists | PullRequestGroup;
 
 export const PULL_REQUESTS_PER_LIST = 50;
 
 const FIELDS = `
   ... on PullRequest {
-    number title url isDraft updatedAt headRefName baseRefName reviewDecision
+    number title url isDraft updatedAt headRefName baseRefName reviewDecision mergeable
     author { login }
     headRepository { nameWithOwner }
     commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
@@ -94,6 +98,7 @@ function pullRequestFrom(node: unknown): PullRequestDto | undefined {
     baseRef: typeof value.baseRefName === 'string' ? value.baseRefName : '',
     reviewDecision: typeof value.reviewDecision === 'string' ? value.reviewDecision : null,
     checks: checksFrom(commits?.[0]?.commit?.statusCheckRollup?.state),
+    mergeable: value.mergeable === 'MERGEABLE' ? 'mergeable' : value.mergeable === 'CONFLICTING' ? 'conflicting' : 'unknown',
     updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : '',
     url: value.url,
   };
@@ -114,6 +119,56 @@ export function parsePullRequestLists(body: unknown): PullRequestLists | undefin
       return pull ? [pull] : [];
     });
   return { createdByMe: read('createdByMe'), reviewRequested: read('reviewRequested'), allOpen: read('allOpen') };
+}
+
+/** What to do about a pull request, from the one that needs the most action down. */
+export const PULL_REQUEST_GROUPS = ['readyToMerge', 'blocked', 'followUp', 'needsReview', 'waitingForReview', 'draft'] as const;
+export type PullRequestGroup = (typeof PULL_REQUEST_GROUPS)[number];
+
+/**
+ * The group of a pull request. A draft is a draft. One that someone else opened and asked you to review needs your
+ * review. Of your own, conflicts or failed checks block it, a reviewer's change request calls for a follow-up, and what
+ * is approved (or needs no review) with its checks done is ready to merge; the rest waits for reviewers or checks.
+ */
+export function groupOf(pull: PullRequestDto, mine: boolean): PullRequestGroup {
+  if (pull.isDraft) {
+    return 'draft';
+  }
+  if (!mine) {
+    return 'needsReview';
+  }
+  if (pull.mergeable === 'conflicting' || pull.checks === 'failure') {
+    return 'blocked';
+  }
+  if (pull.reviewDecision === 'CHANGES_REQUESTED') {
+    return 'followUp';
+  }
+  const decided = pull.reviewDecision === 'APPROVED' || pull.reviewDecision === null;
+  return decided && pull.checks !== 'pending' ? 'readyToMerge' : 'waitingForReview';
+}
+
+/** Your pull requests and the ones you are asked to review, by what each needs next, newest change first. */
+export function groupPullRequests(lists: PullRequestLists): Record<PullRequestGroup, PullRequestDto[]> {
+  const groups: Record<PullRequestGroup, PullRequestDto[]> = {
+    readyToMerge: [],
+    blocked: [],
+    followUp: [],
+    needsReview: [],
+    waitingForReview: [],
+    draft: [],
+  };
+  const mine = new Set(lists.createdByMe.map((pull) => pull.number));
+  const seen = new Set<number>();
+  for (const pull of [...lists.createdByMe, ...lists.reviewRequested]) {
+    if (!seen.has(pull.number)) {
+      seen.add(pull.number);
+      groups[groupOf(pull, mine.has(pull.number))].push(pull);
+    }
+  }
+  for (const pulls of Object.values(groups)) {
+    pulls.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+  return groups;
 }
 
 /** The local branch a pull request is checked out to. */
