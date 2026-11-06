@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.11.0...git-checkout-v0.12.0) (2026-11-06)
+
+
+### Features
+
+* **pull-requests:** group sidebar pull requests by what each needs next ([#79](https://github.com/save-workspace-as/git-checkout/issues/79)) ([e2f19d8](https://github.com/save-workspace-as/git-checkout/commit/e2f19d85477cb851c2a87da5dfd3c74f58392bd8))
+
 ## [0.11.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.10.0...git-checkout-v0.11.0) (2026-11-06)
 
 
