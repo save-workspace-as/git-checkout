@@ -1690,6 +1690,11 @@
           "description": "%config.gitCheckout.git.skipHooks.description%",
           "type": "boolean"
         },
+        "gitCheckout.git.writeCommitGraph": {
+          "default": true,
+          "description": "%config.gitCheckout.git.writeCommitGraph.description%",
+          "type": "boolean"
+        },
         "gitCheckout.graph.compactBranchLabels": {
           "default": true,
           "description": "%config.gitCheckout.graph.compactBranchLabels.description%",

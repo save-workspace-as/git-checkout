@@ -164,6 +164,7 @@ export class GraphController {
         ? await this.ctx.graphService.loadInitialThrough(root, keepDepth)
         : await this.ctx.graphService.loadInitial(root);
       this.ctx.postMessage({ type: 'graphPage', page, append: false, ...(keepDepth > 0 ? { keepView: true } : {}) });
+      void this.ctx.graphService.maintainCommitGraph(root);
       void this.lookUpAvatars(root, page.commits);
     } catch (error) {
       this.ctx.handleGraphError(error);
