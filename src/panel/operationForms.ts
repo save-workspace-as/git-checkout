@@ -220,6 +220,22 @@ export function fixupForm(sha: string, subject: string, pushedTo: readonly strin
   };
 }
 
+/** Split Commit: the commit to take apart. */
+export function splitCommitForm(sha: string, subject: string, pushedTo: readonly string[]): OperationFormDefinition {
+  return {
+    title: l10n.t('Split Commit'),
+    submitLabel: l10n.t('Split'),
+    ...(pushedTo.length > 0
+      ? { notice: { kind: 'warning' as const, message: l10n.t("'{0}' already has this commit. Splitting it rewrites history, so the branch needs a force push.", pushedTo[0]) } }
+      : {}),
+    values: { commit: `${sha.slice(0, 7)} ${subject}` },
+    fields: [
+      { id: 'commit', type: 'text', label: l10n.t('Commit'), readOnly: true,
+        description: l10n.t('Its changes come back unstaged, in the middle of a rebase. Commit them in parts, then continue the rebase.') },
+    ],
+  };
+}
+
 /** Squash into Parent: the commit, the parent it melts into, and the message of the one commit that results. */
 export function squashIntoParentForm(sha: string, subject: string, parent: string, parentSubject: string, message: string, pushedTo: readonly string[]): OperationFormDefinition {
   return {
