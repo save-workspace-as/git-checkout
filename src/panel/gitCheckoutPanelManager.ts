@@ -2,6 +2,7 @@ import { coalesced } from '../core/coalesced';
 import * as l10n from '@vscode/l10n';
 import * as path from 'path';
 import * as vscode from 'vscode';
+import type { BranchFilter } from '../features/branches/branchFilter';
 import { CheckoutService } from '../features/branches/checkoutService';
 import { CommitGraphService } from '../features/graph/commitGraphService';
 import { CommitTreeService } from '../features/history/commitTreeService';
@@ -1554,6 +1555,21 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
 
   runQuickSync(kind: 'fetch' | 'pull' | 'push'): Promise<void> {
     return this.sync.runQuick(kind);
+  }
+
+  /** Which branches the sidebar and the graph of the shown repository list. */
+  branchFilter(): BranchFilter {
+    const root = this.activeRepoRoot();
+    return root ? this.graphService.branchFilter(root) : 'all';
+  }
+
+  async setBranchFilter(filter: BranchFilter): Promise<void> {
+    const root = this.activeRepoRoot();
+    if (!root) {
+      return;
+    }
+    this.graphService.setBranchFilter(root, filter);
+    await this.graph.sendGraphInitial();
   }
 
   showHiddenGraphBranches(): Promise<void> {

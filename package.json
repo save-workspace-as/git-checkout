@@ -568,6 +568,12 @@
         "title": "%command.gitCheckout.sidebar.clearSearch.title%"
       },
       {
+        "category": "%command.gitCheckout.sidebar.filterBranches.category%",
+        "command": "gitCheckout.sidebar.filterBranches",
+        "icon": "$(filter)",
+        "title": "%command.gitCheckout.sidebar.filterBranches.title%"
+      },
+      {
         "category": "%command.gitCheckout.sidebar.checkout.category%",
         "command": "gitCheckout.sidebar.checkout",
         "title": "%command.gitCheckout.sidebar.checkout.title%"
@@ -3069,6 +3075,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.sidebar.filterBranches",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.repo.fetch",
           "when": "false"
         },
@@ -3852,6 +3862,11 @@
           "when": "(view == gitCheckout.changes && viewItem =~ /^change\\.group\\.staged(\\.conflict)?$/) && config.gitCheckout.ai.enabled"
         },
         {
+          "command": "gitCheckout.sidebar.filterBranches",
+          "group": "4_create@2",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == section.branches"
+        },
+        {
           "command": "gitCheckout.repo.fetch",
           "group": "2_sync@0",
           "when": "view == gitCheckout.repositories && viewItem == repository"
@@ -3977,6 +3992,11 @@
           "command": "gitCheckout.sidebar.clearSearch",
           "group": "navigation@2",
           "when": "view == gitCheckout.sidebar && gitCheckout.sidebarSearching"
+        },
+        {
+          "command": "gitCheckout.sidebar.filterBranches",
+          "group": "navigation@3",
+          "when": "view == gitCheckout.sidebar"
         },
         {
           "command": "gitCheckout.repo.fetch",

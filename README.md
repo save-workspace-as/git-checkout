@@ -80,6 +80,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 
 ## Branches, tags, stashes, worktrees and submodules
 
+- **Filter branches:** the filter button of the sidebar (or **Filter Branches…** on the Branches section) shows *Yours* (branches with commits of yours that the default branch lacks, found by your `user.email`), *Active* or *Stale* (changed within, or not for, three months). The sidebar and the graph list the same branches; the checked-out one always stays.
 - **Branches, tags and remotes:** create, check out, rename, delete, merge, rebase, fast-forward, compare, and set upstreams.
 - **Stashes:** save, apply, pop and drop.
 - **Worktrees:** add, open and delete, or check a branch or pull request out into one.
