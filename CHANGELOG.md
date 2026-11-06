@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.11.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.10.0...git-checkout-v0.11.0) (2026-11-06)
+
+
+### Features
+
+* **diff:** scroll each side of a side-by-side diff on its own ([#55](https://github.com/save-workspace-as/git-checkout/issues/55)) ([6eb5ebc](https://github.com/save-workspace-as/git-checkout/commit/6eb5ebc38e368182ed6e4ebc46c605695f772f88))
+* **graph:** compare a commit with HEAD, the merge base, upstream, or another ref ([#69](https://github.com/save-workspace-as/git-checkout/issues/69)) ([b183fe3](https://github.com/save-workspace-as/git-checkout/commit/b183fe343ff8147ab6e889a23836ce716264b756))
+* **graph:** hide a branch and the commits only it reaches ([#57](https://github.com/save-workspace-as/git-checkout/issues/57)) ([65591cb](https://github.com/save-workspace-as/git-checkout/commit/65591cb98e7ebe40a08154dff6b486cb578eb808))
+* **history:** fix up a commit and squash it into its parent ([#70](https://github.com/save-workspace-as/git-checkout/issues/70)) ([92adafb](https://github.com/save-workspace-as/git-checkout/commit/92adafb41c3063d11a3df8a8fa3d7a6aa348723a))
+* **history:** split a commit by stopping the rebase with its changes unstaged ([#72](https://github.com/save-workspace-as/git-checkout/issues/72)) ([bb5061b](https://github.com/save-workspace-as/git-checkout/commit/bb5061bb8bc3c686b715ebd79e9773c7f129e136))
+* **stash:** create a branch from a stash ([#73](https://github.com/save-workspace-as/git-checkout/issues/73)) ([250cd25](https://github.com/save-workspace-as/git-checkout/commit/250cd25aeed5db83481f8558ccadffae061ebb63))
+
+
+### Bug Fixes
+
+* **git:** keep other reads free while a read takes input ([#76](https://github.com/save-workspace-as/git-checkout/issues/76)) ([126cbb4](https://github.com/save-workspace-as/git-checkout/commit/126cbb438e9ccd1ab071b487d115b9159bffe36b))
+* **merge:** scroll the three merge panes sideways together ([#71](https://github.com/save-workspace-as/git-checkout/issues/71)) ([18a8c2b](https://github.com/save-workspace-as/git-checkout/commit/18a8c2bb6c5b28ca30985a9c9b7c6597a851a42b))
+
+
+### Performance Improvements
+
+* **graph:** load later history in larger pages and search beside its filters ([#74](https://github.com/save-workspace-as/git-checkout/issues/74)) ([2680e90](https://github.com/save-workspace-as/git-checkout/commit/2680e90adba29794599122bafff23da0d8a2fb8e))
+* **graph:** write a commit-graph file for a large repository ([#77](https://github.com/save-workspace-as/git-checkout/issues/77)) ([9ab2a33](https://github.com/save-workspace-as/git-checkout/commit/9ab2a3387c00d08de315805c0da5b00ead89fa42))
+
 ## [0.10.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.9.0...git-checkout-v0.10.0) (2026-11-04)
 
 
