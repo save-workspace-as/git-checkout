@@ -333,6 +333,37 @@ describe('CommitGraphService', () => {
     return { svc, reads };
   };
 
+  it('reads history for the filters and for the scan side by side, and keeps the graph order of what the filters allow', async () => {
+    const history = Array.from({ length: 6 }, (_, i) => ({ sha: sha(i), message: 'other' }));
+    let scanStarted!: () => void;
+    const scanIsRunning = new Promise<void>((resolve) => { scanStarted = resolve; });
+    const { cli } = mockGitCli({
+      execRead: async (args) => {
+        if (isSearchScan(args)) {
+          scanStarted();
+          return { stdout: searchLog(history) };
+        }
+        if (args.includes('--format=%H')) {
+          // The filters answer only once the scan is under way: one after the other, they would wait for each other.
+          let timer: NodeJS.Timeout | undefined;
+          try {
+            await Promise.race([scanIsRunning, new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('the scan did not start while the filters ran')), 1000); })]);
+          } finally {
+            clearTimeout(timer);
+          }
+          return { stdout: `${sha(4)}\n${sha(1)}\n` };
+        }
+        return { stdout: '' };
+      },
+    });
+    const svc = new CommitGraphService(
+      mockExtensionContext({ [FILTER_KEY]: { [REPO]: 'main' } }),
+      mockGitExtensionService([mockRepository(REPO)], { headName: 'main' }),
+      mockCliRegistry(REPO, cli),
+    );
+    assert.deepEqual(await svc.findCommits(REPO, 'author:ann'), [sha(1), sha(4)]);
+  });
+
   it('streams matches in graph order, a chunk of commits at a time, from one git process', async () => {
     const history = Array.from({ length: SEARCH_CHUNK_SIZE }, (_, i) => ({
       sha: sha(i), message: i === 5 ? 'fix one' : 'other',
