@@ -1,0 +1,97 @@
+import * as l10n from '@vscode/l10n';
+import * as vscode from 'vscode';
+import type { GitCliRegistry } from '../../core/gitCliRegistry';
+import { createLogger } from '../../log';
+import type { PullRequestChain } from '../../shared/pullRequests/pullRequestStacks';
+import { locateLayer } from '../../shared/pullRequests/stackNavigation';
+import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
+import type { SidebarNode } from '../../ui/sidebarTreeModel';
+import type { PullRequestStore } from './PullRequestStore';
+import { pushStackArgs, pushStackForm, validatePushStackForm } from './stackGit';
+
+const log = createLogger('stack');
+
+type Window = Pick<GitCheckoutPanelManager, 'operationForm' | 'activeRepoRoot' | 'selectRepository' | '_onDidChangeRefs'>;
+
+/** A stack of pull requests, and the repository and remote it is in. */
+interface ResolvedStack {
+  root: string;
+  chain: PullRequestChain;
+  remote: string;
+}
+
+/** What is done to a whole stack: push it, rebase it, sync it, merge it, take it apart. */
+export class StackController {
+  constructor(
+    private readonly store: PullRequestStore,
+    private readonly cliRegistry: GitCliRegistry,
+    private readonly window: Window,
+  ) {}
+
+  register(context: vscode.ExtensionContext): void {
+    const C = PULL_REQUEST_COMMANDS;
+    context.subscriptions.push(
+      vscode.commands.registerCommand(C.pushStack, (node?: SidebarNode) => this.pushStack(node)),
+    );
+  }
+
+  /** The stack that was right-clicked, or the checked-out branch's. Says why when there is none. */
+  private async resolve(node: SidebarNode | undefined): Promise<ResolvedStack | undefined> {
+    const root = node?.repoRoot ?? this.window.activeRepoRoot();
+    const stacks = root ? this.store.stacks(root) : undefined;
+    if (!root || !stacks) {
+      void vscode.window.showInformationMessage(l10n.t('The pull requests of this repository are not loaded.'));
+      return undefined;
+    }
+    let chain: PullRequestChain | undefined;
+    if (node?.ref) {
+      chain = stacks.chains.find((entry) => String(entry.pulls[0].number) === node.ref);
+    } else {
+      const current = (await this.cliRegistry.getOrCreate(root).execRead(['branch', '--show-current'])).stdout.trim();
+      chain = locateLayer(stacks.chains, current)?.chain;
+      if (!chain) {
+        void vscode.window.showInformationMessage(l10n.t("'{0}' is not in a stack of pull requests.", current));
+        return undefined;
+      }
+    }
+    return chain && { root, chain, remote: stacks.remote };
+  }
+
+  /** The local branches of a stack's layers, bottom first; a layer nobody has checked out here has none. */
+  private async localBranches(root: string, chain: PullRequestChain): Promise<string[]> {
+    const git = this.cliRegistry.getOrCreate(root);
+    const names = (await git.execRead(['for-each-ref', '--format=%(refname:short)', 'refs/heads'])).stdout.split('\n').filter(Boolean);
+    return chain.pulls.map((pull) => pull.headRef).filter((branch) => names.includes(branch));
+  }
+
+  /** Opens the form to push the stack's local branches in one push, to replace the ones that were rebased. */
+  private async pushStack(node?: SidebarNode): Promise<void> {
+    const stack = await this.resolve(node);
+    if (!stack) {
+      return;
+    }
+    const git = this.cliRegistry.getOrCreate(stack.root);
+    const branches = await this.localBranches(stack.root, stack.chain);
+    if (branches.length === 0) {
+      void vscode.window.showInformationMessage(l10n.t('None of the branches of this stack is checked out here.'));
+      return;
+    }
+    const remotes = (await git.execRead(['remote'])).stdout.split('\n').filter(Boolean);
+    if (remotes.length === 0) {
+      void vscode.window.showWarningMessage(l10n.t('No remotes are configured.'));
+      return;
+    }
+    await this.window.selectRepository(stack.root);
+    await this.window.operationForm.show(pushStackForm(branches, remotes, remotes.includes(stack.remote) ? stack.remote : remotes[0]), {
+      validate: (values) => validatePushStackForm(remotes, values),
+      submit: async (values) => {
+        log.info(`pushing ${branches.length} branches of a stack`);
+        await git.execWrite(pushStackArgs(String(values.remote), branches, values.force === true), { network: true });
+        this.window._onDidChangeRefs.fire();
+        void vscode.window.showInformationMessage(l10n.t('Pushed {0} branches.', branches.length));
+        return true;
+      },
+    });
+  }
+}

@@ -44,6 +44,7 @@ import { LineBlameService } from './features/blame/lineBlameService';
 import { ignoreRevsEnabled } from './features/blame/blameSettings';
 import type { RestTransport } from './features/pullRequests/githubRestClient';
 import { PullRequestController } from './features/pullRequests/PullRequestController';
+import { StackController } from './features/pullRequests/StackController';
 import { PullRequestStore, type PullRequestState } from './features/pullRequests/PullRequestStore';
 import { RemoteLinkController } from './features/history/RemoteLinkController';
 import { FileBlameController } from './features/blame/FileBlameController';
@@ -141,6 +142,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   const pullRequests = new PullRequestStore(cliRegistry);
   context.subscriptions.push(pullRequests);
   new PullRequestController(pullRequests, cliRegistry, panelManager).register(context);
+  new StackController(pullRequests, cliRegistry, panelManager).register(context);
   const { providers: sidebars, repositories, badge: sidebarBadge, pullRequestsOnScreen } = registerGitCheckoutSidebar(context, panelManager, gitService, watchService, pullRequests);
 
   const statusBar = new DiagnosticsStatusBar(gitService);
