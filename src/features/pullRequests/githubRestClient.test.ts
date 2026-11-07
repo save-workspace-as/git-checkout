@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
-  createPullRequest, createStack, findOpenPullRequest, GitHubRestError, restUrl, setPullRequestBase, type RestTransport,
+  addToStack, createPullRequest, createStack, findOpenPullRequest, GitHubRestError, listStacks, restUrl, setPullRequestBase, type RestTransport,
 } from './githubRestClient';
 
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
@@ -83,7 +83,7 @@ describe('setPullRequestBase', () => {
 describe('createStack', () => {
   it('groups the pull requests, bottom first, with the version of the API that has stacks', async () => {
     const t = transport({ status: 201, json: { number: 9, url: 'https://api.github.com/repos/octo/app/stacks/9', pull_requests: [{ number: 7 }, { number: 8 }] } });
-    assert.deepEqual(await createStack(repo, 't', [7, 8], t), { number: 9, url: 'https://api.github.com/repos/octo/app/stacks/9', pullRequests: [7, 8] });
+    assert.deepEqual(await createStack(repo, 't', [7, 8], t), { number: 9, url: 'https://api.github.com/repos/octo/app/stacks/9', open: true, pullRequests: [7, 8] });
     assert.equal(t.calls[0].url, 'https://api.github.com/repos/octo/app/stacks');
     assert.deepEqual(t.calls[0].body, { pull_requests: [7, 8] });
     assert.deepEqual(t.calls[0].headers, { 'X-GitHub-Api-Version': '2026-03-10' });
@@ -92,5 +92,27 @@ describe('createStack', () => {
   it('reports a refusal, such as pull requests that cannot form a stack', async () => {
     assert.equal(await failureOf(createStack(repo, 't', [7], transport({ status: 422, json: { message: 'Validation Failed' } }))), 'invalid');
     assert.equal(await failureOf(createStack(repo, 't', [7], transport({ status: 404, json: null }))), 'notFound');
+  });
+});
+
+describe('listStacks and addToStack', () => {
+  it('lists the stacks with whether they are open and their pull requests, bottom first', async () => {
+    const t = transport({ status: 200, json: [{ number: 4, open: false, pull_requests: [{ number: 1 }, { number: 2 }] }, { number: 9, open: true, pull_requests: [{ number: 7 }] }] });
+    assert.deepEqual(await listStacks(repo, 't', t), [
+      { number: 4, url: '', open: false, pullRequests: [1, 2] },
+      { number: 9, url: '', open: true, pullRequests: [7] },
+    ]);
+    assert.equal(t.calls[0].url, 'https://api.github.com/repos/octo/app/stacks?per_page=100');
+    assert.deepEqual(t.calls[0].headers, { 'X-GitHub-Api-Version': '2026-03-10' });
+  });
+
+  it('adds pull requests to the top of a stack', async () => {
+    const t = transport({ status: 200, json: { number: 9, open: true, pull_requests: [{ number: 7 }, { number: 8 }] } });
+    assert.deepEqual((await addToStack(repo, 't', 9, [8], t)).pullRequests, [7, 8]);
+    assert.deepEqual([t.calls[0].method, t.calls[0].url, t.calls[0].body], ['POST', 'https://api.github.com/repos/octo/app/stacks/9/add', { pull_requests: [8] }]);
+  });
+
+  it('reports a conflict while someone else changes the stack', async () => {
+    assert.equal(await failureOf(addToStack(repo, 't', 9, [8], transport({ status: 409, json: { message: 'busy' } }))), 'conflict');
   });
 });

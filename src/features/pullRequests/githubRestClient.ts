@@ -136,18 +136,21 @@ export async function setPullRequestBase(repo: GitHubRepository, token: string, 
 export interface PullRequestStack {
   number: number;
   url: string;
+  /** Whether any pull request of the stack is still open. */
+  open: boolean;
   /** The pull requests from the bottom of the stack to the top. */
   pullRequests: number[];
 }
 
 function toStack(json: unknown): PullRequestStack {
-  const stack = json as { number?: unknown; url?: unknown; pull_requests?: unknown } | null;
+  const stack = json as { number?: unknown; url?: unknown; open?: unknown; pull_requests?: unknown } | null;
   if (typeof stack?.number !== 'number' || !Array.isArray(stack.pull_requests)) {
     throw new GitHubRestError('other', 0, 'GitHub answered with a stack this extension does not understand.');
   }
   return {
     number: stack.number,
     url: typeof stack.url === 'string' ? stack.url : '',
+    open: stack.open !== false,
     pullRequests: stack.pull_requests.map((pull) => (pull as { number?: unknown } | null)?.number).filter((n): n is number => typeof n === 'number'),
   };
 }
@@ -157,4 +160,15 @@ const versioned = { 'X-GitHub-Api-Version': STACKS_API_VERSION };
 /** Groups pull requests, bottom first, into a stack. */
 export async function createStack(repo: GitHubRepository, token: string, pullRequests: readonly number[], transport: RestTransport = fetchRestTransport): Promise<PullRequestStack> {
   return toStack(await call(transport, 'POST', restUrl(repo, '/stacks'), token, { pull_requests: pullRequests }, versioned));
+}
+
+/** The most recent stacks of the repository, open or not. */
+export async function listStacks(repo: GitHubRepository, token: string, transport: RestTransport = fetchRestTransport): Promise<PullRequestStack[]> {
+  const list = await call(transport, 'GET', `${restUrl(repo, '/stacks')}?per_page=100`, token, undefined, versioned);
+  return Array.isArray(list) ? list.map(toStack) : [];
+}
+
+/** Puts pull requests on top of a stack, in order from the current top upward. */
+export async function addToStack(repo: GitHubRepository, token: string, stack: number, pullRequests: readonly number[], transport: RestTransport = fetchRestTransport): Promise<PullRequestStack> {
+  return toStack(await call(transport, 'POST', restUrl(repo, `/stacks/${stack}/add`), token, { pull_requests: pullRequests }, versioned));
 }

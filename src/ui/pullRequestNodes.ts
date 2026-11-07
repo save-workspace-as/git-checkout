@@ -21,6 +21,7 @@ export const PULL_REQUEST_COMMANDS = {
   stackBottom: 'gitCheckout.pullRequests.stackBottom',
   pushStack: 'gitCheckout.pullRequests.pushStack',
   rebaseStack: 'gitCheckout.pullRequests.rebaseStack',
+  syncStack: 'gitCheckout.pullRequests.syncStack',
 } as const;
 
 const GROUPS: Record<PullRequestGroup, { label: () => string; icon: string }> = {

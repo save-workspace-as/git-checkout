@@ -52,6 +52,7 @@ const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
   { label: l10n.t('Push…'), command: 'gitCheckout.push' },
   { label: l10n.t('Push Stack…'), command: 'gitCheckout.pullRequests.pushStack' },
   { label: l10n.t('Rebase Stack…'), command: 'gitCheckout.pullRequests.rebaseStack' },
+  { label: l10n.t('Sync Stack…'), command: 'gitCheckout.pullRequests.syncStack' },
   { label: l10n.t('Quick Fetch'), command: 'gitCheckout.quickFetch' },
   { label: l10n.t('Quick Pull'), command: 'gitCheckout.quickPull' },
   { label: l10n.t('Quick Push'), command: 'gitCheckout.quickPush' },

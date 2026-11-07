@@ -52,3 +52,46 @@ export function rebaseStackForm(branches: readonly string[], trunk: string): Ope
     ],
   };
 }
+
+export type StackLink =
+  /** The pull requests are in one stack already, in this order. */
+  | { kind: 'linked' }
+  | { kind: 'create'; pullRequests: number[] }
+  | { kind: 'add'; stack: number; pullRequests: number[] }
+  /** A stack has some of them, but not as the bottom part of this one: GitHub's stack and the branches disagree. */
+  | { kind: 'differs'; stack: number };
+
+/**
+ * What it takes to make the open stack on GitHub the same as the chain of pull requests (bottom first): nothing, a new
+ * stack, or the missing pull requests on top of the stack that has the first ones. Anything else is a disagreement that is
+ * left for the person, because it would mean taking pull requests out of a stack.
+ */
+export function stackLinkFor(stacks: readonly { number: number; open: boolean; pullRequests: readonly number[] }[], chain: readonly number[]): StackLink {
+  const holding = stacks.filter((stack) => stack.open && stack.pullRequests.some((number) => chain.includes(number)));
+  if (holding.length === 0) {
+    return { kind: 'create', pullRequests: [...chain] };
+  }
+  const [stack] = holding;
+  const below = stack.pullRequests.length;
+  const startsTheChain = holding.length === 1 && stack.pullRequests.every((number, index) => chain[index] === number);
+  if (!startsTheChain) {
+    return { kind: 'differs', stack: stack.number };
+  }
+  return below >= chain.length ? { kind: 'linked' } : { kind: 'add', stack: stack.number, pullRequests: chain.slice(below) };
+}
+
+export function syncStackForm(branches: readonly string[], trunk: string): OperationFormDefinition {
+  return {
+    title: l10n.t('Sync Stack'),
+    submitLabel: l10n.t('Sync'),
+    values: { stack: branches.join(' → '), push: true, link: true },
+    fields: [
+      {
+        id: 'stack', type: 'text', label: l10n.t('Stack'), readOnly: true,
+        description: l10n.t('Fetches the remote, moves each branch onto the one before it (the first onto {0}), and keeps the ones already on their parent.', trunk),
+      },
+      { id: 'push', type: 'checkbox', label: l10n.t('Push'), description: l10n.t('Push the branches afterwards, replacing the ones that were rebased') },
+      { id: 'link', type: 'checkbox', label: l10n.t('Stack'), description: l10n.t('Make the stack on GitHub match these pull requests') },
+    ],
+  };
+}
