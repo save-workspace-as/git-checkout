@@ -112,11 +112,14 @@ export function validateStackForm(context: StackFormContext, values: OperationFo
     const index = context.commits.findIndex((commit) => commit.sha === layer.sha);
     const id = branchId(index);
     const problem = layer.created ? validateBranchName(layer.branch) : undefined;
+    if (!layer.title) {
+      errors[titleId(index)] = l10n.t('Enter a title.');
+    }
     if (problem) {
       errors[id] = problem;
     } else if (seen.has(layer.branch)) {
       errors[id] = l10n.t('Another pull request already uses this branch.');
-    } else if (layer.created && context.existingBranches.has(layer.branch)) {
+    } else if (layer.created && (context.existingBranches.has(layer.branch) || layer.branch === context.baseName)) {
       errors[id] = l10n.t('A branch with this name exists.');
     }
     seen.add(layer.branch);

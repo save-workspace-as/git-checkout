@@ -99,6 +99,16 @@ describe('validateStackForm', () => {
     assert.ok(validateStackForm(ctx, { ...chosen, 'branch-1': 'main' })['branch-1']);
   });
 
+  it('refuses the base branch as a new name even when it is not a local branch', () => {
+    const remoteOnly = context({ existingBranches: new Set(['feat/settings']) });
+    const values = { ...stackForm(remoteOnly).values, 'end-1': true, 'branch-1': 'main' };
+    assert.ok(validateStackForm(remoteOnly, values)['branch-1']);
+  });
+
+  it('refuses a title that is empty', () => {
+    assert.deepEqual(Object.keys(validateStackForm(ctx, { ...chosen, 'title-1': '   ' })), ['title-1']);
+  });
+
   it('refuses two pull requests from the same branch', () => {
     assert.deepEqual(Object.keys(validateStackForm(ctx, { ...chosen, 'branch-0': 'feat/x', 'branch-1': 'feat/x' })), ['branch-1']);
   });
