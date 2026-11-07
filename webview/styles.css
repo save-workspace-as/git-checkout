@@ -63,9 +63,9 @@ body {
   padding: 0;
 }
 
-/* A settings-group pads itself. The dialog body adds none, or every row would be inset twice. */
+/* The groups space themselves (15px between rows, as in the Elements form example); the body gives the shared inset. */
 .operation-form-modal > .modal-body {
-  padding: 0;
+  padding: 12px 14px 18px;
 }
 
 .operation-form-description {
@@ -112,8 +112,8 @@ body {
 
 .operation-form-field > .operation-form-error {
   top: 100%;
-  left: 14px;
-  right: 14px;
+  left: 0;
+  right: 0;
   visibility: hidden;
 }
 
@@ -174,9 +174,13 @@ body {
 
 .operation-form-actions {
   position: relative;
-  /* The horizontal variant indents a leading button by the label column. A settings row has no label column. */
-  --label-width: 0;
-  --label-right-margin: 0;
+  /* The body's padding ends the form; the group's own margin would add to it. */
+  margin-bottom: 0;
+}
+
+.operation-form > :first-child,
+.operation-form-fields > :first-child {
+  margin-top: 0;
 }
 
 .rebase-shell button {
