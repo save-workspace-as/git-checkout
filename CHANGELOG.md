@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.12.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.11.0...git-checkout-v0.12.0) (2026-11-07)
+
+
+### Features
+
+* **branches:** filter branches to yours, active, or stale ([#83](https://github.com/save-workspace-as/git-checkout/issues/83)) ([7a49992](https://github.com/save-workspace-as/git-checkout/commit/7a4999222c78a0e2ef3042ffc31ba5b41fceb542))
+* **panel:** remember the last folder used in save and open dialogs ([#93](https://github.com/save-workspace-as/git-checkout/issues/93)) ([c0c1655](https://github.com/save-workspace-as/git-checkout/commit/c0c1655264ef20065fdd7843fb7961312ce510ae))
+* **pull-requests:** create a stack of pull requests from one branch ([#84](https://github.com/save-workspace-as/git-checkout/issues/84)) ([195cd57](https://github.com/save-workspace-as/git-checkout/commit/195cd577b1ccb6f1a9d6846123280e5a8ef656b5))
+* **pull-requests:** end a stack on GitHub ([#92](https://github.com/save-workspace-as/git-checkout/issues/92)) ([729f74a](https://github.com/save-workspace-as/git-checkout/commit/729f74a3083f12b6dde93dbf30cc20f453b01fbe))
+* **pull-requests:** group pull requests by what each needs next ([#81](https://github.com/save-workspace-as/git-checkout/issues/81)) ([ea29246](https://github.com/save-workspace-as/git-checkout/commit/ea29246e01d55b604015e42a4ec78b1fcd633d3f))
+* **pull-requests:** list stacks of pull requests in the sidebar ([#85](https://github.com/save-workspace-as/git-checkout/issues/85)) ([33df3be](https://github.com/save-workspace-as/git-checkout/commit/33df3be3cb2849497bce64b22736250a813e7c80))
+* **pull-requests:** merge a stack through the chosen pull request ([#91](https://github.com/save-workspace-as/git-checkout/issues/91)) ([dc728b8](https://github.com/save-workspace-as/git-checkout/commit/dc728b848814a15b3f547306eb3b89bed3992855))
+* **pull-requests:** move through a stack and check out a layer ([#87](https://github.com/save-workspace-as/git-checkout/issues/87)) ([b9bfa61](https://github.com/save-workspace-as/git-checkout/commit/b9bfa6149265e3dac7554198c53f744499d84196))
+* **pull-requests:** push a stack in one atomic push ([#88](https://github.com/save-workspace-as/git-checkout/issues/88)) ([c7c41e7](https://github.com/save-workspace-as/git-checkout/commit/c7c41e735aab4207dce8db800e1c6b4741ab879b))
+* **pull-requests:** rebase each layer of a stack onto the one below ([#89](https://github.com/save-workspace-as/git-checkout/issues/89)) ([2caeddf](https://github.com/save-workspace-as/git-checkout/commit/2caeddfd47327d84dae2cdf913ffbc0befaf228d))
+* **pull-requests:** sync a stack with its pull requests ([#90](https://github.com/save-workspace-as/git-checkout/issues/90)) ([659c705](https://github.com/save-workspace-as/git-checkout/commit/659c705feae01d5c481fbad9406f995a9d020bbd))
+
 ## [0.11.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.10.0...git-checkout-v0.11.0) (2026-11-06)
 
 
