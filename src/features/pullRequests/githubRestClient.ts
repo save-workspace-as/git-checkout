@@ -8,7 +8,7 @@ const STACKS_API_VERSION = '2026-03-10';
 
 /** How a request reaches GitHub's REST API; the tests answer instead. */
 export interface RestTransport {
-  request(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', url: string, token: string, body?: unknown, headers?: Record<string, string>): Promise<{ status: number; json: unknown }>;
+  request(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', url: string, token: string, body?: unknown, headers?: Record<string, string>): Promise<{ status: number; json: unknown }>;
 }
 
 export const fetchRestTransport: RestTransport = {
@@ -71,7 +71,7 @@ function messageOf(json: unknown, status: number): string {
 
 async function call(
   transport: RestTransport,
-  method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   url: string,
   token: string,
   body?: unknown,
@@ -171,4 +171,54 @@ export async function listStacks(repo: GitHubRepository, token: string, transpor
 /** Puts pull requests on top of a stack, in order from the current top upward. */
 export async function addToStack(repo: GitHubRepository, token: string, stack: number, pullRequests: readonly number[], transport: RestTransport = fetchRestTransport): Promise<PullRequestStack> {
   return toStack(await call(transport, 'POST', restUrl(repo, `/stacks/${stack}/add`), token, { pull_requests: pullRequests }, versioned));
+}
+
+export type MergeStatus = 'pending' | 'merged' | 'enqueued' | 'failed';
+
+export interface MergeResult {
+  status: MergeStatus;
+  /** GitHub's sentence for where the merge stands. */
+  message: string;
+  /** Names the request to ask about while it is pending. */
+  uuid?: string;
+}
+
+export type MergeMethod = 'merge' | 'squash' | 'rebase';
+
+function toMergeResult(json: unknown): MergeResult | undefined {
+  const result = json as { status?: unknown; details?: { message?: unknown; uuid?: unknown } } | null;
+  if (result?.status !== 'pending' && result?.status !== 'merged' && result?.status !== 'enqueued' && result?.status !== 'failed') {
+    return undefined;
+  }
+  const { message, uuid } = result.details ?? {};
+  return { status: result.status, message: typeof message === 'string' ? message : '', uuid: typeof uuid === 'string' ? uuid : undefined };
+}
+
+/**
+ * Asks GitHub to merge a pull request and, for one in a stack, every pull request below it, all or none. The merge runs in
+ * the background; a pending result names the request to {@link mergeResult}. A request made already comes back pending too.
+ */
+export async function submitMerge(repo: GitHubRepository, token: string, number: number, method: MergeMethod, transport: RestTransport = fetchRestTransport): Promise<MergeResult> {
+  let answer: { status: number; json: unknown };
+  try {
+    answer = await transport.request('PUT', restUrl(repo, `/pulls/${number}/merge-async`), token, { merge_method: method, merge_action: 'default' }, versioned);
+  } catch (error) {
+    log.warn('could not reach GitHub', error);
+    throw new GitHubRestError('network', 0, error instanceof Error ? error.message : String(error));
+  }
+  // A pull request that is closed or a draft is answered with 400 and a result of its own.
+  const result = [200, 202, 400, 409].includes(answer.status) ? toMergeResult(answer.json) : undefined;
+  if (result) {
+    return result;
+  }
+  throw new GitHubRestError(answer.status === 404 ? 'notFound' : answer.status === 401 ? 'unauthorized' : answer.status === 403 ? 'forbidden' : answer.status === 422 ? 'invalid' : 'other', answer.status, messageOf(answer.json, answer.status));
+}
+
+/** Where a merge that was submitted stands. */
+export async function mergeResult(repo: GitHubRepository, token: string, number: number, uuid: string, transport: RestTransport = fetchRestTransport): Promise<MergeResult> {
+  const result = toMergeResult(await call(transport, 'GET', restUrl(repo, `/pulls/${number}/merge-async/${encodeURIComponent(uuid)}`), token, undefined, versioned));
+  if (!result) {
+    throw new GitHubRestError('other', 0, 'GitHub answered with a merge result this extension does not understand.');
+  }
+  return result;
 }
