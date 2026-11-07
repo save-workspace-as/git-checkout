@@ -3,7 +3,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import * as vscode from 'vscode';
 
-import { bindExtension, git, readyTree, repoRoot, waitFor } from './harness';
+import { submitForm } from './graphMenu';
+import { bindExtension, changeGroupRows, git, readyTree, repoRoot, waitFor } from './harness';
 
 describe('Create stash', () => {
   const ctx = bindExtension();
@@ -43,6 +44,30 @@ describe('Create stash', () => {
 
     assert.match(git('stash', 'list'), /take new/);
     assert.equal(git('status', '--porcelain'), '');
+  });
+
+  it('lists the changed files in the Save Stash form and stashes only the ticked ones', async () => {
+    await readyTree(ctx.api);
+    await dirtyTrackedAndNewFile();
+    writeFileSync(join(repoRoot(), 'tracked.txt'), 'base\nedit again\n');
+    git('add', 'new.txt');
+
+    await waitFor('both files in the changes list', async () => {
+      await vscode.commands.executeCommand('git.refresh');
+      await ctx.api.sendPanelMessage({ type: 'changesReady' });
+      const rows = [...await changeGroupRows(ctx.api, 'staged'), ...await changeGroupRows(ctx.api, 'unstaged')];
+      return rows.length >= 2 ? rows : undefined;
+    });
+    const command = vscode.commands.executeCommand('gitCheckout.sidebar.createStash');
+    const state = await waitFor('Save Stash modal', async () => ctx.api.operationFormState());
+    const files = state.form.fields.filter((field) => field.id.startsWith('file-')).map((field) => [field.id, 'label' in field ? field.label : '']);
+    assert.deepEqual(files.map(([, label]) => label).sort(), ['new.txt', 'tracked.txt']);
+    const untick = files.find(([, label]) => label === 'new.txt')![0];
+    await submitForm(ctx.api, command, 'Save Stash', { mode: 'paths', [untick]: false });
+
+    assert.match(git('stash', 'list'), /stash@\{0\}/);
+    assert.match(git('status', '--porcelain'), /new\.txt/);
+    assert.doesNotMatch(git('status', '--porcelain'), /tracked\.txt/);
   });
 
   it('applies a stash from the modal and deletes it when requested', async () => {

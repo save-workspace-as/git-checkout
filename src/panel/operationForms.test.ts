@@ -9,6 +9,7 @@ import {
   rebaseForm,
   remoteBranchDeleteForm,
   stashCreateForm,
+  bisectStartForm,
   tagCreateForm,
   editCommitMessageForm,
   validateBranchRenameForm,
@@ -214,7 +215,7 @@ describe('operation-specific form definitions', () => {
     assert.equal(deleteStashForm(stash).fields[0]?.description, 'The stash entry to drop.');
     assert.equal(resetForm('main', 'abc').fields.find((field) => field.id === 'branch')?.description, 'The branch whose head moves.');
     assert.equal(tagDetailsForm('v1', 'note').fields.find((field) => field.id === 'tag')?.description, 'The tag these details describe.');
-    const saved = stashCreateForm(true, 'main');
+    const saved = stashCreateForm(['a.txt'], 'main');
     assert.equal(saved.fields.find((field) => field.id === 'message')?.description, 'A note stored with this stash entry.');
     assert.equal(saved.fields.find((field) => field.id === 'mode')?.description, 'Which changes go into the stash entry.');
     const submodule = submoduleAddForm();
@@ -237,8 +238,16 @@ describe('operation-specific form definitions', () => {
     assert.equal(existing.fields.find((field) => field.id === 'startPoint')?.description, 'The local branch to check out in this worktree.');
   });
 
+  it('asks for the bad revision, which starts at HEAD, and an optional good one', () => {
+    const form = bisectStartForm();
+    assert.deepEqual(form.fields.map((field) => field.id), ['bad', 'good']);
+    assert.equal(form.values.bad, 'HEAD');
+    assert.ok(validateOperationForm(form, { ...form.values, bad: ' ' }).errors.bad);
+    assert.deepEqual(validateOperationForm(form, { bad: 'HEAD', good: '' }).errors, {});
+  });
+
   it('does not offer selected-file stashing when there are no changed files', () => {
-    const form = stashCreateForm(false);
+    const form = stashCreateForm([]);
     assert.ok(validateOperationForm(form, { ...form.values, mode: 'paths' }).errors.mode);
     assert.equal(form.values.includeUntracked, false);
   });
@@ -322,7 +331,7 @@ describe('operation form wording', () => {
     tagCreateForm('HEAD', true), branchRenameForm('a', { remote: 'origin', branch: 'a' }),
     branchDeleteForm('a', null), remoteBranchDeleteForm('origin/a'),
     upstreamRefForm({ remoteBranches: [], branches: [] } as never, 'a'),
-    stashCreateForm(true), submoduleAddForm(), remoteAddForm([]), editCommitMessageForm('abcdef1234', 'subject', 'subject\n\nbody', []),
+    stashCreateForm(['a.txt']), bisectStartForm(), submoduleAddForm(), remoteAddForm([]), editCommitMessageForm('abcdef1234', 'subject', 'subject\n\nbody', []),
   ];
 
   it('gives every form a submit label that names its action', () => {

@@ -76,6 +76,17 @@ export class BisectService {
     };
   }
 
+  /** Throws a sentence the person can act on when `revision` names no commit, so a form can stay open. */
+  async verifyRevision(repoRoot: string, revision: string): Promise<void> {
+    try {
+      await this.cliRegistry.getOrCreate(repoRoot).execRead(['rev-parse', '--verify', '--quiet', '--end-of-options', `${revision}^{commit}`]);
+    } catch (error) {
+      // Exit status 1 is the answer "no such commit"; the form shows it next to the field.
+      log.debug(`${revision} is not a commit`, error);
+      throw new Error(l10n.t('{0} is not a commit.', revision));
+    }
+  }
+
   async start(repoRoot: string, bad: string, good: string, options?: BisectRunOptions): Promise<void> {
     const args = ['bisect', 'start'];
     if (bad) {

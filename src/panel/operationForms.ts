@@ -9,7 +9,7 @@ import {
 } from '../features/worktrees/worktreeCreate';
 import type { LocalChangesMode } from '../features/branches/checkoutService';
 import { branchNameInputFrom, type BranchNamePrefill } from '../shared/branches/branchCreate';
-import type { OperationFormDefinition, OperationFormErrors, OperationFormValues } from '../shared/forms/operationForm';
+import type { OperationFormDefinition, OperationFormErrors, OperationFormField, OperationFormValues } from '../shared/forms/operationForm';
 import type { WorktreeCreateRequest } from '../shared/worktrees/worktreeProtocol';
 import type { StashEntryDto } from '../shared/stash/stashProtocol';
 import { validateGitFlowInit, type GitFlowInitConfig } from '../features/gitflow/gitFlowGuide';
@@ -59,6 +59,21 @@ export function validateGitFlowInitForm(
   branchNames: readonly string[],
 ): OperationFormErrors {
   return validateGitFlowInit(gitFlowInitFromValues(values), branchNames);
+}
+
+export function bisectStartForm(): OperationFormDefinition {
+  return {
+    title: l10n.t('Start Bisect'),
+    submitLabel: l10n.t('Start Bisect'),
+    values: { bad: 'HEAD', good: '' },
+    fields: [
+      { id: 'bad', type: 'text', label: l10n.t('Bad revision'), required: true, placeholder: 'HEAD',
+        description: l10n.t('A commit known to have the problem.') },
+      { id: 'good', type: 'text', label: l10n.t('Good revision'),
+        placeholder: l10n.t('Leave empty to mark a good commit later'),
+        description: l10n.t('A commit known to be free of the problem.') },
+    ],
+  };
 }
 
 export function applyStashForm(stash: StashEntryDto): OperationFormDefinition {
@@ -529,14 +544,21 @@ export function validateTagForm(values: OperationFormValues): OperationFormError
   return errors;
 }
 
+export const stashFileId = (index: number): string => `file-${index}`;
+
+/** `files` are the changed files the person can pick from; with none, every change is stashed. */
 export function stashCreateForm(
-  canSelectFiles: boolean, currentBranch = '',
+  files: readonly string[], currentBranch = '',
   messages: { value: string; label?: string }[] = [],
 ): OperationFormDefinition {
+  const canSelectFiles = files.length > 0;
   return {
     title: l10n.t('Save Stash'),
     submitLabel: l10n.t('Save Stash'),
-    values: { message: messages[0]?.value ?? '', includeUntracked: false, mode: 'all' },
+    values: {
+      message: messages[0]?.value ?? '', includeUntracked: false, mode: 'all',
+      ...Object.fromEntries(files.map((_, index) => [stashFileId(index), true])),
+    },
     fields: [
       { id: 'message', type: 'text', label: l10n.t('Stash message'),
         description: l10n.t('A note stored with this stash entry.'),
@@ -551,6 +573,10 @@ export function stashCreateForm(
         { value: 'all', label: l10n.t('All changes') },
         ...(canSelectFiles ? [{ value: 'paths', label: l10n.t('Select files') }] : []),
       ] },
+      ...files.map((file, index): OperationFormField => ({
+        id: stashFileId(index), type: 'checkbox', label: file, group: l10n.t('Files'),
+        when: { field: 'mode', value: 'paths' },
+      })),
     ],
   };
 }

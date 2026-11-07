@@ -2,13 +2,14 @@ import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { createLogger } from '../../log';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { cleanChoice, cleanForm, deleteMergedBranchesForm, MERGED_PREFIX, requireTicked, sparseChoice, sparseForm, tickedItems, validateCleanForm, validateSparseForm } from './housekeepingForms';
 import { HousekeepingService } from './housekeepingService';
 import { StatisticsService } from '../statistics/statisticsService';
 
 const log = createLogger('housekeeping');
 
 /** What HousekeepingController needs from the window that owns it. */
-export type HousekeepingContext = Pick<GitCheckoutPanelManager, 'activeRepoRoot' | 'cliRegistry' | 'graphReady' | 'sync'>;
+export type HousekeepingContext = Pick<GitCheckoutPanelManager, 'activeRepoRoot' | 'cliRegistry' | 'graphReady' | 'operationForm' | 'sync'>;
 
 /** Prune stale remote branches, delete merged branches, clean untracked files and run garbage collection. */
 export class HousekeepingController {
@@ -77,45 +78,43 @@ export class HousekeepingController {
       void vscode.window.showInformationMessage(l10n.t('No branches are merged into the current branch.'));
       return;
     }
-    const picked = await vscode.window.showQuickPick(
-      merged.map((name) => ({ label: name, picked: true })),
-      { canPickMany: true, placeHolder: l10n.t('Local branches already merged into the current branch'), title: l10n.t('Delete Merged Branches') },
-    );
-    if (!picked || picked.length === 0) { return; }
-    await this.ctx.sync.runSyncOp(l10n.t('Deleting merged branches'), (repoRoot) =>
-      this.housekeeping().deleteBranches(repoRoot, picked.map((item) => item.label)));
+    await this.ctx.operationForm.show(deleteMergedBranchesForm(merged), {
+      validate: (values) => requireTicked(MERGED_PREFIX, merged, values, l10n.t('Select at least one branch to delete.')),
+      submit: async (values) => {
+        const picked = tickedItems(MERGED_PREFIX, merged, values);
+        await this.ctx.sync.runSyncOp(l10n.t('Deleting merged branches'), (repoRoot) =>
+          this.housekeeping().deleteBranches(repoRoot, picked));
+        return true;
+      },
+    });
   }
 
   async runCleanUntracked(): Promise<void> {
     const root = this.repoRoot();
     if (!root) { return; }
-    const includeIgnored = await vscode.window.showQuickPick(
-      [
-        { label: l10n.t('Untracked files'), description: l10n.t('Keep ignored files'), ignored: false },
-        { label: l10n.t('Untracked and ignored files'), description: l10n.t('Also removes build output and caches'), ignored: true },
-      ],
-      { placeHolder: l10n.t('What to clean') },
-    );
-    if (!includeIgnored) { return; }
-    const found = await this.looking(l10n.t('Finding files…'), () => this.housekeeping().cleanPreview(root, includeIgnored.ignored));
+    const found = await this.looking(l10n.t('Finding files…'), async () => ({
+      untracked: await this.housekeeping().cleanPreview(root, false),
+      all: await this.housekeeping().cleanPreview(root, true),
+    }));
     if (!found) { return; }
-    if (found.length === 0) {
+    if (found.all.length === 0) {
       void vscode.window.showInformationMessage(l10n.t('There is nothing to clean.'));
       return;
     }
-    const picked = await vscode.window.showQuickPick(
-      found.map((path) => ({ label: path, picked: true })),
-      { canPickMany: true, placeHolder: l10n.t('Files and folders to delete'), title: l10n.t('Clean Untracked Files') },
-    );
-    if (!picked || picked.length === 0) { return; }
-    const confirm = await vscode.window.showWarningMessage(
-      l10n.t('Permanently delete {0} files and folders? This cannot be undone.', picked.length),
-      { modal: true, detail: picked.map((item) => item.label).join('\n') },
-      l10n.t('Delete'),
-    );
-    if (confirm !== l10n.t('Delete')) { return; }
-    await this.ctx.sync.runSyncOp(l10n.t('Cleaning'), (repoRoot) =>
-      this.housekeeping().clean(repoRoot, picked.map((item) => item.label), includeIgnored.ignored));
+    await this.ctx.operationForm.show(cleanForm(found), {
+      validate: (values) => validateCleanForm(found, values),
+      submit: async (values) => {
+        const { paths, ignored } = cleanChoice(found, values);
+        const confirm = await vscode.window.showWarningMessage(
+          l10n.t('Permanently delete {0} files and folders? This cannot be undone.', paths.length),
+          { modal: true, detail: paths.join('\n') },
+          l10n.t('Delete'),
+        );
+        if (confirm !== l10n.t('Delete')) { return false; }
+        await this.ctx.sync.runSyncOp(l10n.t('Cleaning'), (repoRoot) => this.housekeeping().clean(repoRoot, paths, ignored));
+        return true;
+      },
+    });
   }
 
   async runSparseCheckout(): Promise<void> {
@@ -126,27 +125,18 @@ export class HousekeepingController {
       kept: await this.housekeeping().sparseFolders(root),
     }));
     if (!known) { return; }
-    const choice = await vscode.window.showQuickPick(
-      [
-        { label: l10n.t('Choose folders…'), description: l10n.t('Check out only these folders of the repository'), action: 'set' as const },
-        ...(known.kept.length > 0
-          ? [{ label: l10n.t('Check Out Everything'), description: l10n.t('Turn sparse checkout off'), action: 'disable' as const }]
-          : []),
-      ],
-      { placeHolder: l10n.t('Sparse checkout'), title: l10n.t('Sparse Checkout') },
-    );
-    if (!choice) { return; }
-    if (choice.action === 'disable') {
-      await this.ctx.sync.runSyncOp(l10n.t('Checking out everything'), (repoRoot) => this.housekeeping().disableSparse(repoRoot));
-      return;
-    }
-    const picked = await vscode.window.showQuickPick(
-      known.folders.map((name) => ({ label: name, picked: known.kept.length === 0 || known.kept.includes(name) })),
-      { canPickMany: true, placeHolder: l10n.t('Folders to check out; the files at the top level are always kept'), title: l10n.t('Sparse Checkout') },
-    );
-    if (!picked || picked.length === 0) { return; }
-    await this.ctx.sync.runSyncOp(l10n.t('Narrowing the checkout'), (repoRoot) =>
-      this.housekeeping().setSparseFolders(repoRoot, picked.map((item) => item.label)));
+    await this.ctx.operationForm.show(sparseForm(known), {
+      validate: (values) => validateSparseForm(known, values),
+      submit: async (values) => {
+        const choice = sparseChoice(known, values);
+        if (choice.kind === 'disable') {
+          await this.ctx.sync.runSyncOp(l10n.t('Checking out everything'), (repoRoot) => this.housekeeping().disableSparse(repoRoot));
+        } else {
+          await this.ctx.sync.runSyncOp(l10n.t('Narrowing the checkout'), (repoRoot) => this.housekeeping().setSparseFolders(repoRoot, choice.folders));
+        }
+        return true;
+      },
+    });
   }
 
   async runStatistics(): Promise<void> {

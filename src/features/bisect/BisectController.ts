@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { GitCliError } from '../../core/gitCliError';
 import { createLogger } from '../../log';
 import { bisectCheckoutSha, IDLE_BISECT_STATE, type BisectMark } from '../../shared/bisect/bisectProtocol';
+import { bisectStartForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('bisect');
@@ -15,6 +16,7 @@ export type BisectContext = Pick<
   | 'bisectService'
   | 'createOrReveal'
   | 'graphReady'
+  | 'operationForm'
   | 'postMessage'
   | 'postState'
   | 'reloadGraphOnHeadChange'
@@ -28,26 +30,23 @@ export class BisectController {
   constructor(private readonly ctx: BisectContext) {}
 
   async runBisectStart(): Promise<void> {
-    const bad = await vscode.window.showInputBox({
-      title: l10n.t('Start Bisect'),
-      prompt: l10n.t('Known bad revision'),
-      placeHolder: 'HEAD',
-      value: 'HEAD',
+    await this.ctx.operationForm.show(bisectStartForm(), {
+      validate: () => ({}),
+      submit: async (values) => {
+        const bad = String(values.bad).trim();
+        const good = String(values.good).trim();
+        const root = this.ctx.activeRepoRoot();
+        if (root) {
+          for (const revision of [bad, good].filter(Boolean)) {
+            await this.ctx.bisectService.verifyRevision(root, revision);
+          }
+        }
+        await this.runBisect(l10n.t('Starting bisect'), (root, token) =>
+          this.ctx.bisectService.start(root, bad, good, { cancellationToken: token }),
+        );
+        return true;
+      },
     });
-    if (bad === undefined) {
-      return;
-    }
-    const good = await vscode.window.showInputBox({
-      title: l10n.t('Start Bisect'),
-      prompt: l10n.t('Known good revision'),
-      placeHolder: l10n.t('Leave empty to mark a good commit later'),
-    });
-    if (good === undefined) {
-      return;
-    }
-    await this.runBisect(l10n.t('Starting bisect'), (root, token) =>
-      this.ctx.bisectService.start(root, bad.trim(), good.trim(), { cancellationToken: token }),
-    );
   }
 
   runBisectMark(mark: BisectMark, rev?: string): Promise<void> {
