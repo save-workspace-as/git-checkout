@@ -238,7 +238,7 @@ describe('shared Settings-style operation form view', () => {
     const h = mount();
     const groups = [...h.root.querySelectorAll('.operation-form-field')] as El[];
     assert.equal(groups.length, 3);
-    assert.ok(groups.every((group) => group.getAttribute('variant') === 'settings-group'));
+    assert.ok(groups.every((group) => group.getAttribute('variant') === 'vertical'));
     assert.equal(h.root.querySelector('vscode-form-container')?.children.length, 3);
 
     const [name, check, radio] = groups;

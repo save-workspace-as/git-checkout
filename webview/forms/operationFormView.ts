@@ -156,7 +156,7 @@ export function mountOperationForm(
   }
 
   const textBlock = (field: TextField): TemplateResult => html`
-    <vscode-form-group class="operation-form-field" variant="settings-group">
+    <vscode-form-group class="operation-form-field" variant="vertical">
       ${label(field, field.suggestions ? `suggestions-${field.id}` : `${field.id}-0`)}
       ${helper(field)}
       ${textControl(field)}
@@ -164,7 +164,7 @@ export function mountOperationForm(
     </vscode-form-group>`;
 
   const radioBlock = (field: RadioField): TemplateResult => html`
-    <vscode-form-group class="operation-form-field" variant="settings-group" role="group" aria-labelledby="label-${field.id}">
+    <vscode-form-group class="operation-form-field" variant="vertical" role="group" aria-labelledby="label-${field.id}">
       ${label(field, `radios-${field.id}`)}
       ${helper(field)}
       <vscode-radio-group id="radios-${field.id}" variant="vertical">
@@ -190,7 +190,7 @@ export function mountOperationForm(
     const groupId = `checks-${fields[0].id}`;
     const title = fields.length > 1 ? fields[0].group : undefined;
     return html`
-      <vscode-form-group class="operation-form-field" variant="settings-group">
+      <vscode-form-group class="operation-form-field" variant="vertical">
         ${title
           ? html`<vscode-label id="label-${groupId}" for=${groupId}>${title}</vscode-label>`
           : fields.length === 1 && fields[0].description ? label(fields[0], `${fields[0].id}-0`) : nothing}
@@ -238,7 +238,7 @@ export function mountOperationForm(
           if (!busy) { post({ type: 'formSubmit', values: { ...values } }); }
         }}>
         ${form?.notice && form.notice.message !== failure ? html`
-          <vscode-form-group variant="settings-group">
+          <vscode-form-group variant="vertical">
             <vscode-form-helper>
               <p class=${classMap({ 'operation-form-notice': true, 'operation-form-notice-success': form.notice.kind === 'success' })}
                 role="status" aria-live="polite"><span class="operation-form-notice-icon"
@@ -247,7 +247,7 @@ export function mountOperationForm(
             </vscode-form-helper>
           </vscode-form-group>` : nothing}
         ${form?.tabs ? tabbed(form) : fieldsOf(blocks)}
-        <vscode-form-group class="operation-form-actions" variant="settings-group">
+        <vscode-form-group class="operation-form-actions" variant="vertical">
           ${failure ? html`<p class="operation-form-error" role="alert">${failure}</p>` : nothing}
           <vscode-button type="submit" ?disabled=${busy || Object.keys(errors).length > 0}
           >${form ? operationFormSubmitLabel(form, values) : ''}</vscode-button>
