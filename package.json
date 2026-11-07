@@ -613,6 +613,11 @@
         "title": "%command.gitCheckout.sidebar.openPullRequest.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.createStack.category%",
+        "command": "gitCheckout.pullRequests.createStack",
+        "title": "%command.gitCheckout.pullRequests.createStack.title%"
+      },
+      {
         "category": "%command.gitCheckout.sidebar.openPullRequestWithAi.category%",
         "command": "gitCheckout.sidebar.openPullRequestWithAi",
         "title": "%command.gitCheckout.sidebar.openPullRequestWithAi.title%"
@@ -1176,6 +1181,11 @@
         "category": "%command.gitCheckout.graph.branch.pullRequest.category%",
         "command": "gitCheckout.graph.branch.pullRequest",
         "title": "%command.gitCheckout.graph.branch.pullRequest.title%"
+      },
+      {
+        "category": "%command.gitCheckout.graph.branch.pullRequestStack.category%",
+        "command": "gitCheckout.graph.branch.pullRequestStack",
+        "title": "%command.gitCheckout.graph.branch.pullRequestStack.title%"
       },
       {
         "category": "%command.gitCheckout.graph.branch.pullRequestWithAi.category%",
@@ -2411,6 +2421,14 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.graph.branch.pullRequestStack",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.createStack",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.sidebar.openPullRequest",
           "when": "false"
         },
@@ -3552,6 +3570,11 @@
           "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/) && config.gitCheckout.ai.enabled"
         },
         {
+          "command": "gitCheckout.pullRequests.createStack",
+          "group": "2_sync@6",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^branch\\.local/"
+        },
+        {
           "command": "gitCheckout.sidebar.fetchRemote",
           "group": "1_sync@1",
           "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
@@ -4384,6 +4407,11 @@
           "command": "gitCheckout.graph.branch.pullRequestWithAi",
           "group": "1_branch@6",
           "when": "(graphBranchKind == local) && config.gitCheckout.ai.enabled"
+        },
+        {
+          "command": "gitCheckout.graph.branch.pullRequestStack",
+          "group": "1_branch@7",
+          "when": "graphBranchKind == local"
         },
         {
           "command": "gitCheckout.graph.branch.rename",

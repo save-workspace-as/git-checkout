@@ -12,6 +12,7 @@ export const PULL_REQUEST_COMMANDS = {
   review: 'gitCheckout.pullRequests.review',
   openOnGitHub: 'gitCheckout.pullRequests.openOnGitHub',
   copyLink: 'gitCheckout.pullRequests.copyLink',
+  createStack: 'gitCheckout.pullRequests.createStack',
 } as const;
 
 const GROUPS: Record<PullRequestGroup, { label: () => string; icon: string }> = {

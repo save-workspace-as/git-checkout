@@ -1,6 +1,6 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
-import { operationFormSubmitLabel, validateOperationForm, type OperationFormDefinition } from './operationForm';
+import { isFieldVisible, operationFormSubmitLabel, validateOperationForm, type OperationFormDefinition } from './operationForm';
 
 const form: OperationFormDefinition = {
   title: 'Create Branch',
@@ -63,5 +63,34 @@ describe('operation form contract', () => {
     };
     assert.deepEqual(validateOperationForm(dropdown, dropdown.values).errors, {});
     assert.ok(validateOperationForm(dropdown, { message: 'Custom' }).errors.message);
+  });
+
+  describe('fields that depend on another field', () => {
+    const dependent: OperationFormDefinition = {
+      title: 'Stack', submitLabel: 'Create',
+      values: { mode: 'stack', pick: true, name: '' },
+      fields: [
+        { id: 'mode', label: 'Mode', type: 'radio', options: [{ value: 'one', label: 'One' }, { value: 'stack', label: 'Stack' }] },
+        { id: 'pick', label: 'Pick', type: 'checkbox', when: { field: 'mode', value: 'stack' } },
+        { id: 'name', label: 'Name', type: 'text', required: true, when: [{ field: 'mode', value: 'stack' }, { field: 'pick', value: true }] },
+      ],
+    };
+
+    it('shows a field only while every condition holds', () => {
+      const [, pick, name] = dependent.fields;
+      assert.equal(isFieldVisible(pick, { mode: 'stack' }), true);
+      assert.equal(isFieldVisible(pick, { mode: 'one' }), false);
+      assert.equal(isFieldVisible(name, { mode: 'stack', pick: true }), true);
+      assert.equal(isFieldVisible(name, { mode: 'stack', pick: false }), false);
+      assert.equal(isFieldVisible(dependent.fields[0], {}), true);
+    });
+
+    it('does not ask for a field that is out of the form, and keeps what it holds', () => {
+      const hidden = { mode: 'stack', pick: false, name: '' };
+      assert.deepEqual(validateOperationForm(dependent, hidden), { values: hidden, errors: {} });
+      assert.deepEqual(Object.keys(validateOperationForm(dependent, { ...hidden, pick: true }).errors), ['name']);
+      const loose = validateOperationForm(dependent, { mode: 'one' });
+      assert.deepEqual(loose, { values: { mode: 'one', pick: false, name: '' }, errors: {} });
+    });
   });
 });

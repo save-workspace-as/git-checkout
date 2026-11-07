@@ -3,6 +3,7 @@ import { html, nothing, render, type TemplateResult } from 'lit';
 import { classMap } from 'lit/directives/class-map.js';
 import { live } from 'lit/directives/live.js';
 import {
+  isFieldVisible,
   operationFormSubmitLabel,
   type OperationFormDefinition,
   type OperationFormErrors,
@@ -206,6 +207,8 @@ export function mountOperationForm(
         : block.kind === 'radio' ? radioBlock(block.field) : checkboxBlock(block.fields))}
     </vscode-form-container>`;
 
+  const shown = (fields: readonly Field[]): Field[] => fields.filter((field) => isFieldVisible(field, values));
+
   /** A long form as tabs; the tab shown stays the same while the form redraws. */
   function tabbed(form: OperationFormDefinition): TemplateResult {
     const tabs = form.tabs ?? [];
@@ -216,15 +219,15 @@ export function mountOperationForm(
         @vsc-tabs-select=${(event: CustomEvent<{ selectedIndex: number }>) => { selectedTab = event.detail.selectedIndex; }}>
         ${tabs.map((tab) => html`
           <vscode-tab-header slot="header">${tab.label}</vscode-tab-header>
-          <vscode-tab-panel>${fieldsOf(blocksOf(form.fields.filter((field) => tab.fields.includes(field.id))))}</vscode-tab-panel>`)}
+          <vscode-tab-panel>${fieldsOf(blocksOf(shown(form.fields.filter((field) => tab.fields.includes(field.id)))))}</vscode-tab-panel>`)}
       </vscode-tabs>
-      ${rest.length > 0 ? fieldsOf(blocksOf(rest)) : nothing}`;
+      ${rest.length > 0 ? fieldsOf(blocksOf(shown(rest))) : nothing}`;
   }
 
   function template(): TemplateResult {
     const form = definition;
     // A failed submit that repeats the notice (the preflight of a patch) would show the same sentence twice.
-    const blocks = form ? blocksOf(form.fields) : [];
+    const blocks = form ? blocksOf(form.fields.filter((field) => isFieldVisible(field, values))) : [];
     return html`
       <form class="operation-form" novalidate aria-busy=${String(busy)}
         @keydown=${(event: KeyboardEvent) => {

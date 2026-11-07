@@ -15,6 +15,7 @@ import type { RepositorySummary } from '../changes/workingTreeService';
 import { runRefsMutation } from './refsMutationsHost';
 import { promptUpstreamRef } from './setUpstreamHost';
 import { tagDetailsForm } from '../../panel/operationForms';
+import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 
 const log = createLogger('branches');
@@ -112,7 +113,7 @@ export class RefsController {
 
   /** An action from the menu of a branch badge in the graph. */
   async runBranchBadgeAction(
-    action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest' | 'pullRequestWithAi',
+    action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest' | 'pullRequestWithAi' | 'pullRequestStack',
     ref: string,
   ): Promise<void> {
     if (!ref) {
@@ -133,6 +134,9 @@ export class RefsController {
         return this.ctx.runOpenPullRequest(ref);
       case 'pullRequestWithAi':
         return this.ctx.runOpenPullRequest(ref, true);
+      case 'pullRequestStack':
+        await vscode.commands.executeCommand(PULL_REQUEST_COMMANDS.createStack, { ref });
+        return;
     }
   }
 

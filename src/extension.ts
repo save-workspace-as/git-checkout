@@ -42,6 +42,7 @@ import { showGitCheckoutQuickLaunch } from './panel/quickLaunch';
 import { LineBlameController } from './features/blame/LineBlameController';
 import { LineBlameService } from './features/blame/lineBlameService';
 import { ignoreRevsEnabled } from './features/blame/blameSettings';
+import type { RestTransport } from './features/pullRequests/githubRestClient';
 import { PullRequestController } from './features/pullRequests/PullRequestController';
 import { PullRequestStore, type PullRequestState } from './features/pullRequests/PullRequestStore';
 import { RemoteLinkController } from './features/history/RemoteLinkController';
@@ -81,6 +82,8 @@ export interface GitCheckoutApi {
   seedPullRequests(repoRoot: string, state: PullRequestState): void;
   /** Answers every AI prompt with `model` instead of a language model; `undefined` goes back to VS Code's (e2e only). */
   seedLanguageModel(model: ((prompt: string) => Promise<string>) | undefined): void;
+  /** Sends the requests that change a repository on GitHub, such as opening pull requests, to `access` instead (e2e only); `undefined` undoes it. */
+  seedGitHub(access: { token: string; transport: RestTransport } | undefined): void;
   operationBanner(): ReturnType<GitCheckoutPanelManager['operationBanner']>;
   /** Whether the window has a repository to show and, if not, why (e2e only). */
   panelState(): ReturnType<GitCheckoutPanelManager['panelState']>;
@@ -563,6 +566,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
     fileBlame: () => fileBlame.columnText(),
     seedPullRequests: (repoRoot, state) => pullRequests.seed(repoRoot, state),
     seedLanguageModel,
+    seedGitHub: (access) => pullRequests.seedWriteAccess(access),
     operationBanner: () => panelManager.operationBanner(),
     panelState: () => panelManager.panelState(),
     graphCommits: () => panelManager.graphCommits(),

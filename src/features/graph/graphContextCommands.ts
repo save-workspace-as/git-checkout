@@ -88,6 +88,10 @@ export const GRAPH_CONTEXT_COMMANDS: Record<string, GraphContextCommand> = {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyBranchAction', action: 'pullRequestWithAi', ref: c.graphBranch ?? '' }),
   },
+  'gitCheckout.graph.branch.pullRequestStack': {
+    selection: 'single',
+    toMessage: (c) => ({ type: 'historyBranchAction', action: 'pullRequestStack', ref: c.graphBranch ?? '' }),
+  },
   'gitCheckout.graph.branch.rename': {
     selection: 'single',
     toMessage: (c) => ({ type: 'historyBranchAction', action: 'rename', ref: c.graphBranch ?? '' }),
@@ -225,6 +229,7 @@ const BRANCH_ACTIONS: Record<string, 'any' | 'local'> = {
   'gitCheckout.graph.branch.push': 'local',
   'gitCheckout.graph.branch.pullRequest': 'local',
   'gitCheckout.graph.branch.pullRequestWithAi': 'local',
+  'gitCheckout.graph.branch.pullRequestStack': 'local',
   'gitCheckout.graph.branch.rename': 'local',
 };
 
