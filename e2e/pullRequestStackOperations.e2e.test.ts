@@ -172,4 +172,71 @@ describe('Operations on a stack of pull requests', () => {
       assert.deepEqual(requests, []);
     });
   });
+
+  describe('Merge Stack', () => {
+    const requests: { method: string; url: string; body: unknown }[] = [];
+    const path = (url: string) => url.replace('https://api.github.com/repos/octo/app', '');
+    /** A GitHub that takes the merge and then answers with `final` when asked how it went. */
+    const github = (final: unknown) => ctx.api.seedGitHub({
+      token: 'test-token',
+      transport: {
+        async request(method, url, _token, body) {
+          requests.push({ method, url, body });
+          return method === 'PUT'
+            ? { status: 202, json: { status: 'pending', details: { message: 'Merge request enqueued.', uuid: 'u1' } } }
+            : { status: 200, json: final };
+        },
+      },
+    });
+    const merged = { status: 'merged', details: { message: 'Pull request was merged.', sha: 'abc' } };
+
+    beforeEach(() => { requests.length = 0; });
+    afterEach(() => ctx.api.seedGitHub(undefined));
+
+    it('merges the stack through its top pull request with the chosen method, and waits for GitHub to finish', async () => {
+      github(merged);
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.mergeStack', await stackNode()), 'Merge Stack', { method: 'squash' });
+      assert.deepEqual(requests.map((r) => [r.method, path(r.url)]), [['PUT', '/pulls/3/merge-async'], ['GET', '/pulls/3/merge-async/u1']]);
+      assert.deepEqual(requests[0].body, { merge_method: 'squash', merge_action: 'default' });
+      assert.deepEqual(messages, ['Merged 3 pull requests.']);
+    });
+
+    it('merges only through the layer that was picked', async () => {
+      github(merged);
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.mergeStack'), 'Merge Stack', { through: '2' });
+      assert.equal(path(requests[0].url), '/pulls/2/merge-async');
+      assert.deepEqual(messages, ['Merged 2 pull requests.']);
+    });
+
+    it('says the stack is in the merge queue when GitHub put it there', async () => {
+      github({ status: 'enqueued', details: { message: 'Pull request was added to the merge queue.' } });
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.mergeStack'), 'Merge Stack');
+      assert.deepEqual(messages, ['Added the stack to the merge queue.']);
+    });
+
+    it('keeps the form open with the reason when GitHub could not merge', async () => {
+      github({ status: 'failed', details: { message: 'Merge conflict: the pull request could not be merged.' } });
+      const command = vscode.commands.executeCommand('gitCheckout.pullRequests.mergeStack');
+      const state = await waitFor('Merge Stack modal', async () => ctx.api.operationFormState());
+      await ctx.api.sendPanelMessage({ type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formSubmit', values: state.form.values } });
+      await waitFor('the merge to be asked about', async () => (requests.length === 2 ? true : undefined));
+      assert.ok(ctx.api.operationFormState(), 'the form stays open, to try again');
+      assert.deepEqual(messages, []);
+      await ctx.api.sendPanelMessage({ type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' } });
+      await command;
+    });
+
+    it('does not ask GitHub to merge a stack that has a draft in it', async () => {
+      seedStack(ctx.api, [stackPull(1, 'stack-a', 'main'), stackPull(2, 'stack-b', 'stack-a', { isDraft: true }), stackPull(3, 'stack-c', 'stack-b')]);
+      github(merged);
+      const command = vscode.commands.executeCommand('gitCheckout.pullRequests.mergeStack');
+      const state = await waitFor('Merge Stack modal', async () => ctx.api.operationFormState());
+      await ctx.api.sendPanelMessage({ type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formSubmit', values: state.form.values } });
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      assert.deepEqual(requests, []);
+      assert.ok(ctx.api.operationFormState());
+      await ctx.api.sendPanelMessage({ type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' } });
+      await command;
+    });
+  });
 });

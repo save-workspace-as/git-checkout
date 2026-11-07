@@ -39,6 +39,7 @@ const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
   { label: l10n.t('Go Up the Stack'), command: 'gitCheckout.pullRequests.stackUp' },
   { label: l10n.t('Keyboard Shortcuts'), command: 'gitCheckout.openKeyboardShortcuts' },
   { label: l10n.t('Merge…'), command: 'gitCheckout.merge' },
+  { label: l10n.t('Merge Stack…'), command: 'gitCheckout.pullRequests.mergeStack' },
   { label: l10n.t('New Branch…'), command: 'gitCheckout.sidebar.createBranch' },
   { label: l10n.t('New Tag…'), command: 'gitCheckout.sidebar.createTag' },
   { label: l10n.t('New Worktree…'), command: 'gitCheckout.sidebar.createWorktree' },

@@ -10,10 +10,11 @@ import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { SidebarNode } from '../../ui/sidebarTreeModel';
 import type { PullRequestStore } from './PullRequestStore';
 import { findBaseBranch } from './branchChanges';
-import { addToStack, createStack, GitHubRestError, listStacks } from './githubRestClient';
+import { addToStack, createStack, GitHubRestError, listStacks, submitMerge } from './githubRestClient';
 import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, syncStackForm, validatePushStackForm } from './stackGit';
 import { rebaseStack } from './stackRebase';
 import { baseBranchName } from './stackCommits';
+import { mergeMethodOf, mergeSet, mergeStackForm, validateMergeStackForm, waitForMerge, type MergeLayer } from './stackMerge';
 
 const log = createLogger('stack');
 
@@ -41,6 +42,7 @@ export class StackController {
       vscode.commands.registerCommand(C.pushStack, (node?: SidebarNode) => this.pushStack(node)),
       vscode.commands.registerCommand(C.rebaseStack, (node?: SidebarNode) => this.rebaseStack(node)),
       vscode.commands.registerCommand(C.syncStack, (node?: SidebarNode) => this.syncStack(node)),
+      vscode.commands.registerCommand(C.mergeStack, (node?: SidebarNode) => this.mergeStack(node)),
     );
   }
 
@@ -237,5 +239,42 @@ export class StackController {
       log.warn('could not make the stack on GitHub match', error);
       return l10n.t('Not grouped as a stack: {0}', error.message);
     }
+  }
+
+  /**
+   * Opens the form to merge the stack through one of its pull requests: that one and every one below it, all or none. The
+   * merge runs on GitHub in the background; the form waits for how it ended.
+   */
+  private async mergeStack(node?: SidebarNode): Promise<void> {
+    const stack = await this.resolve(node);
+    if (!stack) {
+      return;
+    }
+    const layers: MergeLayer[] = stack.chain.pulls.map((pull) => ({ number: pull.number, title: pull.title, isDraft: pull.isDraft }));
+    await this.window.selectRepository(stack.root);
+    await this.window.operationForm.show(mergeStackForm(layers), {
+      validate: (values) => validateMergeStackForm(layers, values),
+      submit: async (values) => {
+        const access = await this.store.writeAccess();
+        if (!access) {
+          throw new Error(l10n.t('Sign in to GitHub to merge pull requests.'));
+        }
+        const through = Number(values.through);
+        const count = mergeSet(layers, through).length;
+        log.info(`merging ${count} pull request(s) of a stack`);
+        const first = await submitMerge(stack.repo, access.token, through, mergeMethodOf(values.method), access.transport);
+        const result = await waitForMerge(stack.repo, access.token, through, first, access.transport);
+        if (result.status === 'failed') {
+          throw new Error(result.message || l10n.t('GitHub could not merge the stack.'));
+        }
+        this.store.refresh();
+        void vscode.window.showInformationMessage(
+          result.status === 'enqueued'
+            ? l10n.t('Added the stack to the merge queue.')
+            : count === 1 ? l10n.t('Merged 1 pull request.') : l10n.t('Merged {0} pull requests.', count),
+        );
+        return true;
+      },
+    });
   }
 }

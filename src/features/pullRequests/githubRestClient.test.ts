@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
-  addToStack, createPullRequest, createStack, findOpenPullRequest, GitHubRestError, listStacks, restUrl, setPullRequestBase, type RestTransport,
+  addToStack, createPullRequest, mergeResult, submitMerge, createStack, findOpenPullRequest, GitHubRestError, listStacks, restUrl, setPullRequestBase, type RestTransport,
 } from './githubRestClient';
 
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
@@ -114,5 +114,44 @@ describe('listStacks and addToStack', () => {
 
   it('reports a conflict while someone else changes the stack', async () => {
     assert.equal(await failureOf(addToStack(repo, 't', 9, [8], transport({ status: 409, json: { message: 'busy' } }))), 'conflict');
+  });
+});
+
+describe('submitMerge', () => {
+  const pending = { status: 'pending', details: { message: 'Merge request enqueued.', uuid: 'abc-123' } };
+
+  it('asks for the pull request, and everything below it, to be merged in the background', async () => {
+    const t = transport({ status: 202, json: pending });
+    assert.deepEqual(await submitMerge(repo, 't', 8, 'squash', t), { status: 'pending', message: 'Merge request enqueued.', uuid: 'abc-123' });
+    assert.deepEqual([t.calls[0].method, t.calls[0].url], ['PUT', 'https://api.github.com/repos/octo/app/pulls/8/merge-async']);
+    assert.deepEqual(t.calls[0].body, { merge_method: 'squash', merge_action: 'default' });
+    assert.deepEqual(t.calls[0].headers, { 'X-GitHub-Api-Version': '2026-03-10' });
+  });
+
+  it('takes the results GitHub gives at once: merged already, a request made already, a pull request that cannot be merged', async () => {
+    const answer = (status: number, json: unknown) => submitMerge(repo, 't', 8, 'merge', transport({ status, json }));
+    assert.equal((await answer(200, { status: 'merged', details: { message: 'Pull request was merged.' } })).status, 'merged');
+    assert.equal((await answer(409, pending)).uuid, 'abc-123');
+    assert.deepEqual(await answer(400, { status: 'failed', details: { message: 'The pull request is a draft.' } }), { status: 'failed', message: 'The pull request is a draft.', uuid: undefined });
+  });
+
+  it('reports a repository without the asynchronous merge, and a bad request', async () => {
+    const failure = (status: number, json: unknown = { message: 'Not Found' }) => failureOf(submitMerge(repo, 't', 8, 'merge', transport({ status, json })));
+    assert.equal(await failure(404), 'notFound');
+    assert.equal(await failure(422, { message: 'Invalid merge_method' }), 'invalid');
+    assert.equal(await failure(401), 'unauthorized');
+    assert.equal(await failure(500), 'other');
+  });
+});
+
+describe('mergeResult', () => {
+  it('asks how a merge that was submitted stands', async () => {
+    const t = transport({ status: 200, json: { status: 'enqueued', details: { message: 'Pull request was added to the merge queue.' } } });
+    assert.equal((await mergeResult(repo, 't', 8, 'abc 123', t)).status, 'enqueued');
+    assert.equal(t.calls[0].url, 'https://api.github.com/repos/octo/app/pulls/8/merge-async/abc%20123');
+  });
+
+  it('does not trust an answer that is not a merge result', async () => {
+    assert.equal(await failureOf(mergeResult(repo, 't', 8, 'x', transport({ status: 200, json: { nope: 1 } }))), 'other');
   });
 });
