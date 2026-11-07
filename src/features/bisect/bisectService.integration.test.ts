@@ -79,6 +79,23 @@ describe('BisectService', () => {
       repo.cleanup();
     }
   });
+
+  it('refuses a revision that is not a commit, and accepts a branch, a tag and a hash', async () => {
+    const repo = initTempRepository();
+    const svc = new BisectService(mockCliRegistry(repo.repoRoot, repo.cli));
+    try {
+      commitEmptyAt(repo.repoRoot, 'c1', 1_700_000_001);
+      execSync('git tag v1', { cwd: repo.repoRoot });
+      for (const ok of ['HEAD', 'main', 'v1', runRev(repo.repoRoot, ['rev-parse', 'HEAD'])]) {
+        await svc.verifyRevision(repo.repoRoot, ok);
+      }
+      for (const bad of ['nope', '--all', 'HEAD~5']) {
+        await assert.rejects(svc.verifyRevision(repo.repoRoot, bad), /is not a commit/, bad);
+      }
+    } finally {
+      repo.cleanup();
+    }
+  });
 });
 
 function runRev(repoRoot: string, args: string[]): string {

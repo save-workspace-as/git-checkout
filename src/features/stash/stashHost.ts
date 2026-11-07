@@ -1,8 +1,9 @@
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import type { StashCreateRequest, StashEntryDto } from '../../shared/stash/stashProtocol';
+import type { OperationFormValues } from '../../shared/forms/operationForm';
 import type { ShowOperationForm } from '../../panel/operationFormController';
-import { stashCreateForm } from '../../panel/operationForms';
+import { stashCreateForm, stashFileId } from '../../panel/operationForms';
 import { createLogger } from '../../log';
 
 const log = createLogger('stash-form');
@@ -20,6 +21,9 @@ export async function promptStashMessage(): Promise<string | null> {
   return value.trim();
 }
 
+const pickedFiles = (files: readonly string[], values: OperationFormValues): string[] =>
+  files.filter((_, index) => values[stashFileId(index)] === true);
+
 export async function createStashInForm(
   showOperationForm: ShowOperationForm,
   paths: readonly string[],
@@ -35,20 +39,14 @@ export async function createStashInForm(
     void vscode.window.showErrorMessage(l10n.t('Could not load existing stash messages.'));
     return false;
   }
-  return showOperationForm(stashCreateForm(unique.length > 0, suggestions.currentBranch,
+  return showOperationForm(stashCreateForm(unique, suggestions.currentBranch,
     stashes.map((stash) => ({ value: stash.message, label: stash.selector }))), {
-    validate: () => ({}),
+    validate: (values) => values.mode === 'paths' && pickedFiles(unique, values).length === 0
+      ? { [stashFileId(0)]: l10n.t('Select at least one file to stash.') } : {},
     async submit(values) {
       const message = String(values.message).trim();
       if (values.mode === 'paths') {
-        const picked = await vscode.window.showQuickPick(
-          unique.map((path) => ({ label: path })),
-          { title: l10n.t('Save Stash'), canPickMany: true, placeHolder: l10n.t('Files to stash'), ignoreFocusOut: true },
-        );
-        if (!picked || picked.length === 0) {
-          return false;
-        }
-        await create({ mode: 'paths', message, paths: picked.map((item) => item.label) });
+        await create({ mode: 'paths', message, paths: pickedFiles(unique, values) });
       } else {
         await create({ mode: 'all', message, includeUntracked: values.includeUntracked === true });
       }

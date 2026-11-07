@@ -640,19 +640,21 @@ describe('shared operation form modal controller', () => {
     assert.deepEqual(JSON.parse(JSON.stringify(requests)), [{ mode: 'all', message: 'WIP', includeUntracked: true }]);
   });
 
-  it('preserves stash drafts when native file selection is cancelled and saves only selected files', async () => {
+  it('lists the changed files in the form and saves only the ticked ones', async () => {
     const h = harness();
     const requests: unknown[] = [];
     const pending = h.stash.createStashInForm(h.show, ['a.txt', 'b.txt'], async (request) => { requests.push(request); },
       { currentBranch: 'main', load: async () => [
         { index: 0, selector: 'stash@{0}', sha: 'a'.repeat(40), message: 'Selected' },
       ] });
-    const values = { message: 'Selected', includeUntracked: false, mode: 'paths' };
-    await h.receive({ type: 'formSubmit', values });
+    await h.receive({ type: 'formReady' });
+    const form = h.controller.current()?.form;
+    assert.deepEqual(JSON.parse(JSON.stringify(form?.fields.filter((field) => field.id.startsWith('file-')).map((field) => field.type === 'checkbox' && field.label))), ['a.txt', 'b.txt']);
+    const none = { message: 'Selected', includeUntracked: false, mode: 'paths', 'file-0': false, 'file-1': false };
+    await h.receive({ type: 'formSubmit', values: none });
     assert.equal(h.disposed, false);
     assert.equal(requests.length, 0);
-    h.setPicked([{ label: 'b.txt' }]);
-    await h.receive({ type: 'formSubmit', values });
+    await h.receive({ type: 'formSubmit', values: { ...none, 'file-1': true } });
     assert.equal(await pending, true);
     assert.deepEqual(JSON.parse(JSON.stringify(requests)), [{ mode: 'paths', message: 'Selected', paths: ['b.txt'] }]);
   });
