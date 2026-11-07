@@ -1,8 +1,10 @@
+import * as path from 'node:path';
 import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import { GitCliError } from '../../core/gitCliError';
 import { createLogger } from '../../log';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { openDialogStart, rememberOpenedFolder } from '../../panel/saveLocation';
 import { parseConfigList, repoSettingsChanges, repoSettingsForm } from './repoSettingsForm';
 
 const log = createLogger('repo-settings');
@@ -33,8 +35,9 @@ export class RepoSettingsController {
         const chosen = await vscode.window.showOpenDialog({
           title: l10n.t('Commit message template file'),
           canSelectFiles: true, canSelectFolders: false, canSelectMany: false,
-          defaultUri: current ? vscode.Uri.file(current) : vscode.Uri.file(root),
+          defaultUri: openDialogStart(current ? path.dirname(current) : undefined, root),
         });
+        rememberOpenedFolder(chosen?.[0], false);
         return chosen?.[0]?.fsPath;
       },
       submit: async (values) => {

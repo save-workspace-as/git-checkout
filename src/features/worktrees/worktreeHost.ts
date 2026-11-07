@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { validateWorktreeDestination, WORKTREE_NONEMPTY_FOLDER, worktreeBrowseStart } from './worktreeCreate';
 import type { WorktreeCreateRequest } from '../../shared/worktrees/worktreeProtocol';
 import type { ShowOperationForm } from '../../panel/operationFormController';
+import { openDialogStart, rememberOpenedFolder } from '../../panel/saveLocation';
 import { validateWorktreeForm, worktreeCreateForm, worktreeFormRequest, type WorktreeFormContext } from '../../panel/operationForms';
 
 export function createWorktreeInForm(
@@ -17,8 +18,9 @@ export function createWorktreeInForm(
       const chosen = await vscode.window.showOpenDialog({
         title: l10n.t('Folder for the new worktree'),
         canSelectFolders: true, canSelectFiles: false, canSelectMany: false,
-        defaultUri: vscode.Uri.file(worktreeBrowseStart(context.repoRoot, String(values.path))),
+        defaultUri: String(values.path).trim() ? vscode.Uri.file(worktreeBrowseStart(context.repoRoot, String(values.path))) : openDialogStart(undefined, worktreeBrowseStart(context.repoRoot, '')),
       });
+      rememberOpenedFolder(chosen?.[0], true);
       const folder = chosen?.[0]?.fsPath;
       if (!folder) { return undefined; }
       if (validateWorktreeDestination(context.repoRoot, folder, context.worktrees) === WORKTREE_NONEMPTY_FOLDER) {

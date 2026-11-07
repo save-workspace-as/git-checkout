@@ -17,6 +17,7 @@ import { promptHistorySha, runCherryPick, runRangeOp, runRevert } from '../graph
 import { promptBranchDropAction, promptIntegrateRef, runMergeIntoHead, runRebaseOnto } from '../branches/integrateHost';
 import { promptResetTarget } from '../branches/resetHost';
 import { archiveArgs, defaultArchiveName } from './archive';
+import { rememberSavedFolder, saveDialogStart } from '../../panel/saveLocation';
 import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatchInForm } from './patchHost';
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
 import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, fixupForm, mergeForm, rebaseForm, resetForm, splitCommitForm, squashIntoParentForm, undoOperationForm } from '../../panel/operationForms';
@@ -560,12 +561,13 @@ export class HistoryOperationsController {
       return;
     }
     const target = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(path.join(path.dirname(root), defaultArchiveName(root, ref.length === 40 ? ref.slice(0, 7) : ref))),
+      defaultUri: saveDialogStart(defaultArchiveName(root, ref.length === 40 ? ref.slice(0, 7) : ref), path.dirname(root)),
       filters: { [l10n.t('Zip archive')]: ['zip'], [l10n.t('Tarball')]: ['tar.gz', 'tgz'], [l10n.t('Tar archive')]: ['tar'] },
     });
     if (!target) {
       return;
     }
+    rememberSavedFolder(target);
     try {
       await vscode.window.withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Creating {0}…', path.basename(target.fsPath)) },

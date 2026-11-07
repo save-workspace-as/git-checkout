@@ -9,6 +9,7 @@ import type { OperationFormErrors } from '../../shared/forms/operationForm';
 import type { ShowOperationForm } from '../../panel/operationFormController';
 import { applyPatchForm, createPatchForm } from '../../panel/operationForms';
 import { defaultPatchFileName, rangeForRevision } from './commitRangePatch';
+import { openDialogStart, rememberOpenedFolder, rememberSavedFolder, saveDialogStart } from '../../panel/saveLocation';
 import { createLogger } from '../../log';
 
 const log = createLogger('patch');
@@ -30,12 +31,13 @@ export async function saveCommitPatch(
   try {
     const text = await produce();
     const uri = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(defaultPatchFileName(rangeLabel, format)),
+      defaultUri: saveDialogStart(defaultPatchFileName(rangeLabel, format)),
       filters: { Patch: ['patch', 'diff'] },
     });
     if (!uri) {
       return;
     }
+    rememberSavedFolder(uri);
     await vscode.workspace.fs.writeFile(uri, Buffer.from(text, 'utf8'));
     void vscode.window.showInformationMessage(l10n.t('Saved patch to {0}', uri.fsPath));
   } catch (error) {
@@ -79,12 +81,13 @@ export function createPatchInForm(
       const target = options.saveTo
         ? vscode.Uri.file(options.saveTo)
         : await vscode.window.showSaveDialog({
-            defaultUri: vscode.Uri.file(defaultPatchFileName(revision, format)),
+            defaultUri: saveDialogStart(defaultPatchFileName(revision, format), repoRoot),
             filters: { Patch: ['patch', 'diff'] },
           });
       if (!target) {
         return false;
       }
+      rememberSavedFolder(target);
       await vscode.workspace.fs.writeFile(target, Buffer.from(text, 'utf8'));
       void vscode.window.showInformationMessage(l10n.t('Saved patch to {0}', target.fsPath));
       return true;
@@ -112,8 +115,9 @@ export function applyPatchInForm(
         title: l10n.t('Patch file'),
         canSelectMany: false,
         filters: { Patch: ['patch', 'diff'] },
-        defaultUri: current ? vscode.Uri.file(path.dirname(current)) : undefined,
+        defaultUri: openDialogStart(current ? path.dirname(current) : undefined),
       });
+      rememberOpenedFolder(chosen?.[0], false);
       return chosen?.[0]?.fsPath;
     },
     async noticeAfterPick(_field, value) {
