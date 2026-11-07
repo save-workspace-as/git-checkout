@@ -1046,9 +1046,7 @@ body.vscode-high-contrast-light {
 }
 
 .graph-ref-current {
-  color: var(--vscode-badge-foreground);
-  background: var(--vscode-gitDecoration-addedResourceForeground);
-  border-color: var(--vscode-gitDecoration-addedResourceForeground);
+  /* The checked-out branch looks like any other ref, in bold, so its text stays readable in every theme. */
   font-weight: 600;
 }
 
