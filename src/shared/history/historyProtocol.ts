@@ -50,7 +50,7 @@ export type HistoryWebviewMessage =
   /** Leave the branch whose badge was right-clicked out of the graph. */
   | { type: 'historyHideBranch'; name: string; remote: boolean }
   /** An action on the branch whose badge was right-clicked. */
-  | { type: 'historyBranchAction'; action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest' | 'pullRequestWithAi'; ref: string }
+  | { type: 'historyBranchAction'; action: 'fastForward' | 'pull' | 'push' | 'rename' | 'copyName' | 'pullRequest' | 'pullRequestWithAi' | 'pullRequestStack'; ref: string }
   | { type: 'historyNewBranch'; sha: string; /** A name for the commit to start from; the hash when it has none. */ startRef?: string }
   | { type: 'historyNewTag'; sha: string }
   | { type: 'historyInteractiveRebase'; onto: string }

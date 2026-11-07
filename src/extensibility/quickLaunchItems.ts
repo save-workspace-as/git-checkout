@@ -23,6 +23,7 @@ const builtinItems = (remote: boolean): readonly QuickLaunchItem[] => [
   { label: l10n.t('Checkout Branch…'), command: 'gitCheckout.checkout' },
   { label: l10n.t('Clean Untracked Files…'), command: 'gitCheckout.cleanUntracked' },
   { label: l10n.t('Clone…'), command: 'gitCheckout.clone' },
+  { label: l10n.t('Create Pull Request Stack…'), command: 'gitCheckout.pullRequests.createStack', target: 'localBranch' },
   { label: l10n.t('Delete Branch…'), command: 'gitCheckout.sidebar.deleteBranch', target: 'localBranch' },
   { label: l10n.t('Delete Merged Branches…'), command: 'gitCheckout.deleteMergedBranches' },
   { label: l10n.t('Delete Tag'), command: 'gitCheckout.sidebar.deleteTag', target: 'tag' },

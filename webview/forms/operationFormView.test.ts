@@ -277,6 +277,23 @@ describe('shared Settings-style operation form view', () => {
     );
   });
 
+  it('shows a field only while the field it depends on has its value, and sends the hidden ones along', () => {
+    const h = mount({
+      title: 'Stack', submitLabel: 'Create', values: { pick: false, name: 'topic' },
+      fields: [
+        { id: 'pick', type: 'checkbox', label: 'Pick' },
+        { id: 'name', type: 'text', label: 'Name', when: { field: 'pick', value: true } },
+      ],
+    });
+    assert.equal(h.root.querySelector('[id="name-0"]'), null);
+    h.change('pick-0', { checked: true });
+    assert.equal(h.find('name-0').value, 'topic');
+    h.change('pick-0', { checked: false });
+    assert.equal(h.root.querySelector('[id="name-0"]'), null);
+    h.sendSubmit();
+    assert.deepEqual(h.sent.at(-1), { type: 'formSubmit', values: { pick: false, name: 'topic' } });
+  });
+
   it('gives a checkbox its title above the box and its explanation beside the box', () => {
     const h = mount({
       title: 'Create Tag', submitLabel: 'Create', values: { a: true, b: false, c: '' },

@@ -6,6 +6,7 @@ import { createLogger } from '../../log';
 import type { GitHubRepository } from '../../shared/history/githubReferences';
 import type { PullRequestDto, PullRequestLists } from '../../shared/pullRequests/pullRequests';
 import type { Activity } from '../../core/whenActive';
+import { fetchRestTransport, type RestTransport } from './githubRestClient';
 import { fetchPullRequestLists, PullRequestError } from './pullRequestClient';
 
 const log = createLogger('pull-requests');
@@ -141,6 +142,29 @@ export class PullRequestStore implements vscode.Disposable {
   async signIn(privateRepositories = false): Promise<void> {
     await vscode.authentication.getSession(AUTH_PROVIDER, privateRepositories ? PRIVATE_SCOPES : BASIC_SCOPES, { createIfNone: true });
     this.refresh();
+  }
+
+  /** What a test answers with instead of GitHub, when it has set it. */
+  private seededAccess: { token: string; transport: RestTransport } | undefined;
+
+  /** Makes the next requests that change a repository go to `access` instead of GitHub (e2e only); `undefined` undoes it. */
+  seedWriteAccess(access: { token: string; transport: RestTransport } | undefined): void {
+    this.seededAccess = access;
+  }
+
+  /** A sign-in that may change the repository, such as to open pull requests; asks for it in VS Code's own prompt when there is none. */
+  async writeAccess(): Promise<{ token: string; transport: RestTransport } | undefined> {
+    if (this.seededAccess) {
+      return this.seededAccess;
+    }
+    try {
+      const session = await vscode.authentication.getSession(AUTH_PROVIDER, PRIVATE_SCOPES, { createIfNone: true });
+      return { token: session.accessToken, transport: fetchRestTransport };
+    } catch (error) {
+      // The person closed the sign-in prompt.
+      log.info('the sign-in for pull requests was not completed', error);
+      return undefined;
+    }
   }
 
   private async session(): Promise<vscode.AuthenticationSession | undefined> {

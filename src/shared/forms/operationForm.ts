@@ -3,11 +3,19 @@ import * as l10n from '@vscode/l10n';
 export type OperationFormValues = Record<string, string | boolean>;
 export type OperationFormErrors = Record<string, string>;
 
+/** Holds when the form's value for `field` equals `value`. */
+export interface FormFieldCondition {
+  field: string;
+  value: string | boolean;
+}
+
 interface FormFieldBase {
   id: string;
   label: string;
   /** Shown with the field, the way a Settings row shows its explanation. */
   description?: string;
+  /** The field is shown, and checked, only while every one of these holds. */
+  when?: FormFieldCondition | FormFieldCondition[];
 }
 
 export type OperationFormField =
@@ -67,6 +75,12 @@ export type OperationFormWebviewMessage =
   | { type: 'formPick'; version: number; field: string; values: OperationFormValues }
   | { type: 'formSubmit'; values: OperationFormValues };
 
+/** Whether a field takes part in the form for these values: it has no condition, or all of them hold. */
+export function isFieldVisible(field: OperationFormField, values: Record<string, unknown>): boolean {
+  const conditions = field.when === undefined ? [] : Array.isArray(field.when) ? field.when : [field.when];
+  return conditions.every((condition) => values[condition.field] === condition.value);
+}
+
 export function validateOperationForm(
   form: OperationFormDefinition,
   input: unknown,
@@ -77,6 +91,15 @@ export function validateOperationForm(
     ? input as Record<string, unknown> : {};
   for (const field of form.fields) {
     const value = record[field.id];
+    if (!isFieldVisible(field, record)) {
+      // A field that is out of the form keeps the value it has, and is not asked for.
+      if (typeof value === (field.type === 'checkbox' ? 'boolean' : 'string')) {
+        values[field.id] = value as string | boolean;
+      } else {
+        values[field.id] = field.type === 'checkbox' ? false : '';
+      }
+      continue;
+    }
     const choices = field.type === 'text' ? field.suggestions?.filter((option) =>
       !option.when || record[option.when.field] === option.when.value) : undefined;
     if (field.type === 'checkbox') {

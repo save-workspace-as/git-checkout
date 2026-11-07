@@ -82,6 +82,8 @@ export interface GitCheckoutApi {
   seedPullRequests(repoRoot: string, state: unknown): void;
   /** Answers every AI prompt with `model` instead of a language model; `undefined` goes back to VS Code's. */
   seedLanguageModel(model: ((prompt: string) => Promise<string>) | undefined): void;
+  /** Sends the requests that change a repository on GitHub to `access` instead. */
+  seedGitHub(access: { token: string; transport: { request(method: string, url: string, token: string, body?: unknown, headers?: Record<string, string>): Promise<{ status: number; json: unknown }> } } | undefined): void;
   operationFormState(): {
     sessionId: number;
     form: {
