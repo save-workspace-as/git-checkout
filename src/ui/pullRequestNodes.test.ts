@@ -37,6 +37,31 @@ describe('pullRequestSection', () => {
     assert.equal(commandOf({ kind: 'loading' }), undefined);
   });
 
+  it('shows pull requests that build on one another as a stack, bottom first, with their place in it', () => {
+    const open = [pull(3, { headRef: 'c', baseRef: 'b' }), pull(1, { headRef: 'a' }), pull(2, { headRef: 'b', baseRef: 'a' }), pull(9)];
+    const section = pullRequestSection(ready({ allOpen: open }))!;
+    assert.deepEqual(section.children.map((child) => child.label), ['Stacks', 'All open']);
+    const stacks = section.children[0];
+    assert.equal(stacks.description, '1');
+    assert.equal(treeItemSpec(stacks).collapsible, 'expanded');
+    const [stack] = stacks.children;
+    assert.deepEqual([stack.label, stack.description, treeItemSpec(stack).collapsible], ['c', '3 pull requests into main', 'expanded']);
+    assert.deepEqual(stack.children.map((row) => [row.ref, row.description]), [
+      ['1', '1 of 3 · #1 by ada'],
+      ['2', '2 of 3 · #2 by ada'],
+      ['3', '3 of 3 · #3 by ada'],
+    ]);
+    const ids: string[] = [];
+    const collect = (node: { id: string; children: unknown[] }): void => { ids.push(node.id); (node.children as typeof node[]).forEach(collect); };
+    collect(section);
+    assert.equal(new Set(ids).size, ids.length, 'every row has an id of its own, though a pull request is in more than one place');
+  });
+
+  it('has no Stacks folder when no pull requests build on one another', () => {
+    const section = pullRequestSection(ready({ allOpen: [pull(1), pull(2)] }))!;
+    assert.deepEqual(section.children.map((child) => child.label), ['All open']);
+  });
+
   it('groups what needs you by the next step, leaves out empty groups, and keeps All open to browse', () => {
     const section = pullRequestSection(
       ready({

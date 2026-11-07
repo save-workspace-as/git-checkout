@@ -67,6 +67,22 @@ describe('Pull requests in the sidebar', () => {
     assert.deepEqual(categories, ['Blocked', 'All open']);
   });
 
+  it('lists pull requests that build on one another as a stack, bottom first, and checks one of them out', async () => {
+    const chain = [pull({ number: 9, headRef: 'upper', baseRef: 'speed', title: 'Use it' }), pull(), pull({ number: 8, headRef: 'other', title: 'Alone' })];
+    seed(chain);
+    const stacks = await waitFor('the Stacks folder', async () =>
+      (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'folder' && node.label === 'Stacks'));
+    assert.equal(stacks.description, '1');
+    const [stack] = stacks.children;
+    assert.equal(stack.label, 'upper');
+    assert.equal(stack.description, '2 pull requests into main');
+    assert.deepEqual(stack.children.map((row) => [row.ref, row.description]), [['7', '1 of 2 · #7 by ada'], ['9', '2 of 2 · #9 by ada']]);
+
+    await vscode.commands.executeCommand('gitCheckout.pullRequests.checkout', stack.children[0]);
+    assert.equal(git('branch', '--show-current'), 'pr/7');
+    assert.equal(git('rev-parse', 'HEAD'), head);
+  });
+
   it('reviews a pull request against its target branch without touching any branch', async () => {
     git('push', '-q', 'origin', 'main');
     await vscode.commands.executeCommand('gitCheckout.pullRequests.review', await pullNode());
