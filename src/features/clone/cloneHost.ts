@@ -5,6 +5,7 @@ import { validateClone, type CloneRequest } from './cloneRequest';
 import type { GitCli } from '../../core/gitCli';
 import type { ShowOperationForm } from '../../panel/operationFormController';
 import { cloneForm } from '../../panel/operationForms';
+import { openDialogStart, rememberOpenedFolder } from '../../panel/saveLocation';
 
 /** Asks for a URL and a folder; resolves to what was entered, or undefined when the form is canceled. */
 export async function cloneInForm(
@@ -22,8 +23,9 @@ export async function cloneInForm(
         const chosen = await vscode.window.showOpenDialog({
           title: l10n.t('Folder for the repository'),
           canSelectFolders: true, canSelectFiles: false, canSelectMany: false,
-          defaultUri: vscode.Uri.file(String(values.location).trim() || location),
+          defaultUri: openDialogStart(String(values.location).trim() || location),
         });
+        rememberOpenedFolder(chosen?.[0], true);
         return chosen?.[0]?.fsPath;
       }
       const problem = await testRemoteUrl(cli, String(values.url));

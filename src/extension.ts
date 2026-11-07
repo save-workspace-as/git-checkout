@@ -32,6 +32,7 @@ import type { ChangeNode } from './shared/changes/changesTree';
 import type { RevisionNode } from './shared/history/revisionTree';
 import { GitCheckoutWindows } from './panel/gitCheckoutWindows';
 import { rememberBranchCheckoutIn } from './features/branches/branchCreateHost';
+import { rememberSaveFolderIn } from './panel/saveLocation';
 import { AutoFetch } from './features/sync/autoFetch';
 import { RepoOperationService } from './features/operations/repoOperationService';
 import { createWorkspaceGitCheckoutSettings } from './core/gitCheckoutSettings';
@@ -105,6 +106,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<GitChe
   context.subscriptions.push(outputChannel, trackWindowFocus());
 
   rememberBranchCheckoutIn(context.globalState);
+  rememberSaveFolderIn(context.globalState);
   const cliRegistry = getGitCliRegistry();
   context.subscriptions.push(cliRegistry);
 

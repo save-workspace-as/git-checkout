@@ -4,6 +4,7 @@ import * as vscode from 'vscode';
 
 import { openExternalTool } from '../../extensibility/externalToolHost';
 import type { GitCli } from '../../core/gitCli';
+import { rememberSavedFolder, saveDialogStart } from '../../panel/saveLocation';
 import { createLogger } from '../../log';
 import { commitFileTarget, openRevision, resetSources, type CommitFileTarget } from '../../shared/history/commitFileActions';
 
@@ -107,12 +108,13 @@ export class CommitFileActions {
       .cli(root)
       .execRead(['show', `${target.revision}:${target.path}`], { binaryStdout: true });
     const destination = await vscode.window.showSaveDialog({
-      defaultUri: vscode.Uri.file(posix.join(root.replace(/\\/g, '/'), posix.basename(target.path))),
+      defaultUri: saveDialogStart(posix.basename(target.path), root),
       title: l10n.t('Save {0} at {1}', target.path, short(target.revision)),
     });
     if (!destination) {
       return;
     }
+    rememberSavedFolder(destination);
     await vscode.workspace.fs.writeFile(destination, result.stdoutBytes ?? new Uint8Array());
     log.info(`saved ${target.path} at ${target.revision}`);
   }
