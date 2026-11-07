@@ -14,6 +14,11 @@ export const PULL_REQUEST_COMMANDS = {
   openOnGitHub: 'gitCheckout.pullRequests.openOnGitHub',
   copyLink: 'gitCheckout.pullRequests.copyLink',
   createStack: 'gitCheckout.pullRequests.createStack',
+  checkoutStack: 'gitCheckout.pullRequests.checkoutStack',
+  stackUp: 'gitCheckout.pullRequests.stackUp',
+  stackDown: 'gitCheckout.pullRequests.stackDown',
+  stackTop: 'gitCheckout.pullRequests.stackTop',
+  stackBottom: 'gitCheckout.pullRequests.stackBottom',
 } as const;
 
 const GROUPS: Record<PullRequestGroup, { label: () => string; icon: string }> = {
@@ -164,7 +169,8 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
             kind: 'folder',
             label: top.headRef,
             description: l10n.t('{0} pull requests into {1}', chain.pulls.length, chain.base),
-            contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
+            contextValue: SIDEBAR_CONTEXT.pullRequestStack,
+            ref: String(chain.pulls[0].number),
             icon: { id: 'layers' },
             expanded: true,
             children: chain.pulls.map((pull, index) => pullRequestNode(pull, category, { index: index + 1, count: chain.pulls.length })),

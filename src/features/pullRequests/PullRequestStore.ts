@@ -5,6 +5,7 @@ import { loadGitHubRemote } from '../../core/githubRepository';
 import { createLogger } from '../../log';
 import type { GitHubRepository } from '../../shared/history/githubReferences';
 import type { PullRequestDto, PullRequestLists } from '../../shared/pullRequests/pullRequests';
+import { pullRequestChains, type PullRequestChain } from '../../shared/pullRequests/pullRequestStacks';
 import type { Activity } from '../../core/whenActive';
 import { fetchRestTransport, type RestTransport } from './githubRestClient';
 import { fetchPullRequestLists, PullRequestError } from './pullRequestClient';
@@ -136,6 +137,12 @@ export class PullRequestStore implements vscode.Disposable {
     }
     const pull = [...state.lists.allOpen, ...state.lists.createdByMe, ...state.lists.reviewRequested].find((entry) => entry.number === number);
     return pull && { pull, repo: state.repo, remote: state.remote };
+  }
+
+  /** The stacks among the open pull requests of the repository's last reading. */
+  stacks(repoRoot: string): { chains: PullRequestChain[]; repo: GitHubRepository; remote: string } | undefined {
+    const state = this.states.get(keyOf(repoRoot));
+    return state?.kind === 'ready' ? { chains: pullRequestChains(state.lists.allOpen, state.repo), repo: state.repo, remote: state.remote } : undefined;
   }
 
   /** Asks for GitHub's sign-in, in VS Code's own prompt, and reads again once it is done. */
