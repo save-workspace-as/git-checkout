@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, validatePushStackForm } from './stackGit';
+import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, unstackForm, validatePushStackForm } from './stackGit';
 
 describe('pushStackArgs', () => {
   it('pushes every branch in one atomic push, with a lease when forcing', () => {
@@ -60,5 +60,13 @@ describe('stackLinkFor', () => {
     assert.deepEqual(stackLinkFor([stack(4, [1]), stack(5, [2])], [1, 2]), { kind: 'differs', stack: 4 });
     assert.deepEqual(stackLinkFor([stack(4, [1, 9])], [1, 2]), { kind: 'differs', stack: 4 });
     assert.deepEqual(stackLinkFor([stack(4, [2, 3])], [1, 2, 3]), { kind: 'differs', stack: 4 });
+  });
+});
+
+describe('unstackForm', () => {
+  it('names the pull requests of the stack and says what stays', () => {
+    const form = unstackForm([4, 5, 6]);
+    assert.deepEqual(form.values, { stack: '#4 → #5 → #6' });
+    assert.match(form.fields[0].description ?? '', /The pull requests and the branches stay/);
   });
 });

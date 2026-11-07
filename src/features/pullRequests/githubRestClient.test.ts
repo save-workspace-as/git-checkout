@@ -2,7 +2,7 @@ import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
 import {
-  addToStack, createPullRequest, mergeResult, submitMerge, createStack, findOpenPullRequest, GitHubRestError, listStacks, restUrl, setPullRequestBase, type RestTransport,
+  addToStack, createPullRequest, mergeResult, submitMerge, unstack, createStack, findOpenPullRequest, GitHubRestError, listStacks, restUrl, setPullRequestBase, type RestTransport,
 } from './githubRestClient';
 
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
@@ -153,5 +153,14 @@ describe('mergeResult', () => {
 
   it('does not trust an answer that is not a merge result', async () => {
     assert.equal(await failureOf(mergeResult(repo, 't', 8, 'x', transport({ status: 200, json: { nope: 1 } }))), 'other');
+  });
+});
+
+describe('unstack', () => {
+  it('ends the stack and nothing else', async () => {
+    const t = transport({ status: 200, json: null });
+    await unstack(repo, 't', 5, t);
+    assert.deepEqual([t.calls[0].method, t.calls[0].url, t.calls[0].body], ['POST', 'https://api.github.com/repos/octo/app/stacks/5/unstack', undefined]);
+    assert.equal(await failureOf(unstack(repo, 't', 5, transport({ status: 404, json: null }))), 'notFound');
   });
 });

@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { answer, commitFile, gitIn, submitForm } from './graphMenu';
+import { answer, cancelForm, commitFile, gitIn, submitForm } from './graphMenu';
 import { bindExtension, git, loadTree, readyTree, repoRoot, waitFor, type SidebarNode } from './harness';
 import { makeStack, seedStack, stackPull } from './stackFixture';
 
@@ -237,6 +237,46 @@ describe('Operations on a stack of pull requests', () => {
       assert.ok(ctx.api.operationFormState());
       await ctx.api.sendPanelMessage({ type: 'operationFormMessage', sessionId: state.sessionId, message: { type: 'formCancel' } });
       await command;
+    });
+  });
+
+  describe('Unstack', () => {
+    const requests: { method: string; url: string }[] = [];
+    const github = (stacks: unknown[], unstackStatus = 200) => ctx.api.seedGitHub({
+      token: 'test-token',
+      transport: {
+        async request(method, url) {
+          requests.push({ method, url: url.replace('https://api.github.com/repos/octo/app', '') });
+          return method === 'GET' ? { status: 200, json: stacks } : { status: unstackStatus, json: unstackStatus === 200 ? null : { message: 'Not Found' } };
+        },
+      },
+    });
+
+    beforeEach(() => { requests.length = 0; });
+    afterEach(() => ctx.api.seedGitHub(undefined));
+
+    it('ends the stack on GitHub after the form, and leaves the branches and the pull requests', async () => {
+      github([{ number: 7, open: true, pull_requests: [{ number: 1 }, { number: 2 }, { number: 3 }] }]);
+      const before = git('branch', '--list');
+      const state = vscode.commands.executeCommand('gitCheckout.pullRequests.unstack', await stackNode());
+      await submitForm(ctx.api, state, 'Unstack');
+      assert.deepEqual(requests, [{ method: 'GET', url: '/stacks?per_page=100' }, { method: 'POST', url: '/stacks/7/unstack' }]);
+      assert.deepEqual(messages, ['Ended the stack on GitHub. Its pull requests and branches stay.']);
+      assert.equal(git('branch', '--list'), before);
+    });
+
+    it('shows the pull requests of the stack in the form, and makes no request when it is canceled', async () => {
+      github([{ number: 7, open: true, pull_requests: [{ number: 1 }, { number: 2 }, { number: 3 }] }]);
+      const values = await cancelForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.unstack'), 'Unstack');
+      assert.equal(values.stack, '#1 → #2 → #3');
+      assert.deepEqual(requests.map((r) => r.method), ['GET']);
+    });
+
+    it('says so when the pull requests are not grouped on GitHub', async () => {
+      github([{ number: 7, open: false, pull_requests: [{ number: 1 }, { number: 2 }] }]);
+      await vscode.commands.executeCommand('gitCheckout.pullRequests.unstack');
+      assert.deepEqual(messages, ['These pull requests are not grouped as a stack on GitHub.']);
+      assert.equal(ctx.api.operationFormState(), undefined);
     });
   });
 });
