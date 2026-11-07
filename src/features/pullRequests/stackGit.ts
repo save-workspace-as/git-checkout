@@ -95,3 +95,17 @@ export function syncStackForm(branches: readonly string[], trunk: string): Opera
     ],
   };
 }
+
+export function unstackForm(pullRequests: readonly number[]): OperationFormDefinition {
+  return {
+    title: l10n.t('Unstack'),
+    submitLabel: l10n.t('Unstack'),
+    values: { stack: pullRequests.map((number) => `#${number}`).join(' → ') },
+    fields: [
+      {
+        id: 'stack', type: 'text', label: l10n.t('Stack'), readOnly: true,
+        description: l10n.t('Ends the stack on GitHub. The pull requests and the branches stay as they are.'),
+      },
+    ],
+  };
+}

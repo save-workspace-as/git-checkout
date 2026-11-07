@@ -10,8 +10,8 @@ import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { SidebarNode } from '../../ui/sidebarTreeModel';
 import type { PullRequestStore } from './PullRequestStore';
 import { findBaseBranch } from './branchChanges';
-import { addToStack, createStack, GitHubRestError, listStacks, submitMerge } from './githubRestClient';
-import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, syncStackForm, validatePushStackForm } from './stackGit';
+import { addToStack, createStack, GitHubRestError, listStacks, submitMerge, unstack } from './githubRestClient';
+import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, syncStackForm, unstackForm, validatePushStackForm } from './stackGit';
 import { rebaseStack } from './stackRebase';
 import { baseBranchName } from './stackCommits';
 import { mergeMethodOf, mergeSet, mergeStackForm, validateMergeStackForm, waitForMerge, type MergeLayer } from './stackMerge';
@@ -43,6 +43,7 @@ export class StackController {
       vscode.commands.registerCommand(C.rebaseStack, (node?: SidebarNode) => this.rebaseStack(node)),
       vscode.commands.registerCommand(C.syncStack, (node?: SidebarNode) => this.syncStack(node)),
       vscode.commands.registerCommand(C.mergeStack, (node?: SidebarNode) => this.mergeStack(node)),
+      vscode.commands.registerCommand(C.unstack, (node?: SidebarNode) => this.unstack(node)),
     );
   }
 
@@ -273,6 +274,46 @@ export class StackController {
             ? l10n.t('Added the stack to the merge queue.')
             : count === 1 ? l10n.t('Merged 1 pull request.') : l10n.t('Merged {0} pull requests.', count),
         );
+        return true;
+      },
+    });
+  }
+
+  /** Opens the form to end the stack on GitHub: only the grouping goes; the pull requests and the branches stay. */
+  private async unstack(node?: SidebarNode): Promise<void> {
+    const stack = await this.resolve(node);
+    if (!stack) {
+      return;
+    }
+    const access = await this.store.writeAccess();
+    if (!access) {
+      void vscode.window.showInformationMessage(l10n.t('Sign in to GitHub to end a stack.'));
+      return;
+    }
+    const numbers = stack.chain.pulls.map((pull) => pull.number);
+    let grouped;
+    try {
+      grouped = (await listStacks(stack.repo, access.token, access.transport)).find((entry) => entry.open && entry.pullRequests.some((number) => numbers.includes(number)));
+    } catch (error) {
+      if (!(error instanceof GitHubRestError)) {
+        throw error;
+      }
+      log.warn('could not read the stacks of the repository', error);
+      void vscode.window.showErrorMessage(l10n.t('Could not read the stacks on GitHub: {0}', error.message));
+      return;
+    }
+    if (!grouped) {
+      void vscode.window.showInformationMessage(l10n.t('These pull requests are not grouped as a stack on GitHub.'));
+      return;
+    }
+    const ended = grouped;
+    await this.window.selectRepository(stack.root);
+    await this.window.operationForm.show(unstackForm(ended.pullRequests), {
+      validate: () => ({}),
+      submit: async () => {
+        await unstack(stack.repo, access.token, ended.number, access.transport);
+        this.store.refresh();
+        void vscode.window.showInformationMessage(l10n.t('Ended the stack on GitHub. Its pull requests and branches stay.'));
         return true;
       },
     });

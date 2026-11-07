@@ -395,6 +395,8 @@
   "command.gitCheckout.pullRequests.stackTop.category": "Git Checkout",
   "command.gitCheckout.pullRequests.stackBottom.title": "Go to Bottom of Stack",
   "command.gitCheckout.pullRequests.stackBottom.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.unstack.title": "Unstack…",
+  "command.gitCheckout.pullRequests.unstack.category": "Git Checkout",
   "command.gitCheckout.pullRequests.mergeStack.title": "Merge Stack…",
   "command.gitCheckout.pullRequests.mergeStack.category": "Git Checkout",
   "command.gitCheckout.pullRequests.syncStack.title": "Sync Stack…",

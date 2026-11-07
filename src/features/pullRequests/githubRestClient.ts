@@ -222,3 +222,8 @@ export async function mergeResult(repo: GitHubRepository, token: string, number:
   }
   return result;
 }
+
+/** Ends a stack: its pull requests stay, as ordinary ones. */
+export async function unstack(repo: GitHubRepository, token: string, stack: number, transport: RestTransport = fetchRestTransport): Promise<void> {
+  await call(transport, 'POST', restUrl(repo, `/stacks/${stack}/unstack`), token, undefined, versioned);
+}
