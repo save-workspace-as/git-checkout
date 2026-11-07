@@ -1,5 +1,6 @@
 import * as l10n from '@vscode/l10n';
 import type { PullRequestState } from '../features/pullRequests/PullRequestStore';
+import { pullRequestChains } from '../shared/pullRequests/pullRequestStacks';
 import { groupPullRequests, PULL_REQUEST_GROUPS, type PullRequestCategory, type PullRequestDto, type PullRequestGroup } from '../shared/pullRequests/pullRequests';
 import { SIDEBAR_CONTEXT, type SidebarNode } from './sidebarTreeModel';
 
@@ -86,13 +87,15 @@ function checksText(pull: PullRequestDto): string {
   }
 }
 
-export function pullRequestNode(pull: PullRequestDto, category: PullRequestCategory): SidebarNode {
+/** `position` is where the pull request is in its stack, counting from the bottom at 1. */
+export function pullRequestNode(pull: PullRequestDto, category: PullRequestCategory, position?: { index: number; count: number }): SidebarNode {
   const details = [pull.author ? l10n.t('by {0}', pull.author) : '', pull.isDraft ? l10n.t('Draft') : ''].filter(Boolean).join(' · ');
+  const place = position ? `${l10n.t('{0} of {1}', position.index, position.count)} · ` : '';
   return {
     id: `pullRequest:${category}:${pull.number}`,
     kind: 'pullRequest',
     label: pull.title,
-    description: `#${pull.number}${details ? ` ${details}` : ''}`,
+    description: `${place}#${pull.number}${details ? ` ${details}` : ''}`,
     tooltip: [`#${pull.number} ${pull.title}`, `${pull.headRepository ? `${pull.headRepository}:` : ''}${pull.headRef} → ${pull.baseRef}`, decisionText(pull), checksText(pull)]
       .filter(Boolean)
       .join('\n'),
@@ -144,12 +147,37 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
         expanded,
         children: pulls.map((pull) => pullRequestNode(pull, key)),
       });
+      const chains = pullRequestChains(state.lists.allOpen, state.repo);
+      const stacks: SidebarNode | undefined = chains.length === 0 ? undefined : {
+        id: 'pullRequests:stacks',
+        kind: 'folder',
+        label: l10n.t('Stacks'),
+        description: String(chains.length),
+        contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
+        icon: { id: 'layers' },
+        expanded: true,
+        children: chains.map((chain): SidebarNode => {
+          const category: PullRequestCategory = `stack-${chain.pulls[0].number}`;
+          const top = chain.pulls[chain.pulls.length - 1];
+          return {
+            id: `pullRequests:${category}`,
+            kind: 'folder',
+            label: top.headRef,
+            description: l10n.t('{0} pull requests into {1}', chain.pulls.length, chain.base),
+            contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
+            icon: { id: 'layers' },
+            expanded: true,
+            children: chain.pulls.map((pull, index) => pullRequestNode(pull, category, { index: index + 1, count: chain.pulls.length })),
+          };
+        }),
+      };
       // A group with nothing in it is left out; All open stays, as the place to browse.
       return section(
         [
           ...PULL_REQUEST_GROUPS.filter((group) => groups[group].length > 0).map((group) =>
             folder(group, GROUPS[group].label(), GROUPS[group].icon, groups[group], true),
           ),
+          ...(stacks ? [stacks] : []),
           folder('allOpen', l10n.t('All open'), 'list-flat', state.lists.allOpen, false),
         ],
         String(state.lists.allOpen.length),

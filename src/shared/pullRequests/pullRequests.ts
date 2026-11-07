@@ -33,7 +33,8 @@ export interface PullRequestLists {
   allOpen: PullRequestDto[];
 }
 
-export type PullRequestCategory = keyof PullRequestLists | PullRequestGroup;
+/** Where a pull request row sits: one of the lists, a group, or a stack (named by the number of its bottom pull request). */
+export type PullRequestCategory = keyof PullRequestLists | PullRequestGroup | `stack-${number}`;
 
 export const PULL_REQUESTS_PER_LIST = 50;
 
