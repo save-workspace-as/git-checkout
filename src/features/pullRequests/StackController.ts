@@ -8,11 +8,14 @@ import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManage
 import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { SidebarNode } from '../../ui/sidebarTreeModel';
 import type { PullRequestStore } from './PullRequestStore';
-import { pushStackArgs, pushStackForm, validatePushStackForm } from './stackGit';
+import { findBaseBranch } from './branchChanges';
+import { pushStackArgs, pushStackForm, rebaseStackForm, validatePushStackForm } from './stackGit';
+import { rebaseStack } from './stackRebase';
+import { baseBranchName } from './stackCommits';
 
 const log = createLogger('stack');
 
-type Window = Pick<GitCheckoutPanelManager, 'operationForm' | 'activeRepoRoot' | 'selectRepository' | '_onDidChangeRefs'>;
+type Window = Pick<GitCheckoutPanelManager, 'operationForm' | 'activeRepoRoot' | 'selectRepository' | '_onDidChangeRefs' | 'sync' | 'repoOperationService'>;
 
 /** A stack of pull requests, and the repository and remote it is in. */
 interface ResolvedStack {
@@ -33,6 +36,7 @@ export class StackController {
     const C = PULL_REQUEST_COMMANDS;
     context.subscriptions.push(
       vscode.commands.registerCommand(C.pushStack, (node?: SidebarNode) => this.pushStack(node)),
+      vscode.commands.registerCommand(C.rebaseStack, (node?: SidebarNode) => this.rebaseStack(node)),
     );
   }
 
@@ -58,10 +62,13 @@ export class StackController {
     return chain && { root, chain, remote: stacks.remote };
   }
 
+  private async branchNames(root: string): Promise<string[]> {
+    return (await this.cliRegistry.getOrCreate(root).execRead(['for-each-ref', '--format=%(refname:short)', 'refs/heads'])).stdout.split('\n').filter(Boolean);
+  }
+
   /** The local branches of a stack's layers, bottom first; a layer nobody has checked out here has none. */
   private async localBranches(root: string, chain: PullRequestChain): Promise<string[]> {
-    const git = this.cliRegistry.getOrCreate(root);
-    const names = (await git.execRead(['for-each-ref', '--format=%(refname:short)', 'refs/heads'])).stdout.split('\n').filter(Boolean);
+    const names = await this.branchNames(root);
     return chain.pulls.map((pull) => pull.headRef).filter((branch) => names.includes(branch));
   }
 
@@ -89,7 +96,60 @@ export class StackController {
         log.info(`pushing ${branches.length} branches of a stack`);
         await git.execWrite(pushStackArgs(String(values.remote), branches, values.force === true), { network: true });
         this.window._onDidChangeRefs.fire();
-        void vscode.window.showInformationMessage(l10n.t('Pushed {0} branches.', branches.length));
+        void vscode.window.showInformationMessage(branches.length === 1 ? l10n.t('Pushed 1 branch.') : l10n.t('Pushed {0} branches.', branches.length));
+        return true;
+      },
+    });
+  }
+
+  /**
+   * Opens the form to move the stack's layers onto their parents: the bottom onto the base branch, the others onto the layer
+   * below. A stopped rebase is finished like any other, and running this again carries on with the layers above.
+   */
+  private async rebaseStack(node?: SidebarNode): Promise<void> {
+    const stack = await this.resolve(node);
+    if (!stack) {
+      return;
+    }
+    const git = this.cliRegistry.getOrCreate(stack.root);
+    const branches = await this.localBranches(stack.root, stack.chain);
+    const missing = stack.chain.pulls.filter((pull) => !branches.includes(pull.headRef)).map((pull) => pull.headRef);
+    if (missing.length > 0) {
+      void vscode.window.showInformationMessage(l10n.t('Check out these layers first, to rebase the stack: {0}.', missing.join(', ')));
+      return;
+    }
+    const trunk = await findBaseBranch(git, branches[0]);
+    if (!trunk) {
+      void vscode.window.showInformationMessage(l10n.t("Could not find the branch that '{0}' would merge into.", branches[0]));
+      return;
+    }
+    // A bottom pull request that still targets a branch other than the trunk is built on a parent that was merged.
+    const bottomBase = stack.chain.pulls[0].baseRef;
+    const mergedParent = bottomBase !== baseBranchName(trunk, stack.remote) && (await this.branchNames(stack.root)).includes(bottomBase) ? bottomBase : undefined;
+    await this.window.selectRepository(stack.root);
+    await this.window.operationForm.show(rebaseStackForm(branches, trunk), {
+      validate: () => ({}),
+      submit: async (values) => {
+        await this.window.sync.runSyncOp(l10n.t('Rebasing stack'), async () => {
+          if (values.fetch === true) {
+            await git.execWrite(['fetch', stack.remote], { network: true, concurrent: true });
+          }
+          const original = (await git.execRead(['branch', '--show-current'])).stdout.trim();
+          try {
+            const steps = await rebaseStack(git, { branches, trunk, mergedParent });
+            const moved = steps.filter((step) => step.moved).length;
+            void vscode.window.showInformationMessage(moved === 0 ? l10n.t('The stack is up to date.') : moved === 1 ? l10n.t('Rebased 1 branch.') : l10n.t('Rebased {0} branches.', moved));
+          } catch (error) {
+            if ((await this.window.repoOperationService.getStatus(stack.root)).active) {
+              void vscode.window.showInformationMessage(l10n.t('The rebase stopped for conflicts. Resolve them and continue the rebase, then rebase the stack again to carry on with the branches above.'));
+            }
+            throw error;
+          }
+          // Each rebase checks its branch out; the person is put back where they were.
+          if (original && (await git.execRead(['branch', '--show-current'])).stdout.trim() !== original) {
+            await git.execWrite(['switch', original]);
+          }
+        });
         return true;
       },
     });
