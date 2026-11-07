@@ -638,6 +638,11 @@
         "title": "%command.gitCheckout.pullRequests.stackBottom.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.rebaseStack.category%",
+        "command": "gitCheckout.pullRequests.rebaseStack",
+        "title": "%command.gitCheckout.pullRequests.rebaseStack.title%"
+      },
+      {
         "category": "%command.gitCheckout.pullRequests.pushStack.category%",
         "command": "gitCheckout.pullRequests.pushStack",
         "title": "%command.gitCheckout.pullRequests.pushStack.title%"
@@ -2463,6 +2468,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.pullRequests.rebaseStack",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.pullRequests.checkoutStack",
           "when": "false"
         },
@@ -3837,6 +3846,11 @@
           "command": "gitCheckout.sidebar.openRemote",
           "group": "8_remote@0",
           "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
+        },
+        {
+          "command": "gitCheckout.pullRequests.rebaseStack",
+          "group": "2_sync@0",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
         },
         {
           "command": "gitCheckout.pullRequests.pushStack",

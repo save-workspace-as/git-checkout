@@ -395,6 +395,8 @@
   "command.gitCheckout.pullRequests.stackTop.category": "Git Checkout",
   "command.gitCheckout.pullRequests.stackBottom.title": "Go to Bottom of Stack",
   "command.gitCheckout.pullRequests.stackBottom.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.rebaseStack.title": "Rebase Stack…",
+  "command.gitCheckout.pullRequests.rebaseStack.category": "Git Checkout",
   "command.gitCheckout.pullRequests.pushStack.title": "Push Stack…",
   "command.gitCheckout.pullRequests.pushStack.category": "Git Checkout",
   "command.gitCheckout.pullRequests.createStack.title": "Create Pull Request Stack…",
