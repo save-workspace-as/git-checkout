@@ -4,6 +4,9 @@ import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { loadGitHubRemote } from '../../core/githubRepository';
 import { createLogger } from '../../log';
 import { canonicalGitHubIssueUrl } from '../../shared/history/githubReferences';
+import type { PullRequestDto } from '../../shared/pullRequests/pullRequests';
+import type { PullRequestChain } from '../../shared/pullRequests/pullRequestStacks';
+import { locateLayer, moveInStack, type StackMove } from '../../shared/pullRequests/stackNavigation';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
 import { PULL_REQUEST_COMMANDS } from '../../ui/pullRequestNodes';
 import type { SidebarNode } from '../../ui/sidebarTreeModel';
@@ -38,6 +41,11 @@ export class PullRequestController {
       vscode.commands.registerCommand(C.openOnGitHub, (node?: SidebarNode) => this.openOnGitHub(node)),
       vscode.commands.registerCommand(C.copyLink, (node?: SidebarNode) => this.copyLink(node)),
       vscode.commands.registerCommand(C.createStack, (target?: { ref?: string; repoRoot?: string }) => this.createStack(target)),
+      vscode.commands.registerCommand(C.checkoutStack, (node?: SidebarNode) => this.pickLayer(node)),
+      vscode.commands.registerCommand(C.stackUp, () => this.moveInStack('up')),
+      vscode.commands.registerCommand(C.stackDown, () => this.moveInStack('down')),
+      vscode.commands.registerCommand(C.stackTop, () => this.moveInStack('top')),
+      vscode.commands.registerCommand(C.stackBottom, () => this.moveInStack('bottom')),
     );
   }
 
@@ -90,16 +98,10 @@ export class PullRequestController {
 
   /**
    * Gets the pull request's head onto the branch `pr/<n>` in the same way as other long operations (progress, the check for
-   * a merge or rebase in progress, errors), then hands over to the branch checkout or the worktree form, so the pull
-   * request is checked out like any other branch: with the same prompts for local changes and submodules.
+   * a merge or rebase in progress, errors), asking before a branch with commits of its own is moved. Undefined when the
+   * person says no.
    */
-  private async checkout(node: SidebarNode | undefined, inWorktree: boolean): Promise<void> {
-    const found = this.find(node);
-    if (!found) {
-      return;
-    }
-    const { pull, remote, repoRoot } = found;
-    await this.window.selectRepository(repoRoot);
+  private async prepareBranch(pull: PullRequestDto, remote: string): Promise<string | undefined> {
     let branch: string | undefined;
     await this.window.sync.runSyncOp(l10n.t('Getting pull request #{0}', pull.number), async (root) => {
       const git = this.cliRegistry.getOrCreate(root);
@@ -119,11 +121,106 @@ export class PullRequestController {
         branch = prepared.branch;
       }
     });
+    return branch;
+  }
+
+  /**
+   * Checks the pull request out, then hands over to the branch checkout or the worktree form, so the pull request is
+   * checked out like any other branch: with the same prompts for local changes and submodules.
+   */
+  private async checkout(node: SidebarNode | undefined, inWorktree: boolean): Promise<void> {
+    const found = this.find(node);
+    if (!found) {
+      return;
+    }
+    const { pull, remote, repoRoot } = found;
+    await this.window.selectRepository(repoRoot);
+    const branch = await this.prepareBranch(pull, remote);
     if (!branch) {
       return;
     }
     log.info(`pull request ${pull.number} is on ${branch}`);
     await (inWorktree ? this.window.runCheckoutAsWorktree(branch) : this.window.runCheckout(branch, true));
+  }
+
+  /** Checks out the branch of a stack's layer: the local branch it is from when there is one, else `pr/<n>`. */
+  private async checkoutLayer(root: string, pull: PullRequestDto, remote: string): Promise<void> {
+    const git = this.cliRegistry.getOrCreate(root);
+    let local = false;
+    try {
+      local = (await git.execRead(['rev-parse', '--verify', '--quiet', `refs/heads/${pull.headRef}`])).stdout.trim() !== '';
+    } catch (error) {
+      // No branch of that name here, which is usual for a stack someone else made.
+      log.debug(`${pull.headRef} is not a local branch`, error);
+    }
+    await this.window.selectRepository(root);
+    const branch = local ? pull.headRef : await this.prepareBranch(pull, remote);
+    if (branch) {
+      log.info(`stack layer #${pull.number} is on ${branch}`);
+      await this.window.runCheckout(branch, true);
+    }
+  }
+
+  /** Moves from the checked-out branch to the layer above or below it in its stack, or to the top or bottom. */
+  private async moveInStack(move: StackMove): Promise<void> {
+    const root = this.window.activeRepoRoot();
+    const stacks = root ? this.store.stacks(root) : undefined;
+    if (!root || !stacks) {
+      void vscode.window.showInformationMessage(l10n.t('The pull requests of this repository are not loaded.'));
+      return;
+    }
+    const current = (await this.cliRegistry.getOrCreate(root).execRead(['branch', '--show-current'])).stdout.trim();
+    const here = locateLayer(stacks.chains, current);
+    if (!here) {
+      void vscode.window.showInformationMessage(l10n.t("'{0}' is not in a stack of pull requests.", current));
+      return;
+    }
+    const target = moveInStack(here.chain, here.index, move);
+    if (!target) {
+      void vscode.window.showInformationMessage(move === 'up' || move === 'top'
+        ? l10n.t("'{0}' is already at the top of its stack.", current)
+        : l10n.t("'{0}' is already at the bottom of its stack.", current));
+      return;
+    }
+    await this.checkoutLayer(root, target, stacks.remote);
+  }
+
+  /** Asks which layer of a stack to check out: of the stack that was right-clicked, or the checked-out branch's, or else one picked first. */
+  private async pickLayer(node?: SidebarNode): Promise<void> {
+    const root = node?.repoRoot ?? this.window.activeRepoRoot();
+    const stacks = root ? this.store.stacks(root) : undefined;
+    if (!root || !stacks) {
+      void vscode.window.showInformationMessage(l10n.t('The pull requests of this repository are not loaded.'));
+      return;
+    }
+    if (stacks.chains.length === 0) {
+      void vscode.window.showInformationMessage(l10n.t('No stacks of pull requests are open.'));
+      return;
+    }
+    const current = (await this.cliRegistry.getOrCreate(root).execRead(['branch', '--show-current'])).stdout.trim();
+    let chain: PullRequestChain | undefined = node?.ref ? stacks.chains.find((entry) => String(entry.pulls[0].number) === node.ref) : locateLayer(stacks.chains, current)?.chain;
+    if (!chain) {
+      const stack = await vscode.window.showQuickPick(
+        stacks.chains.map((entry) => ({ label: entry.pulls[entry.pulls.length - 1].headRef, description: l10n.t('{0} pull requests into {1}', entry.pulls.length, entry.base), entry })),
+        { placeHolder: l10n.t('Select a stack') },
+      );
+      chain = stack?.entry;
+    }
+    if (!chain) {
+      return;
+    }
+    const layer = await vscode.window.showQuickPick(
+      chain.pulls.map((pull, index) => ({
+        label: `$(git-pull-request) #${pull.number} ${pull.title}`,
+        description: [l10n.t('{0} of {1}', index + 1, chain.pulls.length), pull.headRef === current ? l10n.t('checked out') : ''].filter(Boolean).join(' · '),
+        detail: `${pull.headRef} → ${pull.baseRef}`,
+        pull,
+      })),
+      { placeHolder: l10n.t('Select a layer to check out'), title: l10n.t('Check Out Stack Layer') },
+    );
+    if (layer) {
+      await this.checkoutLayer(root, layer.pull, stacks.remote);
+    }
   }
 
   /**

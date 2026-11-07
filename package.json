@@ -613,6 +613,31 @@
         "title": "%command.gitCheckout.sidebar.openPullRequest.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.checkoutStack.category%",
+        "command": "gitCheckout.pullRequests.checkoutStack",
+        "title": "%command.gitCheckout.pullRequests.checkoutStack.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.stackUp.category%",
+        "command": "gitCheckout.pullRequests.stackUp",
+        "title": "%command.gitCheckout.pullRequests.stackUp.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.stackDown.category%",
+        "command": "gitCheckout.pullRequests.stackDown",
+        "title": "%command.gitCheckout.pullRequests.stackDown.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.stackTop.category%",
+        "command": "gitCheckout.pullRequests.stackTop",
+        "title": "%command.gitCheckout.pullRequests.stackTop.title%"
+      },
+      {
+        "category": "%command.gitCheckout.pullRequests.stackBottom.category%",
+        "command": "gitCheckout.pullRequests.stackBottom",
+        "title": "%command.gitCheckout.pullRequests.stackBottom.title%"
+      },
+      {
         "category": "%command.gitCheckout.pullRequests.createStack.category%",
         "command": "gitCheckout.pullRequests.createStack",
         "title": "%command.gitCheckout.pullRequests.createStack.title%"
@@ -2429,6 +2454,26 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.pullRequests.checkoutStack",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.stackUp",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.stackDown",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.stackTop",
+          "when": "false"
+        },
+        {
+          "command": "gitCheckout.pullRequests.stackBottom",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.sidebar.openPullRequest",
           "when": "false"
         },
@@ -3783,6 +3828,11 @@
           "command": "gitCheckout.sidebar.openRemote",
           "group": "8_remote@0",
           "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == remote"
+        },
+        {
+          "command": "gitCheckout.pullRequests.checkoutStack",
+          "group": "1_checkout@1",
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
         },
         {
           "command": "gitCheckout.pullRequests.checkout",
