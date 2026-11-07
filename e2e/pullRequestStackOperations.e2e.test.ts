@@ -5,7 +5,7 @@ import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { answer, commitFile, gitIn, submitForm } from './graphMenu';
 import { bindExtension, git, loadTree, readyTree, repoRoot, waitFor, type SidebarNode } from './harness';
-import { makeStack } from './stackFixture';
+import { makeStack, seedStack, stackPull } from './stackFixture';
 
 const walk = (node: SidebarNode): SidebarNode[] => [node, ...(node.children ?? []).flatMap(walk)];
 
@@ -98,6 +98,78 @@ describe('Operations on a stack of pull requests', () => {
       await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
       assert.equal(messages[0], 'Rebased 1 branch.');
       assert.deepEqual(subjects('main..stack-c'), ['Layer 1', 'Layer 2', 'Layer 3']);
+    });
+  });
+
+  describe('Sync Stack', () => {
+    const requests: { method: string; url: string; body: unknown }[] = [];
+    /** A GitHub whose stacks are `existing`, or that refuses them with `refuse`. */
+    const github = (existing: unknown[] = [], refuse?: number) => ctx.api.seedGitHub({
+      token: 'test-token',
+      transport: {
+        async request(method, url, _token, body) {
+          requests.push({ method, url, body });
+          if (refuse) { return { status: refuse, json: { message: 'Resource not accessible by integration' } }; }
+          return method === 'GET' ? { status: 200, json: existing } : { status: 201, json: { number: 5, open: true, pull_requests: [] } };
+        },
+      },
+    });
+
+    beforeEach(() => {
+      requests.length = 0;
+      git('checkout', '-q', 'main');
+      commitFile('main.txt', 'main\n', 'main moves');
+      git('checkout', '-q', 'stack-b');
+    });
+
+    afterEach(() => ctx.api.seedGitHub(undefined));
+
+    it('rebases the stack onto its base, pushes the branches and groups the pull requests as a stack', async () => {
+      github();
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.syncStack', await stackNode()), 'Sync Stack');
+      assert.deepEqual(git('log', '--format=%s', '--reverse', 'main..stack-c').split('\n'), ['Layer 1', 'Layer 2', 'Layer 3']);
+      assert.deepEqual(remoteBranches(), ['stack-a', 'stack-b', 'stack-c']);
+      assert.equal(gitIn(stack.remote, 'rev-parse', 'stack-c'), git('rev-parse', 'stack-c'));
+      assert.equal(git('branch', '--show-current'), 'stack-b');
+      assert.deepEqual(requests.map((r) => [r.method, r.url.replace('https://api.github.com/repos/octo/app', '')]), [['GET', '/stacks?per_page=100'], ['POST', '/stacks']]);
+      assert.deepEqual(requests[1].body, { pull_requests: [1, 2, 3] });
+      await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
+      assert.equal(messages[0], 'Rebased 3 branches. Pushed 3 branches. Grouped the pull requests as a stack on GitHub.');
+    });
+
+    it('leaves a stack on GitHub that is the same already, and adds what is missing to one that has the first pull requests', async () => {
+      github([{ number: 5, open: true, pull_requests: [{ number: 1 }, { number: 2 }, { number: 3 }] }]);
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.syncStack'), 'Sync Stack');
+      await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
+      assert.match(messages[0], /The pull requests are one stack on GitHub\.$/);
+      assert.deepEqual(requests.map((r) => r.method), ['GET']);
+
+      requests.length = 0;
+      messages.length = 0;
+      // The first sync read the pull requests again, which the test answers from nowhere.
+      seedStack(ctx.api, [stackPull(1, 'stack-a', 'main'), stackPull(2, 'stack-b', 'stack-a'), stackPull(3, 'stack-c', 'stack-b')]);
+      github([{ number: 5, open: true, pull_requests: [{ number: 1 }, { number: 2 }] }]);
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.syncStack'), 'Sync Stack');
+      await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
+      assert.match(messages[0], /Added 1 pull requests to the stack on GitHub\.$/);
+      assert.deepEqual([requests[1].url.replace('https://api.github.com/repos/octo/app', ''), requests[1].body], ['/stacks/5/add', { pull_requests: [3] }]);
+    });
+
+    it('still rebases and pushes when GitHub does not take the stack, and says why', async () => {
+      github([], 403);
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.syncStack'), 'Sync Stack');
+      await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
+      assert.equal(messages[0], 'Rebased 3 branches. Pushed 3 branches. Not grouped as a stack: Resource not accessible by integration');
+      assert.deepEqual(remoteBranches(), ['stack-a', 'stack-b', 'stack-c']);
+    });
+
+    it('only rebases when push and the stack are turned off', async () => {
+      github();
+      await submitForm(ctx.api, vscode.commands.executeCommand('gitCheckout.pullRequests.syncStack'), 'Sync Stack', { push: false, link: false });
+      await waitFor('the result message', async () => (messages.length > 0 ? true : undefined));
+      assert.equal(messages[0], 'Rebased 3 branches.');
+      assert.deepEqual(remoteBranches(), []);
+      assert.deepEqual(requests, []);
     });
   });
 });

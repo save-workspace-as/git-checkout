@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { pushStackArgs, pushStackForm, rebaseStackForm, validatePushStackForm } from './stackGit';
+import { pushStackArgs, pushStackForm, rebaseStackForm, stackLinkFor, validatePushStackForm } from './stackGit';
 
 describe('pushStackArgs', () => {
   it('pushes every branch in one atomic push, with a lease when forcing', () => {
@@ -32,5 +32,33 @@ describe('rebaseStackForm', () => {
     assert.deepEqual(form.values, { stack: 'a → b → c', fetch: true });
     assert.match(form.fields[0].description ?? '', /the first onto origin\/main/);
     assert.equal(form.fields[0].type === 'text' && form.fields[0].readOnly, true);
+  });
+});
+
+describe('stackLinkFor', () => {
+  const stack = (number: number, pullRequests: number[], open = true) => ({ number, open, pullRequests });
+
+  it('creates a stack when none of the pull requests is in one', () => {
+    assert.deepEqual(stackLinkFor([], [1, 2, 3]), { kind: 'create', pullRequests: [1, 2, 3] });
+    assert.deepEqual(stackLinkFor([stack(9, [7, 8])], [1, 2]), { kind: 'create', pullRequests: [1, 2] });
+  });
+
+  it('does not count a stack that is closed', () => {
+    assert.deepEqual(stackLinkFor([stack(4, [1, 2], false)], [1, 2]), { kind: 'create', pullRequests: [1, 2] });
+  });
+
+  it('leaves a stack that has all of them in order', () => {
+    assert.deepEqual(stackLinkFor([stack(4, [1, 2, 3])], [1, 2, 3]), { kind: 'linked' });
+  });
+
+  it('adds the pull requests above the ones a stack has', () => {
+    assert.deepEqual(stackLinkFor([stack(4, [1, 2])], [1, 2, 3, 4]), { kind: 'add', stack: 4, pullRequests: [3, 4] });
+  });
+
+  it('leaves the people to settle it when the stack and the branches disagree', () => {
+    assert.deepEqual(stackLinkFor([stack(4, [2, 1])], [1, 2]), { kind: 'differs', stack: 4 });
+    assert.deepEqual(stackLinkFor([stack(4, [1]), stack(5, [2])], [1, 2]), { kind: 'differs', stack: 4 });
+    assert.deepEqual(stackLinkFor([stack(4, [1, 9])], [1, 2]), { kind: 'differs', stack: 4 });
+    assert.deepEqual(stackLinkFor([stack(4, [2, 3])], [1, 2, 3]), { kind: 'differs', stack: 4 });
   });
 });
