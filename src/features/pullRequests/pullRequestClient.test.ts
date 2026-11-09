@@ -1,7 +1,7 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
-import { fetchPullRequestLists, graphqlUrl, PullRequestError, type PullRequestTransport } from './pullRequestClient';
+import { fetchClosedPullRequests, fetchPullRequestLists, graphqlUrl, PullRequestError, type PullRequestTransport } from './pullRequestClient';
 
 const repo = { host: 'github.com', owner: 'octo', repo: 'app' };
 const pull = { number: 3, title: 'A change', url: 'https://github.com/octo/app/pull/3', headRefName: 'a', baseRefName: 'main', author: { login: 'ada' } };
@@ -62,5 +62,19 @@ describe('fetchPullRequestLists', () => {
       (e: unknown) => e as Error,
     );
     assert.match(error?.message ?? '', /Something odd/);
+  });
+});
+
+describe('fetchClosedPullRequests', () => {
+  it('asks for the closed pull requests and tells merged from closed', async () => {
+    const t = transport({ status: 200, json: { data: { closed: { nodes: [{ ...pull, state: 'MERGED' }, { ...pull, number: 4, state: 'CLOSED' }, { ...pull, number: 5, state: 'OPEN' }] } } } });
+    const pulls = await fetchClosedPullRequests(repo, 'secret', t);
+    assert.deepEqual(pulls.map((entry) => [entry.number, entry.state]), [[3, 'merged'], [4, 'closed'], [5, undefined]]);
+    assert.match(JSON.parse(t.calls[0].body).variables.closed, /repo:octo\/app .*is:closed/);
+  });
+
+  it('fails the way the open lists do', async () => {
+    await assert.rejects(fetchClosedPullRequests(repo, 't', transport({ status: 401, json: null })), (error: unknown) => error instanceof PullRequestError && error.failure === 'unauthorized');
+    await assert.rejects(fetchClosedPullRequests(repo, 't', transport({ status: 200, json: { data: null } })), (error: unknown) => error instanceof PullRequestError && error.failure === 'other');
   });
 });

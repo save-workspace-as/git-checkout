@@ -556,6 +556,8 @@
   "command.gitCheckout.pullRequests.signIn.category": "Git Checkout",
   "command.gitCheckout.pullRequests.grantAccess.title": "Allow Access to Private Repositories",
   "command.gitCheckout.pullRequests.grantAccess.category": "Git Checkout",
+  "command.gitCheckout.pullRequests.showClosed.title": "Show Closed and Merged Pull Requests",
+  "command.gitCheckout.pullRequests.showClosed.category": "Git Checkout",
   "command.gitCheckout.pullRequests.checkout.title": "Checkout Pull Request",
   "command.gitCheckout.pullRequests.checkout.category": "Git Checkout",
   "command.gitCheckout.pullRequests.checkoutInWorktree.title": "Checkout Pull Request in Worktree",

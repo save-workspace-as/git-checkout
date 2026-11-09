@@ -16,7 +16,7 @@ describe('Operations on a stack of pull requests', () => {
   let undo: (() => void)[] = [];
 
   const stackNode = () => waitFor('the stack', async () =>
-    (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'folder' && node.label === 'stack-c'));
+    (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'pullRequest' && node.ref === '1' && node.children.length > 0));
   const remoteBranches = () => gitIn(stack.remote, 'for-each-ref', '--format=%(refname:short)', 'refs/heads').split('\n').filter(Boolean).sort();
 
   beforeEach(async () => {
