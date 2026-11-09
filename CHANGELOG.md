@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.12.0...git-checkout-v0.13.0) (2026-11-09)
+
+
+### Features
+
+* **pull-requests:** nest a stack under its bottom pull request ([#98](https://github.com/save-workspace-as/git-checkout/issues/98)) ([6526711](https://github.com/save-workspace-as/git-checkout/commit/6526711bc318460fe3eee712f28eefb40c32dce9))
+
 ## [0.12.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.11.0...git-checkout-v0.12.0) (2026-11-07)
 
 
