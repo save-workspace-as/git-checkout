@@ -1441,6 +1441,11 @@
         "title": "%command.gitCheckout.pullRequests.grantAccess.title%"
       },
       {
+        "category": "%command.gitCheckout.pullRequests.showClosed.category%",
+        "command": "gitCheckout.pullRequests.showClosed",
+        "title": "%command.gitCheckout.pullRequests.showClosed.title%"
+      },
+      {
         "category": "%command.gitCheckout.pullRequests.checkout.category%",
         "command": "gitCheckout.pullRequests.checkout",
         "title": "%command.gitCheckout.pullRequests.checkout.title%"
@@ -3159,6 +3164,10 @@
           "when": "false"
         },
         {
+          "command": "gitCheckout.pullRequests.showClosed",
+          "when": "false"
+        },
+        {
           "command": "gitCheckout.pullRequests.checkout",
           "when": "false"
         },
@@ -3877,62 +3886,62 @@
         {
           "command": "gitCheckout.pullRequests.unstack",
           "group": "4_manage@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.mergeStack",
           "group": "3_merge@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.syncStack",
           "group": "2_sync@0",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.rebaseStack",
           "group": "2_sync@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.pushStack",
           "group": "2_sync@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.checkoutStack",
           "group": "1_checkout@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequests.stack"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest.stackBase"
         },
         {
           "command": "gitCheckout.pullRequests.checkout",
           "group": "1_checkout@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.checkoutInWorktree",
           "group": "1_checkout@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.review",
           "group": "1_checkout@3",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.openOnGitHub",
           "group": "2_open@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.copyLink",
           "group": "2_open@2",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.refresh",
           "group": "3_refresh@1",
-          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem == pullRequest"
+          "when": "view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^pullRequest(\\.stackBase)?$/"
         },
         {
           "command": "gitCheckout.pullRequests.refresh",

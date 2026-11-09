@@ -100,7 +100,7 @@ export const SIDEBAR_CONTEXT = {
   worktreesSection: 'section.worktrees',
   pullRequestsSection: 'section.pullRequests',
   pullRequestCategory: 'pullRequests.category',
-  pullRequestStack: 'pullRequests.stack',
+  pullRequestStackBase: 'pullRequest.stackBase',
   pullRequest: 'pullRequest',
   pullRequestAction: 'pullRequests.action',
   worktree: 'worktree',

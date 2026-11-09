@@ -37,29 +37,54 @@ describe('pullRequestSection', () => {
     assert.equal(commandOf({ kind: 'loading' }), undefined);
   });
 
-  it('shows pull requests that build on one another as a stack, bottom first, with their place in it', () => {
+  it('shows the pull requests on top of a stack as children of its bottom one, wherever that is listed', () => {
     const open = [pull(3, { headRef: 'c', baseRef: 'b' }), pull(1, { headRef: 'a' }), pull(2, { headRef: 'b', baseRef: 'a' }), pull(9)];
     const section = pullRequestSection(ready({ allOpen: open }))!;
-    assert.deepEqual(section.children.map((child) => child.label), ['Stacks', 'All open']);
-    const stacks = section.children[0];
-    assert.equal(stacks.description, '1');
-    assert.equal(treeItemSpec(stacks).collapsible, 'expanded');
-    const [stack] = stacks.children;
-    assert.deepEqual([stack.label, stack.description, treeItemSpec(stack).collapsible], ['c', '3 pull requests into main', 'expanded']);
-    assert.deepEqual(stack.children.map((row) => [row.ref, row.description]), [
-      ['1', '1 of 3 · #1 by ada'],
-      ['2', '2 of 3 · #2 by ada'],
-      ['3', '3 of 3 · #3 by ada'],
+    assert.deepEqual(section.children.map((child) => child.label), ['All open', 'Show closed and merged']);
+    const allOpen = section.children[0];
+    assert.deepEqual(allOpen.children.map((row) => row.ref), ['1', '9']);
+    const [bottom] = allOpen.children;
+    assert.equal(bottom.contextValue, 'pullRequest.stackBase');
+    assert.equal(treeItemSpec(bottom).collapsible, 'expanded');
+    assert.deepEqual([bottom.description, ...bottom.children.map((row) => row.description)], [
+      '1 of 3 · #1 by ada',
+      '2 of 3 · #2 by ada',
+      '3 of 3 · #3 by ada',
     ]);
-    const ids: string[] = [];
-    const collect = (node: { id: string; children: unknown[] }): void => { ids.push(node.id); (node.children as typeof node[]).forEach(collect); };
-    collect(section);
-    assert.equal(new Set(ids).size, ids.length, 'every row has an id of its own, though a pull request is in more than one place');
+    assert.deepEqual(bottom.children.map((row) => row.children.length), [0, 0], 'one level deep');
   });
 
-  it('has no Stacks folder when no pull requests build on one another', () => {
-    const section = pullRequestSection(ready({ allOpen: [pull(1), pull(2)] }))!;
-    assert.deepEqual(section.children.map((child) => child.label), ['All open']);
+  it('keeps a pull request on top of a stack in its own list when the bottom one is not there', () => {
+    const [one, two] = [pull(1, { headRef: 'a' }), pull(2, { headRef: 'b', baseRef: 'a' })];
+    const section = pullRequestSection(ready({ createdByMe: [two], allOpen: [one, two] }))!;
+    const [mine, all] = section.children;
+    assert.deepEqual(mine.children.map((row) => [row.ref, row.contextValue]), [['2', 'pullRequest']]);
+    assert.deepEqual(all.children.map((row) => row.ref), ['1']);
+    assert.deepEqual(all.children[0].children.map((row) => row.ref), ['2']);
+  });
+
+  it('offers the closed and merged pull requests on demand, then lists them with their outcome', () => {
+    const offer = pullRequestSection(ready({ allOpen: [pull(1)] }))!.children.at(-1)!;
+    assert.equal(treeItemSpec(offer).command?.id, PULL_REQUEST_COMMANDS.showClosed);
+
+    const loading = pullRequestSection({ ...ready({ allOpen: [pull(1)] }), closed: 'loading' } as PullRequestState)!.children.at(-1)!;
+    assert.equal(loading.label, 'Loading…');
+
+    const closed = [pull(5, { state: 'merged' }), pull(6, { state: 'closed' })];
+    const folder = pullRequestSection({ ...ready({ allOpen: [pull(1)] }), closed } as PullRequestState)!.children.at(-1)!;
+    assert.deepEqual([folder.label, folder.description, treeItemSpec(folder).collapsible], ['Closed and merged', '2', 'collapsed']);
+    assert.deepEqual(folder.children.map((row) => [row.ref, row.description, row.icon?.id]), [
+      ['5', '#5 by ada · Merged', 'git-merge'],
+      ['6', '#6 by ada · Closed', 'git-pull-request-closed'],
+    ]);
+  });
+
+  it('nests a stack among the closed and merged pull requests too, without the actions of an open stack', () => {
+    const closed = [pull(3, { headRef: 'c', baseRef: 'b', state: 'closed' }), pull(2, { headRef: 'b', baseRef: 'a', state: 'closed' }), pull(1, { headRef: 'a', state: 'merged' })];
+    const folder = pullRequestSection({ ...ready({ allOpen: [pull(9)] }), closed } as PullRequestState)!.children.at(-1)!;
+    assert.deepEqual(folder.children.map((row) => row.ref), ['1']);
+    assert.deepEqual(folder.children[0].children.map((row) => row.ref), ['2', '3']);
+    assert.equal(folder.children[0].contextValue, 'pullRequest');
   });
 
   it('groups what needs you by the next step, leaves out empty groups, and keeps All open to browse', () => {
@@ -79,13 +104,14 @@ describe('pullRequestSection', () => {
       ['Needs your review', '1', 'expanded'],
       ['Waiting for review', '1', 'expanded'],
       ['All open', '6', 'collapsed'],
+      ['Show closed and merged', undefined, 'none'],
     ]);
-    assert.deepEqual(section.children.map((child) => child.children.map((row) => row.ref)), [['1'], ['2'], ['3'], ['5'], ['4'], ['1', '2', '3', '4', '5', '6']]);
+    assert.deepEqual(section.children.map((child) => child.children.map((row) => row.ref)), [['1'], ['2'], ['3'], ['5'], ['4'], ['1', '2', '3', '4', '5', '6'], []]);
   });
 
   it('shows only All open when nothing involves you', () => {
     const section = pullRequestSection(ready({ allOpen: [pull(1)] }))!;
-    assert.deepEqual(section.children.map((child) => child.label), ['All open']);
+    assert.deepEqual(section.children.map((child) => child.label), ['All open', 'Show closed and merged']);
   });
 
   it('keeps the rows of one pull request in two groups apart', () => {

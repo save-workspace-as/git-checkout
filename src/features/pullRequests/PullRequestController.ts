@@ -33,6 +33,7 @@ export class PullRequestController {
     const C = PULL_REQUEST_COMMANDS;
     context.subscriptions.push(
       vscode.commands.registerCommand(C.refresh, () => this.store.refresh()),
+      vscode.commands.registerCommand(C.showClosed, (node?: SidebarNode) => (node?.repoRoot ? this.store.showClosed(node.repoRoot) : undefined)),
       vscode.commands.registerCommand(C.signIn, () => this.store.signIn(false)),
       vscode.commands.registerCommand(C.grantAccess, () => this.store.signIn(true)),
       vscode.commands.registerCommand(C.checkout, (node?: SidebarNode) => this.checkout(node, false)),

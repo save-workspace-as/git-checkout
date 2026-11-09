@@ -1,11 +1,12 @@
 import * as l10n from '@vscode/l10n';
 import type { PullRequestState } from '../features/pullRequests/PullRequestStore';
-import { pullRequestChains } from '../shared/pullRequests/pullRequestStacks';
+import { pullRequestChains, type PullRequestChain } from '../shared/pullRequests/pullRequestStacks';
 import { groupPullRequests, PULL_REQUEST_GROUPS, type PullRequestCategory, type PullRequestDto, type PullRequestGroup } from '../shared/pullRequests/pullRequests';
 import { SIDEBAR_CONTEXT, type SidebarNode } from './sidebarTreeModel';
 
 export const PULL_REQUEST_COMMANDS = {
   refresh: 'gitCheckout.pullRequests.refresh',
+  showClosed: 'gitCheckout.pullRequests.showClosed',
   signIn: 'gitCheckout.pullRequests.signIn',
   grantAccess: 'gitCheckout.pullRequests.grantAccess',
   checkout: 'gitCheckout.pullRequests.checkout',
@@ -58,6 +59,12 @@ const action = (id: string, label: string, command: string, tooltip: string): Si
 
 /** What a reviewer's decision looks like on the row: the pull request icon takes its color. */
 function iconOf(pull: PullRequestDto): { id: string; color?: string } {
+  if (pull.state === 'merged') {
+    return { id: 'git-merge', color: 'charts.purple' };
+  }
+  if (pull.state === 'closed') {
+    return { id: 'git-pull-request-closed', color: 'charts.red' };
+  }
   if (pull.isDraft) {
     return { id: 'git-pull-request-draft', color: 'disabledForeground' };
   }
@@ -99,7 +106,7 @@ function checksText(pull: PullRequestDto): string {
 
 /** `position` is where the pull request is in its stack, counting from the bottom at 1. */
 export function pullRequestNode(pull: PullRequestDto, category: PullRequestCategory, position?: { index: number; count: number }): SidebarNode {
-  const details = [pull.author ? l10n.t('by {0}', pull.author) : '', pull.isDraft ? l10n.t('Draft') : ''].filter(Boolean).join(' · ');
+  const details = [pull.author ? l10n.t('by {0}', pull.author) : '', pull.state === 'merged' ? l10n.t('Merged') : pull.state === 'closed' ? l10n.t('Closed') : pull.isDraft ? l10n.t('Draft') : ''].filter(Boolean).join(' · ');
   const place = position ? `${l10n.t('{0} of {1}', position.index, position.count)} · ` : '';
   return {
     id: `pullRequest:${category}:${pull.number}`,
@@ -147,49 +154,65 @@ export function pullRequestSection(state: PullRequestState): SidebarNode | undef
       ]);
     case 'ready': {
       const groups = groupPullRequests(state.lists);
-      const folder = (key: PullRequestCategory, label: string, icon: string, pulls: PullRequestDto[], expanded: boolean): SidebarNode => ({
-        id: `pullRequests:${key}`,
-        kind: 'folder',
-        label,
-        description: String(pulls.length),
-        contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
-        icon: { id: icon },
-        expanded,
-        children: pulls.map((pull) => pullRequestNode(pull, key)),
-      });
-      const chains = pullRequestChains(state.lists.allOpen, state.repo);
-      const stacks: SidebarNode | undefined = chains.length === 0 ? undefined : {
-        id: 'pullRequests:stacks',
-        kind: 'folder',
-        label: l10n.t('Stacks'),
-        description: String(chains.length),
-        contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
-        icon: { id: 'layers' },
-        expanded: true,
-        children: chains.map((chain): SidebarNode => {
-          const category: PullRequestCategory = `stack-${chain.pulls[0].number}`;
-          const top = chain.pulls[chain.pulls.length - 1];
-          return {
-            id: `pullRequests:${category}`,
-            kind: 'folder',
-            label: top.headRef,
-            description: l10n.t('{0} pull requests into {1}', chain.pulls.length, chain.base),
-            contextValue: SIDEBAR_CONTEXT.pullRequestStack,
-            ref: String(chain.pulls[0].number),
-            icon: { id: 'layers' },
-            expanded: true,
-            children: chain.pulls.map((pull, index) => pullRequestNode(pull, category, { index: index + 1, count: chain.pulls.length })),
-          };
-        }),
+      // A stack shows once, under its bottom pull request, wherever that one is listed; the pull requests on top of it are its children.
+      const closedPulls = Array.isArray(state.closed) ? state.closed : [];
+      const chains = [...pullRequestChains(state.lists.allOpen, state.repo), ...pullRequestChains(closedPulls, state.repo)];
+      const chainOf = new Map<number, PullRequestChain>();
+      for (const chain of chains) {
+        for (const pull of chain.pulls) {
+          chainOf.set(pull.number, chain);
+        }
+      }
+      const folder = (key: PullRequestCategory, label: string, icon: string, pulls: PullRequestDto[], expanded: boolean): SidebarNode => {
+        const listed = new Set(pulls.map((pull) => pull.number));
+        const rows: SidebarNode[] = [];
+        for (const pull of pulls) {
+          const chain = chainOf.get(pull.number);
+          if (!chain || chain.pulls[0] === pull) {
+            const node = pullRequestNode(pull, key);
+            if (chain) {
+              const count = chain.pulls.length;
+              rows.push({
+                ...node,
+                description: `${l10n.t('{0} of {1}', 1, count)} · ${node.description}`,
+                // The stack actions change pull requests that are open; a finished stack only shows its shape.
+                ...(key === 'closed' ? {} : { contextValue: SIDEBAR_CONTEXT.pullRequestStackBase }),
+                expanded: true,
+                children: chain.pulls.slice(1).map((above, index) => pullRequestNode(above, key, { index: index + 2, count })),
+              });
+            } else {
+              rows.push(node);
+            }
+          } else if (!listed.has(chain.pulls[0].number)) {
+            // Its stack is not in this list, so there is no parent here to show it under.
+            rows.push(pullRequestNode(pull, key));
+          }
+        }
+        return {
+          id: `pullRequests:${key}`,
+          kind: 'folder',
+          label,
+          description: String(pulls.length),
+          contextValue: SIDEBAR_CONTEXT.pullRequestCategory,
+          icon: { id: icon },
+          expanded,
+          children: rows,
+        };
       };
+      const closed: SidebarNode =
+        state.closed === undefined
+          ? action('showClosed', l10n.t('Show closed and merged'), PULL_REQUEST_COMMANDS.showClosed, l10n.t('Read the latest closed and merged pull requests from GitHub.'))
+          : state.closed === 'loading'
+            ? { ...message('closedLoading', l10n.t('Loading…')), icon: { id: 'loading~spin' } }
+            : folder('closed', l10n.t('Closed and merged'), 'git-pull-request-closed', state.closed, false);
       // A group with nothing in it is left out; All open stays, as the place to browse.
       return section(
         [
           ...PULL_REQUEST_GROUPS.filter((group) => groups[group].length > 0).map((group) =>
             folder(group, GROUPS[group].label(), GROUPS[group].icon, groups[group], true),
           ),
-          ...(stacks ? [stacks] : []),
           folder('allOpen', l10n.t('All open'), 'list-flat', state.lists.allOpen, false),
+          closed,
         ],
         String(state.lists.allOpen.length),
       );

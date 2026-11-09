@@ -24,6 +24,8 @@ export interface PullRequestDto {
   /** ISO time of the last change. */
   updatedAt: string;
   url: string;
+  /** Set on a pull request that is no longer open; an open one has none. */
+  state?: 'merged' | 'closed';
 }
 
 /** The three searches behind the sidebar, newest change first. */
@@ -34,13 +36,13 @@ export interface PullRequestLists {
 }
 
 /** Where a pull request row sits: one of the lists, a group, or a stack (named by the number of its bottom pull request). */
-export type PullRequestCategory = keyof PullRequestLists | PullRequestGroup | `stack-${number}`;
+export type PullRequestCategory = keyof PullRequestLists | PullRequestGroup | 'closed';
 
 export const PULL_REQUESTS_PER_LIST = 50;
 
 const FIELDS = `
   ... on PullRequest {
-    number title url isDraft updatedAt headRefName baseRefName reviewDecision mergeable
+    number title url isDraft updatedAt state headRefName baseRefName reviewDecision mergeable
     author { login }
     headRepository { nameWithOwner }
     commits(last: 1) { nodes { commit { statusCheckRollup { state } } } }
@@ -62,6 +64,16 @@ export function pullRequestsQuery(repo: GitHubRepository): { query: string; vari
       reviewRequested: `${scope} review-requested:@me`,
       allOpen: scope,
     },
+  };
+}
+
+/** The closed and merged pull requests, newest change first. Asked for on demand, as there can be many. */
+export function closedPullRequestsQuery(repo: GitHubRepository): { query: string; variables: Record<string, string> } {
+  return {
+    query: `query($closed: String!) {
+      closed: search(query: $closed, type: ISSUE, first: ${PULL_REQUESTS_PER_LIST}) { nodes { ${FIELDS} } }
+    }`,
+    variables: { closed: `repo:${repo.owner}/${repo.repo} is:pr is:closed sort:updated-desc` },
   };
 }
 
@@ -102,6 +114,7 @@ function pullRequestFrom(node: unknown): PullRequestDto | undefined {
     mergeable: value.mergeable === 'MERGEABLE' ? 'mergeable' : value.mergeable === 'CONFLICTING' ? 'conflicting' : 'unknown',
     updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : '',
     url: value.url,
+    ...(value.state === 'MERGED' ? { state: 'merged' as const } : value.state === 'CLOSED' ? { state: 'closed' as const } : {}),
   };
 }
 
@@ -110,16 +123,25 @@ function pullRequestFrom(node: unknown): PullRequestDto | undefined {
  * address, are left out. Undefined when the answer is not the shape the query asks for.
  */
 export function parsePullRequestLists(body: unknown): PullRequestLists | undefined {
+  const read = pullRequestSearches(body);
+  return read && { createdByMe: read('createdByMe'), reviewRequested: read('reviewRequested'), allOpen: read('allOpen') };
+}
+
+/** Reads the answer to {@link closedPullRequestsQuery}; undefined when it is not the shape the query asks for. */
+export function parseClosedPullRequests(body: unknown): PullRequestDto[] | undefined {
+  return pullRequestSearches(body)?.('closed');
+}
+
+function pullRequestSearches(body: unknown): ((name: string) => PullRequestDto[]) | undefined {
   const data = (body as { data?: Record<string, { nodes?: unknown[] } | null> } | null)?.data;
   if (!data || typeof data !== 'object') {
     return undefined;
   }
-  const read = (name: string): PullRequestDto[] =>
+  return (name) =>
     (data[name]?.nodes ?? []).flatMap((node) => {
       const pull = pullRequestFrom(node);
       return pull ? [pull] : [];
     });
-  return { createdByMe: read('createdByMe'), reviewRequested: read('reviewRequested'), allOpen: read('allOpen') };
 }
 
 /** What to do about a pull request, from the one that needs the most action down. */

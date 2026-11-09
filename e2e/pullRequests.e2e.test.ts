@@ -64,21 +64,20 @@ describe('Pull requests in the sidebar', () => {
     assert.equal(labels[labels.indexOf('Remotes') + 1], 'Pull Requests');
     const categories = tree.find((entry) => entry.label === 'Pull Requests')!.children.map((child) => child.label);
     // The seeded pull request is mine and its checks failed.
-    assert.deepEqual(categories, ['Blocked', 'All open']);
+    assert.deepEqual(categories, ['Blocked', 'All open', 'Show closed and merged']);
   });
 
-  it('lists pull requests that build on one another as a stack, bottom first, and checks one of them out', async () => {
+  it('shows the pull requests on top of a stack as children of the bottom one, and checks one of them out', async () => {
     const chain = [pull({ number: 9, headRef: 'upper', baseRef: 'speed', title: 'Use it' }), pull(), pull({ number: 8, headRef: 'other', title: 'Alone' })];
     seed(chain);
-    const stacks = await waitFor('the Stacks folder', async () =>
-      (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'folder' && node.label === 'Stacks'));
-    assert.equal(stacks.description, '1');
-    const [stack] = stacks.children;
-    assert.equal(stack.label, 'upper');
-    assert.equal(stack.description, '2 pull requests into main');
-    assert.deepEqual(stack.children.map((row) => [row.ref, row.description]), [['7', '1 of 2 · #7 by ada'], ['9', '2 of 2 · #9 by ada']]);
+    const bottom = await waitFor('the stack under its bottom pull request', async () =>
+      (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'pullRequest' && node.ref === '7' && node.children.length > 0));
+    assert.equal(bottom.description, '1 of 2 · #7 by ada');
+    assert.deepEqual(bottom.children.map((row) => [row.ref, row.description]), [['9', '2 of 2 · #9 by ada']]);
+    const topLevel = (await loadTree(ctx.api)).flatMap(walk).filter((node) => node.kind === 'folder').flatMap((folder) => folder.children.map((row) => row.ref));
+    assert.ok(!topLevel.includes('9'), 'the pull request on top is not listed on its own');
 
-    await vscode.commands.executeCommand('gitCheckout.pullRequests.checkout', stack.children[0]);
+    await vscode.commands.executeCommand('gitCheckout.pullRequests.checkout', bottom);
     assert.equal(git('branch', '--show-current'), 'pr/7');
     assert.equal(git('rev-parse', 'HEAD'), head);
   });

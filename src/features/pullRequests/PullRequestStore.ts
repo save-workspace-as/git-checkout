@@ -1,4 +1,5 @@
 import { realpathSync } from 'node:fs';
+import * as l10n from '@vscode/l10n';
 import * as vscode from 'vscode';
 import type { GitCliRegistry } from '../../core/gitCliRegistry';
 import { loadGitHubRemote } from '../../core/githubRepository';
@@ -8,7 +9,7 @@ import type { PullRequestDto, PullRequestLists } from '../../shared/pullRequests
 import { pullRequestChains, type PullRequestChain } from '../../shared/pullRequests/pullRequestStacks';
 import type { Activity } from '../../core/whenActive';
 import { fetchRestTransport, type RestTransport } from './githubRestClient';
-import { fetchPullRequestLists, PullRequestError } from './pullRequestClient';
+import { fetchClosedPullRequests, fetchPullRequestLists, PullRequestError } from './pullRequestClient';
 
 const log = createLogger('pull-requests');
 
@@ -22,7 +23,10 @@ export type PullRequestState =
   | { kind: 'signedOut' }
   | { kind: 'needsAccess' }
   | { kind: 'error'; message: string }
-  | { kind: 'ready'; repo: GitHubRepository; remote: string; lists: PullRequestLists };
+  | { kind: 'ready'; repo: GitHubRepository; remote: string; lists: PullRequestLists;
+      /** The closed and merged pull requests, once they were asked for: `loading` while GitHub is read. */
+      closed?: PullRequestDto[] | 'loading';
+    };
 
 /** Public repositories need no more than the sign-in the pictures use; private ones need `repo`. */
 const BASIC_SCOPES = ['read:user'];
@@ -55,6 +59,8 @@ export class PullRequestStore implements vscode.Disposable {
   private readonly seeded = new Set<string>();
   /** Repositories whose list was left alone while the view was out of sight, and has to be read when it is shown. */
   private readonly stale = new Set<string>();
+  /** Repositories whose closed and merged pull requests were asked for; they are read again with every refresh. */
+  private readonly closedWanted = new Set<string>();
   private activity: Activity | undefined;
   private readonly changed = new vscode.EventEmitter<void>();
   readonly onDidChange = this.changed.event;
@@ -135,7 +141,8 @@ export class PullRequestStore implements vscode.Disposable {
     if (state?.kind !== 'ready') {
       return undefined;
     }
-    const pull = [...state.lists.allOpen, ...state.lists.createdByMe, ...state.lists.reviewRequested].find((entry) => entry.number === number);
+    const closed = Array.isArray(state.closed) ? state.closed : [];
+    const pull = [...state.lists.allOpen, ...state.lists.createdByMe, ...state.lists.reviewRequested, ...closed].find((entry) => entry.number === number);
     return pull && { pull, repo: state.repo, remote: state.remote };
   }
 
@@ -143,6 +150,34 @@ export class PullRequestStore implements vscode.Disposable {
   stacks(repoRoot: string): { chains: PullRequestChain[]; repo: GitHubRepository; remote: string } | undefined {
     const state = this.states.get(keyOf(repoRoot));
     return state?.kind === 'ready' ? { chains: pullRequestChains(state.lists.allOpen, state.repo), repo: state.repo, remote: state.remote } : undefined;
+  }
+
+  /** Reads the closed and merged pull requests, which are only asked for on demand, and keeps them up to date from then on. */
+  async showClosed(repoRoot: string): Promise<void> {
+    const key = keyOf(repoRoot);
+    this.closedWanted.add(key);
+    const state = this.states.get(key);
+    if (state?.kind !== 'ready') {
+      return;
+    }
+    this.set(repoRoot, { ...state, closed: 'loading' });
+    const closed = await this.readClosed(state.repo);
+    const now = this.states.get(key);
+    if (now?.kind === 'ready') {
+      this.set(repoRoot, { ...now, closed: closed ?? [] });
+    }
+  }
+
+  /** The closed and merged pull requests, or undefined when they could not be read (which is logged and told in a message). */
+  private async readClosed(repo: GitHubRepository): Promise<PullRequestDto[] | undefined> {
+    try {
+      const session = await this.session();
+      return session ? await fetchClosedPullRequests(repo, session.accessToken) : undefined;
+    } catch (error) {
+      log.warn('could not read the closed pull requests', error);
+      void vscode.window.showWarningMessage(l10n.t('Could not load closed pull requests: {0}', error instanceof Error ? error.message : String(error)));
+      return undefined;
+    }
   }
 
   /** Asks for GitHub's sign-in, in VS Code's own prompt, and reads again once it is done. */
@@ -229,7 +264,10 @@ export class PullRequestStore implements vscode.Disposable {
       }
       try {
         const lists = await fetchPullRequestLists(github.repo, session.accessToken);
-        this.finish(repoRoot, { kind: 'ready', repo: github.repo, remote: github.remote, lists });
+        const closed = this.closedWanted.has(key) ? await this.readClosed(github.repo) : undefined;
+        // A reading that fails leaves the closed list that was shown.
+        const kept = closed ?? (shown?.kind === 'ready' ? shown.closed : undefined);
+        this.finish(repoRoot, { kind: 'ready', repo: github.repo, remote: github.remote, lists, ...(kept ? { closed: kept } : {}) });
       } catch (error) {
         const failure = error instanceof PullRequestError ? error.failure : 'other';
         log.warn('could not read the pull requests', error);
