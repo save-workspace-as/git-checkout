@@ -50,6 +50,8 @@ describe('Workspace shapes', () => {
       const state = await ctx.api.panelState();
       assert.equal(state.empty, true);
       assert.equal(state.emptyReason, 'noRepository');
+      // The sidebar rebuilds a moment after the folder changes, so it empties a little after the repository list does.
+      await waitFor('an empty sidebar', async () => ((await ctx.api.sidebar.getChildren())?.length === 0 ? true : undefined));
       assert.deepEqual(await ctx.api.sidebar.getChildren(), []);
     });
 
