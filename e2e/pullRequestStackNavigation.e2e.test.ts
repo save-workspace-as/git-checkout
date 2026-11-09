@@ -78,7 +78,7 @@ describe('Moving through a stack of pull requests', () => {
 
   it('checks out the layer picked from the stack that was right-clicked', async () => {
     const stack = await waitFor('the stack', async () =>
-      (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'folder' && node.label === 'stack-c'));
+      (await loadTree(ctx.api)).flatMap(walk).find((node) => node.kind === 'pullRequest' && node.ref === '1' && node.children.length > 0));
     const shown: unknown[] = [];
     undo.push(answer('showQuickPick', async (items: unknown) => {
       const list = (await items) as { label: string; description: string; pull: { number: number } }[];
