@@ -7,6 +7,7 @@ import { pullRequestUrl } from '../../shared/history/githubReferences';
 import { buildPullRequestPrompt, canTravelInLink, linkableTitle, parsePullRequestText } from '../../shared/pullRequests/pullRequestPrompt';
 import { githubRepositoryFor } from '../history/githubLinkHost';
 import { loadBranchChanges } from './branchChanges';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('pull-request-draft');
 
@@ -22,7 +23,7 @@ export async function openPullRequestWithAi(repoRoot: string, branch: string): P
   }
   let text: { title: string; body: string } | undefined;
   let canceled = false;
-  await vscode.window.withProgress(
+  await withProgress(
     { location: vscode.ProgressLocation.Notification, title: l10n.t('Writing a pull request description…'), cancellable: true },
     async (_progress, token) => {
       try {

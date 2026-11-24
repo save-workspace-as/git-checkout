@@ -11,6 +11,7 @@ import { createPatchInForm } from '../history/patchHost';
 import { confirmStashClear, confirmStashDrop, confirmStashPop, openStashPatch, createStashInForm, promptStashMessage } from './stashHost';
 import { applyStashForm, branchFromStashForm, deleteStashForm, renameStashForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('stash');
 
@@ -269,7 +270,7 @@ export class StashController {
     op: (repoRoot: string) => Promise<void>,
   ): Promise<boolean> {
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Git Checkout: {0}', title) },
         () => op(root),
       );

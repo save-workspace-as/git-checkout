@@ -5,6 +5,7 @@ import type { CancellationToken } from 'vscode';
 import { GitCliError, isGitLockError } from './gitCliError';
 import type { GitOperationQueue } from './gitOperationQueue';
 import { createLogger } from '../log';
+import { noticeIfSlow } from './progressNotice';
 
 const log = createLogger('git');
 
@@ -212,7 +213,7 @@ export class GitCli {
     if (options?.concurrent) {
       return this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true);
     }
-    return this.queue.runWrite(() => this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true));
+    return this.queue.runWrite(() => noticeIfSlow(args, () => this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, undefined, true)));
   }
 
   async execWriteWithInput(
@@ -221,7 +222,7 @@ export class GitCli {
     options?: GitExecOptions,
   ): Promise<GitExecResult> {
     return this.queue.runWrite(() =>
-      this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, input, true),
+      noticeIfSlow(args, () => this.spawnGit(args, options, DEFAULT_WRITE_TIMEOUT_MS, input, true)),
     );
   }
 

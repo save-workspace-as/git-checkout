@@ -5,13 +5,14 @@ import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelEr
 import { showMarkdownBeside } from '../../core/markdownDocument';
 import { createLogger } from '../../log';
 import { buildReviewPrompt } from '../../shared/changes/reviewPrompt';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('staged-review');
 
 /** Has the language model review what is staged, and shows its findings as a Markdown document beside the form. */
 export async function reviewStagedChanges(cli: GitCli): Promise<void> {
   let findings: string | undefined;
-  await vscode.window.withProgress(
+  await withProgress(
     { location: vscode.ProgressLocation.Notification, title: l10n.t('Reviewing the staged changes…'), cancellable: true },
     async (_progress, token) => {
       try {

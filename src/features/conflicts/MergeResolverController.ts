@@ -10,6 +10,7 @@ import { editorTokenColorsFromRules } from '../../shared/diff/editorTokenColors'
 import { aiDisabledMessage, AiDisabledError, askLanguageModel, NoLanguageModelError } from '../../core/languageModel';
 import type { MergeResolverFile } from './mergeResolverService';
 import { MergeResolverService } from './mergeResolverService';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('merge-resolver');
 
@@ -130,7 +131,7 @@ export class MergeResolverController {
     const proposals = new Map<string, Proposal>();
     const left: { path: string; reason: string }[] = [];
     let canceled = false;
-    await vscode.window.withProgress(
+    await withProgress(
       { location: vscode.ProgressLocation.Notification, title: l10n.t('Resolving conflicts with AI…'), cancellable: true },
       async (progress, token) => {
         for (const [index, path] of paths.entries()) {

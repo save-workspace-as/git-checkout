@@ -22,6 +22,7 @@ import { applyPatchFromClipboard, applyPatchInForm, copyCommitPatch, createPatch
 import { buildBranchCommitRange, buildRangeFromOrderedShas } from './commitRangePatch';
 import { CHECKOUT_LOCAL_CHANGES, MERGE_TYPE_FAST_FORWARD, checkoutForm, editCommitMessageForm, fixupForm, mergeForm, rebaseForm, resetForm, splitCommitForm, squashIntoParentForm, undoOperationForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('history');
 
@@ -569,7 +570,7 @@ export class HistoryOperationsController {
     }
     rememberSavedFolder(target);
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Creating {0}…', path.basename(target.fsPath)) },
         () => this.ctx.cliRegistry.getOrCreate(root).execWrite(archiveArgs(ref, target.fsPath, path.basename(root))),
       );

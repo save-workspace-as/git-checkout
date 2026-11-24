@@ -10,6 +10,7 @@ import { copyTextToClipboard } from '../../panel/clipboardHost';
 import { readBranchNameSeparator, readBranchWhitespaceReplacement } from '../branches/branchCreateHost';
 import { confirmDeleteWorktree, confirmOpenWorktree, createWorktreeInForm } from './worktreeHost';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('worktrees');
 
@@ -183,7 +184,7 @@ export class WorktreeController {
       return false;
     }
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Git Checkout: {0}', title) },
         () => op(root),
       );

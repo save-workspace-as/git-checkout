@@ -6,13 +6,14 @@ import { showMarkdownBeside } from '../../core/markdownDocument';
 import { createLogger } from '../../log';
 import { buildExplainPrompt } from '../../shared/history/commitExplainPrompt';
 import { loadCommitForExplain } from './commitExplainSource';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('commit-explainer');
 
 /** Has the language model explain a commit, and shows the explanation as a Markdown document beside the graph. */
 export async function explainCommit(repoRoot: string, revision: string): Promise<void> {
   let shown: { sha: string; subject: string; explanation: string } | undefined;
-  await vscode.window.withProgress(
+  await withProgress(
     { location: vscode.ProgressLocation.Notification, title: l10n.t('Explaining the commit…'), cancellable: true },
     async (_progress, token) => {
       try {

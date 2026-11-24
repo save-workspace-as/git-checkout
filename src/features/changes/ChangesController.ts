@@ -18,6 +18,7 @@ import { commitStaged } from './commitHost';
 import { filterChangeEntries, joinCommitMessage, type ChangesViewOptions } from '../../shared/changes/changesProtocol';
 import { commandChangeTargets } from '../../shared/changes/changesTree';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('changes');
 export const CHANGES_VIEW_STATE_KEY = 'gitCheckout.changesView';
@@ -290,7 +291,7 @@ export class ChangesController {
     }
     this.ctx.changesSlot.post({ type: 'changesGenerating', busy: true });
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: l10n.t('Writing a commit message…'),
