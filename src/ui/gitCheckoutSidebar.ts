@@ -373,8 +373,8 @@ export function registerGitCheckoutSidebar(
     registerChecksDecorations(),
     panel.onDidChangeActiveRepo(refreshAll),
   );
-  // The number on the Git Checkout icon, like the Source Control icon's. Activity Bar icons show one badge
-  // for their whole container, so the first view carries the total. It reads VS Code's Git state: no git call.
+  // The number on the Git Checkout icon: the changes of the repository selected here, the one every view shows.
+  // Activity Bar icons show one badge for their whole container, so the first view carries it. It reads VS Code's Git state: no git call.
   function updateBadge(): void {
     const roots = new Set(panel.repositoryRoots());
     const count = changeCountBadge(
