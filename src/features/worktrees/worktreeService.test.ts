@@ -52,6 +52,26 @@ describe('WorktreeService', () => {
     ]);
   });
 
+  it('reports a worktree as being deleted until Git is done, and again when it fails', async () => {
+    let release!: () => void;
+    const { cli } = mockGitCli({ execWrite: () => new Promise((resolve) => { release = () => resolve(); }) });
+    const svc = new WorktreeService(mockCliRegistry(REPO, cli));
+    let changes = 0;
+    svc.onDidChangeDeleting(() => { changes += 1; });
+    const removing = svc.remove(REPO, '/repos/feature', false);
+    assert.equal(svc.isDeleting('/repos/feature/'), true);
+    assert.equal(svc.isDeleting('/repos/other'), false);
+    release();
+    await removing;
+    assert.equal(svc.isDeleting('/repos/feature'), false);
+    assert.equal(changes, 2);
+
+    const failing = mockGitCli({ execWrite: async () => { throw new Error('contains modified files'); } });
+    const failed = new WorktreeService(mockCliRegistry(REPO, failing.cli));
+    await assert.rejects(() => failed.remove(REPO, '/repos/feature', false), /modified files/);
+    assert.equal(failed.isDeleting('/repos/feature'), false);
+  });
+
   it('refuses to delete the current worktree', async () => {
     const { cli, writes } = mockGitCli();
     await assert.rejects(

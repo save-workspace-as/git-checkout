@@ -10,11 +10,34 @@ import * as l10n from '@vscode/l10n';
 const log = createLogger('worktree');
 
 export class WorktreeService {
+  /** Worktrees being deleted: Git may take seconds to remove a large one, and the views should not list it meanwhile. */
+  private readonly deleting = new Set<string>();
+  private readonly deletingListeners = new Set<() => void>();
+
   constructor(private readonly cliRegistry: GitCliRegistry) {}
 
   async list(repoRoot: string): Promise<GitWorktreeDto[]> {
     const result = await this.cli(repoRoot).execRead(['worktree', 'list', '--porcelain']);
     return parseWorktreeList(result.stdout, repoRoot);
+  }
+
+  isDeleting(worktreePath: string): boolean {
+    return [...this.deleting].some((path) => sameWorktreePath(path, worktreePath));
+  }
+
+  /** Calls `listener` when a worktree starts or stops being deleted. */
+  onDidChangeDeleting(listener: () => void): { dispose(): void } {
+    this.deletingListeners.add(listener);
+    return { dispose: () => { this.deletingListeners.delete(listener); } };
+  }
+
+  private setDeleting(worktreePath: string, deleting: boolean): void {
+    if (deleting) {
+      this.deleting.add(worktreePath);
+    } else {
+      this.deleting.delete(worktreePath);
+    }
+    this.deletingListeners.forEach((listener) => listener());
   }
 
   async add(repoRoot: string, request: WorktreeCreateRequest): Promise<void> {
@@ -46,19 +69,24 @@ export class WorktreeService {
     if (sameWorktreePath(repoRoot, worktreePath)) {
       throw new Error(l10n.t('The current worktree cannot be deleted.'));
     }
-    if (cleanupSubmodules) {
-      log.info(`deinit submodules in ${worktreePath}`);
-      await this.cli(repoRoot).execWrite([
-        '-C',
-        worktreePath,
-        'submodule',
-        'deinit',
-        '--all',
-        '--force',
-      ]);
+    this.setDeleting(worktreePath, true);
+    try {
+      if (cleanupSubmodules) {
+        log.info(`deinit submodules in ${worktreePath}`);
+        await this.cli(repoRoot).execWrite([
+          '-C',
+          worktreePath,
+          'submodule',
+          'deinit',
+          '--all',
+          '--force',
+        ]);
+      }
+      log.info(`remove worktree ${worktreePath}`);
+      await this.cli(repoRoot).execWrite(['worktree', 'remove', worktreePath]);
+    } finally {
+      this.setDeleting(worktreePath, false);
     }
-    log.info(`remove worktree ${worktreePath}`);
-    await this.cli(repoRoot).execWrite(['worktree', 'remove', worktreePath]);
   }
 
   private cli(repoRoot: string): GitCli {

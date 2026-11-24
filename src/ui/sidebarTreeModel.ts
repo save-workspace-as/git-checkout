@@ -490,6 +490,25 @@ function elsewhereByBranch(worktrees: readonly GitWorktreeDto[]): Map<string, st
   return map;
 }
 
+/**
+ * The rows without the worktrees `hidden` names, as a copy. A worktree being deleted leaves the list when the delete
+ * starts: Git can take seconds to remove a large one, and reads of the repository wait for it.
+ */
+export function withoutWorktrees(nodes: readonly SidebarNode[], hidden: (worktreePath: string) => boolean): SidebarNode[] {
+  return nodes.map((node) => {
+    if (node.id !== 'section:worktrees' || !node.children.some((child) => child.kind === 'worktree' && child.ref !== undefined && hidden(child.ref))) {
+      return node;
+    }
+    const children = node.children.filter((child) => !(child.kind === 'worktree' && child.ref !== undefined && hidden(child.ref)));
+    const remaining = children.filter((child) => child.kind === 'worktree').length;
+    return {
+      ...node,
+      description: remaining > 0 ? String(remaining) : undefined,
+      children: remaining > 0 ? children : worktreeSectionChildren([]),
+    };
+  });
+}
+
 function worktreeSectionChildren(worktrees: readonly GitWorktreeDto[]): SidebarNode[] {
   if (worktrees.length === 0) {
     return [

@@ -21,6 +21,7 @@ import {
     type SidebarNode,
     treeItemSpec,
     withSidebarSearch,
+    withoutWorktrees,
 } from './sidebarTreeModel';
 
 
@@ -609,5 +610,30 @@ describe('repositoryNode', () => {
     assert.equal(node.description, 'main 2↓ 1↑ 3+');
     assert.equal(treeItemSpec(node).command?.id, SIDEBAR_COMMANDS.showAllCommits);
     assert.equal(repositoryNode('/work/app', 'app', null, null, 0).description, '');
+  });
+});
+
+describe('withoutWorktrees', () => {
+  const worktree = (path: string, label: string): GitWorktreeDto => ({
+    path, head: 'a'.repeat(40), branch: `refs/heads/${label}`, detached: false, bare: false, locked: false, prunable: false, current: path === '/repos/main',
+  });
+  const tree = buildSidebarTree(snapshot(), [], [worktree('/repos/main', 'main'), worktree('/repos/feature', 'feature'), worktree('/repos/topic', 'topic')]);
+  const rows = (nodes: ReturnType<typeof buildSidebarTree>) => nodes.find((node) => node.id === 'section:worktrees')!;
+
+  it('drops the worktrees being deleted and recounts the section', () => {
+    const shown = rows(withoutWorktrees(tree, (path) => path === '/repos/feature'));
+    assert.deepEqual(shown.children.map((child) => child.ref), ['/repos/main', '/repos/topic']);
+    assert.equal(shown.description, '2');
+  });
+
+  it('shows the empty message when none is left, and leaves the original tree alone', () => {
+    const shown = rows(withoutWorktrees(tree, () => true));
+    assert.deepEqual(shown.children.map((child) => child.id), ['message:worktrees']);
+    assert.equal(shown.description, undefined);
+    assert.equal(rows(tree).children.length, 3);
+  });
+
+  it('returns the same rows when nothing is being deleted', () => {
+    assert.deepEqual(withoutWorktrees(tree, () => false), tree);
   });
 });

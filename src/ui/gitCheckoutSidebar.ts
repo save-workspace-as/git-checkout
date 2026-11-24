@@ -35,6 +35,7 @@ import {
     sidebarMessageNode,
     treeItemSpec,
     withSidebarSearch,
+    withoutWorktrees,
     type SidebarCollapsible,
     type SidebarNode,
 } from './sidebarTreeModel';
@@ -65,9 +66,10 @@ class SidebarSource {
     this.tree = undefined;
   }
 
-  read(): Promise<{ root: string; nodes: SidebarNode[] } | undefined> {
+  async read(): Promise<{ root: string; nodes: SidebarNode[] } | undefined> {
     this.tree ??= this.build();
-    return this.tree;
+    const tree = await this.tree;
+    return tree && { root: tree.root, nodes: withoutWorktrees(tree.nodes, (path) => this.panel.isDeletingWorktree(path)) };
   }
 
   private async build(): Promise<{ root: string; nodes: SidebarNode[] } | undefined> {
@@ -399,6 +401,11 @@ export function registerGitCheckoutSidebar(
     // A pull request list changing is a single event, not a burst, so it shows at once.
     ...(pullRequests ? [pullRequests.onDidChange(refreshAll)] : []),
     panel.onDidChangeRefs(() => refreshSoon()),
+    // The row of a worktree being deleted goes at once, from the tree already read; the repository itself cannot be read until Git is done.
+    panel.onDidChangeDeletingWorktrees(() => {
+      scoped.forEach((entry) => entry.provider.refresh());
+      everything.refresh();
+    }),
   );
 
   const withRef =
