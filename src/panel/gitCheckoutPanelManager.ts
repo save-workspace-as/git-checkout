@@ -1846,6 +1846,14 @@ export class GitCheckoutPanelManager implements vscode.Disposable {
     return this.worktrees.runCheckoutAsWorktree(branchName);
   }
 
+  isDeletingWorktree(worktreePath: string): boolean {
+    return this.worktreeService.isDeleting(worktreePath);
+  }
+
+  onDidChangeDeletingWorktrees(listener: () => void): { dispose(): void } {
+    return this.worktreeService.onDidChangeDeleting(listener);
+  }
+
   runDeleteWorktree(worktreePath: string): Promise<void> {
     return this.worktrees.runDeleteWorktree(worktreePath);
   }

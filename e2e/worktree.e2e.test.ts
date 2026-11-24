@@ -133,6 +133,27 @@ describe('Create worktree', () => {
     }
   });
 
+  it('drops a worktree from the sidebar once it is removed', async () => {
+    await readyTree(ctx.api);
+    const parent = mkdtempSync(join(tmpdir(), 'git-checkout-worktree-'));
+    const destination = join(parent, 'gone');
+    const listed = async () => (await loadTree(ctx.api))
+      .find((node) => node.id === 'section:worktrees')?.children.some((node) => node.label === 'gone') ?? false;
+    try {
+      await vscode.commands.executeCommand('gitCheckout.sidebar.createWorktree', { path: destination, newBranch: 'gone', startPoint: 'main' });
+      await waitFor('sidebar lists the worktree', async () => (await listed()) ? true : undefined);
+      git('worktree', 'remove', '--force', destination);
+      await waitFor('sidebar no longer lists the worktree', async () => (await listed()) ? undefined : true);
+    } finally {
+      try {
+        git('worktree', 'remove', '--force', destination);
+      } catch {
+        // Already removed.
+      }
+      rmSync(parent, { recursive: true, force: true });
+    }
+  });
+
   it('copies the worktree path and keeps the current worktree open from its context menu', async () => {
     await readyTree(ctx.api);
     // The tree can still be the previous fixture's right after the folder changed; its worktree is not a workspace folder, so opening it would ask.
