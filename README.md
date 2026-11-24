@@ -11,7 +11,7 @@
 1. Install **Git Checkout** and open a folder that is a Git repository.
 2. Click the **Git Checkout** icon in the Activity Bar. Your repositories, your changes and your branches are all in its sidebar.
 3. Click a repository to open its commit graph in the main area, then click any commit to see the files it changed.
-4. Press **Ctrl+P** (**Cmd+P** on macOS) while a Git Checkout view has focus to run any action from one list.
+4. Press **Ctrl+Alt+Shift+K** (**Cmd+Alt+Shift+K** on macOS) while a Git Checkout view has focus to run any action from one list.
 
 To clone, press **Ctrl+N** (**Cmd+Shift+N**), choose **Clone Repository…** in the empty sidebar, or run **Clone…** from Quick Launch.
 
@@ -72,7 +72,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 
 ## Pull requests, without leaving the editor
 
-- **A section in the sidebar:** for a repository on GitHub, **Pull Requests** groups your pull requests, and the ones you are asked to review, by what each needs next: *Ready to merge*, *Blocked* (conflicts or failed checks), *Requires follow-up* (changes requested), *Needs your review*, *Waiting for review* and *Draft*. *All open* lists every open pull request, with a badge for how their checks stand. Pull requests that build on one another (each one's target is the branch of the one below) show as a stack: the bottom pull request stays where it is listed, and the ones on top of it are its children, each with its place in the stack (*2 of 3*) and not listed on their own; it finds them from their branches, so a stack shows whether or not GitHub grouped it. Right-click the bottom pull request and choose **Check Out Stack Layer…** to pick a layer to check out. **Go Up the Stack**, **Go Down the Stack**, **Go to Top of Stack** and **Go to Bottom of Stack** (in Quick Launch, `Cmd/Ctrl+P` in the Git Checkout tab) move from the checked-out branch to a neighboring layer; a layer you have no branch for is fetched as `pr/<number>`. **Push Stack…** (right-click the bottom pull request) pushes the stack's local branches in one atomic push, with a lease so that branches rebased since they were pushed are replaced unless someone else pushed to them. **Rebase Stack…** moves each branch onto the one below it, the first onto the base branch (after an optional fetch): layers that are on their parent already stay, a layer whose parent was amended does not bring the parent's old commits along, and a bottom layer built on a parent that was squash-merged moves only its own commits while the parent's branch is still here. A conflict stops the rebase like any other; once it is resolved and continued, run **Rebase Stack…** again to carry on with the layers above. **Sync Stack…** does the routine round in one go: fetch, rebase, push the branches, and make the stack on GitHub match the chain of pull requests (a new stack, or the missing pull requests added on top of the stack that has the first ones; a stack that disagrees is left alone and you are told). **Merge Stack…** merges the stack through the pull request you pick (that one and every one below it, all or none) with the method you choose, through GitHub's merge for stacks: the form waits while it runs in the background, says if the stack was put in the merge queue, and stays open with GitHub's reason if it could not merge. A draft in the set is refused before GitHub is asked. **Unstack…** ends the stack on GitHub and nothing else: the pull requests and the branches stay.
+- **A section in the sidebar:** for a repository on GitHub, **Pull Requests** groups your pull requests, and the ones you are asked to review, by what each needs next: *Ready to merge*, *Blocked* (conflicts or failed checks), *Requires follow-up* (changes requested), *Needs your review*, *Waiting for review* and *Draft*. *All open* lists every open pull request, with a badge for how their checks stand. Pull requests that build on one another (each one's target is the branch of the one below) show as a stack: the bottom pull request stays where it is listed, and the ones on top of it are its children, each with its place in the stack (*2 of 3*) and not listed on their own; it finds them from their branches, so a stack shows whether or not GitHub grouped it. Right-click the bottom pull request and choose **Check Out Stack Layer…** to pick a layer to check out. **Go Up the Stack**, **Go Down the Stack**, **Go to Top of Stack** and **Go to Bottom of Stack** (in Quick Launch, `Ctrl+Alt+G, Q` in the Git Checkout tab) move from the checked-out branch to a neighboring layer; a layer you have no branch for is fetched as `pr/<number>`. **Push Stack…** (right-click the bottom pull request) pushes the stack's local branches in one atomic push, with a lease so that branches rebased since they were pushed are replaced unless someone else pushed to them. **Rebase Stack…** moves each branch onto the one below it, the first onto the base branch (after an optional fetch): layers that are on their parent already stay, a layer whose parent was amended does not bring the parent's old commits along, and a bottom layer built on a parent that was squash-merged moves only its own commits while the parent's branch is still here. A conflict stops the rebase like any other; once it is resolved and continued, run **Rebase Stack…** again to carry on with the layers above. **Sync Stack…** does the routine round in one go: fetch, rebase, push the branches, and make the stack on GitHub match the chain of pull requests (a new stack, or the missing pull requests added on top of the stack that has the first ones; a stack that disagrees is left alone and you are told). **Merge Stack…** merges the stack through the pull request you pick (that one and every one below it, all or none) with the method you choose, through GitHub's merge for stacks: the form waits while it runs in the background, says if the stack was put in the merge queue, and stays open with GitHub's reason if it could not merge. A draft in the set is refused before GitHub is asked. **Unstack…** ends the stack on GitHub and nothing else: the pull requests and the branches stay.
 - **Check one out:** right-click a pull request to check it out (as the branch `pr/<number>`, through the same checkout as any branch), check it out in a worktree, review what it changes against its target branch, open it on GitHub, or copy its link.
 - **Start one with a written description:** right-click a local branch and choose **Open Pull Request with AI Description…**. A language model that VS Code provides, such as GitHub Copilot's, writes the title and description from the branch's commits and changes, and GitHub's new pull request page opens with them filled in. Without a model, the page opens as it does without AI.
 - **Make a stack of pull requests from one branch:** right-click a local branch (in the sidebar or the graph) and choose **Create Pull Request Stack…**. The form lists the branch's commits, newest first. Tick the commits that end a pull request; the commits between two of them join the upper one, and the newest always ends the top pull request. Each one gets a branch name and a title you can edit. **Create Stack** makes the new branches at those commits (nothing is rewritten), pushes them together, opens the pull requests from the bottom up, each against the one below, and groups them as a stack on GitHub. If GitHub does not offer stacks for the repository, the pull requests are still made and chained by their targets, and you are told why they are not grouped. A branch with a merge commit, or with more than 50 commits, cannot be cut this way.
@@ -101,7 +101,7 @@ Everything sits in one container, top to bottom, and each part folds away. Anyth
 
 - **File Tree:** browse the repository as it was at the selected commit, and preview any file, pictures included.
 - **Image diffs:** the old and the new picture, side by side.
-- **Quick Launch:** one list of every repository action, plus your own commands. Press **Ctrl+P** (**Cmd+P**).
+- **Quick Launch:** one list of every repository action, plus your own commands. Press **Ctrl+Alt+Shift+K** (**Cmd+Alt+Shift+K**) or **Ctrl+Alt+G, Q**.
 
 ![Quick Launch over the graph](docs/screenshots/10-quick-launch.png)
 
@@ -208,7 +208,7 @@ While a Git Checkout window, its sidebar or one of its tabs has focus, these sho
 | Ctrl+1 | Cmd+1 | Show Changes; pressed again, focus the commit message |
 | Ctrl+2 | Cmd+2 | Show all commits; pressed again, jump to HEAD |
 | Ctrl+0 | Cmd+0 | Reveal HEAD in the graph |
-| Ctrl+P | Cmd+P | Quick Launch |
+| Ctrl+Alt+Shift+K | Ctrl+Alt+Shift+K | Quick Launch |
 | Ctrl+F | Cmd+F | Search commits |
 | F3, Shift+F3 | F3, Shift+F3 | Next, previous search result (Enter and Shift+Enter in the search field) |
 | Ctrl+C | Cmd+C | Copy the selected commit's hash (in the Changes lists, the file path) |
@@ -221,27 +221,27 @@ While a Git Checkout window, its sidebar or one of its tabs has focus, these sho
 | Backspace, Ctrl+Shift+D | Backspace, Cmd+Shift+D | Discard the selected files |
 | Ctrl+O | Cmd+Alt+Shift+O | Open the selected file |
 | Ctrl+D | Cmd+D | Open the selected file in the external diff tool |
-| F5 | Cmd+R | Refresh |
-| Ctrl+N | Cmd+Shift+N | Clone a repository |
-| Ctrl+Shift+N | Ctrl+Shift+N | Initialize a repository |
-| Ctrl+O | Cmd+O | Open a repository |
-| Ctrl+B | Cmd+B | Checkout a branch |
-| Ctrl+Shift+F | Cmd+Shift+F | Fetch |
+| Ctrl+Alt+G, R | Cmd+Alt+G, R | Refresh |
+| Ctrl+Alt+G, N | Cmd+Alt+G, N | Clone a repository |
+| Ctrl+Alt+G, Shift+N | Cmd+Alt+G, Shift+N | Initialize a repository |
+| Ctrl+Alt+G, O | Cmd+Alt+G, O | Open a repository |
+| Ctrl+Alt+G, B | Cmd+Alt+G, B | Checkout a branch |
+| Ctrl+Alt+G, F | Cmd+Alt+G, F | Fetch |
 | Ctrl+Alt+Shift+F | Cmd+Alt+Shift+F | Quick Fetch: the tracked remote, no form |
-| Ctrl+Shift+L | Cmd+Shift+L | Pull |
+| Ctrl+Alt+G, L | Cmd+Alt+G, L | Pull |
 | Ctrl+Alt+Shift+L | Cmd+Alt+Shift+L | Quick Pull |
-| Ctrl+Shift+P | Cmd+Shift+P | Push |
+| Ctrl+Alt+G, P | Cmd+Alt+G, P | Push |
 | Ctrl+Alt+Shift+P | Cmd+Alt+Shift+P | Quick Push |
-| Ctrl+Shift+B | Cmd+Shift+B | New branch |
-| Ctrl+Shift+T | Cmd+Shift+T | New tag |
-| Ctrl+Shift+H | Cmd+Shift+H | Save stash |
+| Ctrl+Alt+G, Shift+B | Cmd+Alt+G, Shift+B | New branch |
+| Ctrl+Alt+G, T | Cmd+Alt+G, T | New tag |
+| Ctrl+Alt+G, H | Cmd+Alt+G, H | Save stash |
 | Ctrl+Alt+Shift+H | Cmd+Alt+Shift+H | Quick Stash: stash everything, no form |
 | Ctrl+Alt+O | Cmd+Ctrl+O | Reveal the repository in the file manager |
 | Ctrl+Alt+T | Cmd+Ctrl+T | Open the repository in a terminal |
 
 Tabs, Zoom and Preferences (Ctrl+Tab, Ctrl+W, Ctrl+=, Ctrl+-, Ctrl+,) are VS Code's own and work as usual.
 
-Outside those places VS Code's own keys (such as Ctrl+B, Ctrl+N and Ctrl+O) are untouched. To turn all of them off, clear
+The repository actions (checkout, fetch, pull, push, stash, tag, clone and the rest) are chords: press Ctrl+Alt+G (Cmd+Alt+G on macOS), release it, then press the letter. That leaves VS Code's own Ctrl+P, Ctrl+B, Ctrl+Shift+P and the like alone. Outside those places VS Code's own keys are untouched. To turn all of them off, clear
 `gitCheckout.shortcuts.enabled`. To change one, run **Git Checkout: Keyboard Shortcuts** from the Command Palette. It opens VS Code's Keyboard
 Shortcuts editor filtered to this extension, where you can rebind or remove any of them like any other shortcut.
 

@@ -48,14 +48,14 @@ describe('buildQuickLaunchItems', () => {
     assert.ok(!labels.includes(revealLabel()));
   });
 
-  it('opens from Cmd+P / Ctrl+P while the Git Checkout panel is focused', () => {
+  it('opens from the Ctrl+Alt+G, Q chord while the Git Checkout panel is focused', () => {
     const manifest = JSON.parse(readFileSync('package.json', 'utf8')) as {
       contributes: { keybindings: { command: string; key: string; mac?: string; when?: string }[] };
     };
     const binding = manifest.contributes.keybindings.find(
-      (entry) => entry.command === 'gitCheckout.quickLaunch' && entry.key === 'ctrl+p',
+      (entry) => entry.command === 'gitCheckout.quickLaunch' && entry.key === 'ctrl+alt+g q',
     );
-    assert.equal(binding?.mac, 'cmd+p');
+    assert.equal(binding?.mac, 'cmd+alt+g q');
     assert.match(binding?.when ?? '', /activeWebviewPanelId == 'gitCheckout\.main'/);
   });
 });
