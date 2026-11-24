@@ -1,4 +1,6 @@
 import { strict as assert } from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { before, beforeEach, describe, it } from 'node:test';
 import type { GraphCommitDto, GraphHostMessage, GraphPageDto } from '../../src/shared/graph/graphProtocol';
 import type { WebviewMessage } from '../protocol';
@@ -171,6 +173,16 @@ describe('commit graph', () => {
     assert.equal(badges[0].classList.contains('graph-ref-current'), true);
     assert.equal(JSON.parse(badges[1].getAttribute('data-vscode-context')!).graphBranch, 'origin/main');
     assert.equal(badges[2].hasAttribute('data-vscode-context'), false);
+  });
+
+  it('colors a row\'s labels with the color of its lane, and the stylesheet does not reset it', () => {
+    const { graph, rows } = mount();
+    graph.handleHostMessage(page([commit('a', [], { refs: [{ kind: 'local', name: 'x' }] })]));
+    const cell = rows()[0].querySelector('.graph-col-subject') as El;
+    assert.match(cell.getAttribute('style') ?? '', /--ref-color:\s*var\(--graph-lane-\d+\)/);
+    const css = readFileSync(join(__dirname, '..', 'styles.css'), 'utf8');
+    const rule = /\n\.graph-ref \{([^}]*)\}/.exec(css)![1];
+    assert.doesNotMatch(rule, /--ref-color\s*:/);
   });
 
   it('shows a branch and its remote-tracking branch as one label with a remote icon', () => {

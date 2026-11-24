@@ -1008,7 +1008,7 @@ body.vscode-high-contrast-light {
 }
 
 .graph-ref {
-  --ref-color: var(--graph-lane-3);
+  /* --ref-color comes from the row (its lane color), so each label matches its branch line. */
   flex-shrink: 0;
   max-width: 180px;
   padding: 0 6px;
@@ -1039,10 +1039,6 @@ body.vscode-high-contrast-light {
 
 .graph-ref-tag {
   border-style: dashed;
-}
-
-.graph-ref-stash {
-  --ref-color: var(--graph-lane-4);
 }
 
 .graph-ref-current {
