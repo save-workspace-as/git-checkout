@@ -484,6 +484,7 @@
   "Git Checkout: {0}": "Git Checkout: {0}",
   "Git Checkout: Blame": "Git Checkout: Blame",
   "Git Checkout: Git Flow": "Git Checkout: Git Flow",
+  "Git Checkout: running git {0}": "Git Checkout: running git {0}",
   "Git does not store a Git LFS pointer for this file.": "Git does not store a Git LFS pointer for this file.",
   "Git Flow…": "Git Flow…",
   "Git LFS pointer change": "Git LFS pointer change",

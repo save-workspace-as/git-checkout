@@ -10,6 +10,7 @@ import { openTerminalForRepo } from '../../panel/repoTerminal';
 import { confirmDeleteSubmodule, confirmOpenSubmodule, openSubmoduleInWorkspace } from './submoduleHost';
 import { submoduleAddForm, submoduleFormRequest, validateSubmoduleForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('submodules');
 
@@ -158,7 +159,7 @@ export class SubmoduleController {
       return;
     }
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Git Checkout: {0}', title) },
         () => op(root),
       );

@@ -5,6 +5,7 @@ import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManage
 import { cleanChoice, cleanForm, deleteMergedBranchesForm, MERGED_PREFIX, requireTicked, sparseChoice, sparseForm, tickedItems, validateCleanForm, validateSparseForm } from './housekeepingForms';
 import { HousekeepingService } from './housekeepingService';
 import { StatisticsService } from '../statistics/statisticsService';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('housekeeping');
 
@@ -34,7 +35,7 @@ export class HousekeepingController {
   /** Runs `read` behind a progress notification and reports a failure instead of throwing it. */
   private async looking<T>(title: string, read: () => Promise<T>): Promise<T | undefined> {
     try {
-      return await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title }, read);
+      return await withProgress({ location: vscode.ProgressLocation.Notification, title }, read);
     } catch (error) {
       log.error(title, error);
       void vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));

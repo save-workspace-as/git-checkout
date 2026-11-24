@@ -8,6 +8,7 @@ import { createLogger } from '../../log';
 import { cloneInForm } from './cloneHost';
 import { cloneGitArgs, cloneTarget, parseCloneArg, parseCloneProgress, repositoryNameFromUrl, type CloneRequest } from './cloneRequest';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('clone');
 
@@ -50,7 +51,7 @@ export class CloneController {
     try {
       const args = cloneGitArgs(request);
       log.info(`clone into ${target}`);
-      await vscode.window.withProgress(
+      await withProgress(
         { location: vscode.ProgressLocation.Notification, title: l10n.t('Cloning {0}…', name), cancellable: true },
         (progress, token) => {
           let shown = 0;

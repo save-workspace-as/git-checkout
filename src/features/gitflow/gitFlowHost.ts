@@ -13,6 +13,7 @@ import { GitCliError } from '../../core/gitCliError';
 import { createLogger } from '../../log';
 import type { ShowOperationForm } from '../../panel/operationFormController';
 import { gitFlowInitForm, gitFlowInitFromValues, validateGitFlowInitForm } from '../../panel/operationForms';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('git-flow');
 
@@ -103,7 +104,7 @@ async function runRequest(
   interactive: boolean,
 ): Promise<GitFlowRunResult> {
   try {
-    const result = await vscode.window.withProgress(
+    const result = await withProgress(
       {
         location: vscode.ProgressLocation.Notification,
         title: l10n.t('Git Checkout: Git Flow'),

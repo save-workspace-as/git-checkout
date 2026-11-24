@@ -5,6 +5,7 @@ import { createLogger } from '../../log';
 import { bisectCheckoutSha, IDLE_BISECT_STATE, type BisectMark } from '../../shared/bisect/bisectProtocol';
 import { bisectStartForm } from '../../panel/operationForms';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('bisect');
 
@@ -117,7 +118,7 @@ export class BisectController {
 
     this.ctx.sync.setSyncBusy(true);
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: l10n.t('Git Checkout: {0}', title),

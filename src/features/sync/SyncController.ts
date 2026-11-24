@@ -9,6 +9,7 @@ import { promptFetchChoices } from './fetchHost';
 import { promptPullChoices } from './pullHost';
 import { promptPushChoices } from './pushHost';
 import type { GitCheckoutPanelManager } from '../../panel/gitCheckoutPanelManager';
+import { withProgress } from '../../core/progressNotice';
 
 const log = createLogger('sync');
 
@@ -328,7 +329,7 @@ export class SyncController {
     await this.ctx.postState('state');
 
     try {
-      await vscode.window.withProgress(
+      await withProgress(
         {
           location: vscode.ProgressLocation.Notification,
           title: l10n.t('Git Checkout: {0}', title),
