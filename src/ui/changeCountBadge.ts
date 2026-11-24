@@ -1,7 +1,7 @@
 import type { RepositoryState } from '../core/vscodeGitApi';
 
-/** VS Code's own `scm.countBadge` setting: count every repository, only the one in use, or show nothing. */
-export type CountBadgeMode = 'all' | 'focused' | 'off';
+/** The repository selected in the sidebar, or nothing: `scm.countBadge` set to `off` hides the badge. */
+export type CountBadgeMode = 'focused' | 'off';
 
 type ChangeLists = Pick<RepositoryState, 'mergeChanges' | 'indexChanges' | 'workingTreeChanges' | 'untrackedChanges'>;
 
@@ -14,8 +14,8 @@ export function repositoryChangeCount(state: ChangeLists): number {
 }
 
 /**
- * The number on the Git Checkout icon in the Activity Bar: the changes of every repository, or of the one
- * in use, as `scm.countBadge` asks; 0 shows no badge.
+ * The number on the Git Checkout icon in the Activity Bar: the changes of the repository selected in the sidebar,
+ * the one every view shows; 0 shows no badge.
  */
 export function changeCountBadge(
   repositories: readonly { root: string; state: ChangeLists }[],
@@ -25,10 +25,10 @@ export function changeCountBadge(
   if (mode === 'off') {
     return 0;
   }
-  const counted = mode === 'focused' ? repositories.filter((repo) => repo.root === activeRoot) : repositories;
+  const counted = repositories.filter((repo) => repo.root === activeRoot);
   return counted.reduce((total, repo) => total + repositoryChangeCount(repo.state), 0);
 }
 
 export function parseCountBadgeMode(value: unknown): CountBadgeMode {
-  return value === 'focused' || value === 'off' ? value : 'all';
+  return value === 'off' ? 'off' : 'focused';
 }

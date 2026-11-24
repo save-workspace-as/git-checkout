@@ -16,18 +16,18 @@ describe('change count badge', () => {
     assert.equal(repositoryChangeCount({}), 0);
   });
 
-  it('adds up every repository, or only the one in use, as scm.countBadge asks', () => {
+  it('counts only the selected repository, and nothing when counting is off', () => {
     const repos = [{ root: '/a', state: state(1, 2) }, { root: '/b', state: state(0, 4) }];
-    assert.equal(changeCountBadge(repos, 'all', '/a'), 7);
+    assert.equal(changeCountBadge(repos, 'focused', '/a'), 3);
     assert.equal(changeCountBadge(repos, 'focused', '/b'), 4);
     assert.equal(changeCountBadge(repos, 'focused', null), 0);
     assert.equal(changeCountBadge(repos, 'off', '/a'), 0);
   });
 
-  it('reads the setting, treating anything unknown as all', () => {
-    assert.equal(parseCountBadgeMode('focused'), 'focused');
+  it('reads scm.countBadge: off hides the badge, anything else counts the selected repository', () => {
     assert.equal(parseCountBadgeMode('off'), 'off');
-    assert.equal(parseCountBadgeMode(undefined), 'all');
-    assert.equal(parseCountBadgeMode('weird'), 'all');
+    assert.equal(parseCountBadgeMode('all'), 'focused');
+    assert.equal(parseCountBadgeMode('focused'), 'focused');
+    assert.equal(parseCountBadgeMode(undefined), 'focused');
   });
 });
