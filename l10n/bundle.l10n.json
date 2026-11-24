@@ -80,6 +80,7 @@
   "{0}: as Git left it ↔ resolved by AI": "{0}: as Git left it ↔ resolved by AI",
   "*.log": "*.log",
   "**You**, uncommitted changes": "**You**, uncommitted changes",
+  "+{0}": "+{0}",
   "✓ {0}": "✓ {0}",
   "$(error) Git Checkout: Built-in Git unavailable": "$(error) Git Checkout: Built-in Git unavailable",
   "$(folder) Git Checkout: no repository · {0}": "$(folder) Git Checkout: no repository · {0}",

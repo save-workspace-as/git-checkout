@@ -185,6 +185,18 @@ describe('commit graph', () => {
     assert.doesNotMatch(rule, /--ref-color\s*:/);
   });
 
+  it('counts the labels active-branch mode left out, and names them in the tooltip', () => {
+    const { graph, rows } = mount();
+    graph.handleHostMessage(page([
+      commit('a', ['b'], { refs: [{ kind: 'local', name: 'main', isHead: true }], hiddenRefs: ['x', 'v1'] }),
+      commit('b', [], { refs: [] }),
+    ] as GraphCommitDto[]));
+    const more = rows()[0].querySelector('.graph-ref-more') as El;
+    assert.equal(more.textContent, '+2');
+    assert.equal(more.getAttribute('title'), 'x\nv1');
+    assert.equal(rows()[1].querySelector('.graph-ref-more'), null);
+  });
+
   it('shows a branch and its remote-tracking branch as one label with a remote icon', () => {
     const { graph, rows } = mount();
     graph.handleHostMessage(page([commit('a', [], { refs: [

@@ -99,6 +99,13 @@ function refBadge(ref: GraphRefDto): TemplateResult {
       : nothing}<span class="graph-ref-name">${ref.isHead ? l10n.t('✓ {0}', ref.name) : ref.name}</span></span>`;
 }
 
+/** "+3" after the labels of a row in active-branch mode: how many other labels are on the commit. */
+function hiddenRefsBadge(names: readonly string[] | undefined): TemplateResult | typeof nothing {
+  return names && names.length > 0
+    ? html`<span class="graph-ref graph-ref-more" title=${names.join('\n')}>${l10n.t('+{0}', names.length)}</span>`
+    : nothing;
+}
+
 function avatar(commit: GraphCommitDto): TemplateResult {
   return html`<span class="graph-avatar" style=${styleMap({ '--avatar-background': `var(--graph-lane-${authorColor(commit.authorEmail)})` })}
     >${authorInitials(commit.author)}${commit.avatarUrl
@@ -432,7 +439,7 @@ export function mountGraphView(
           <div class="graph-cell graph-col-subject"
             style=${styleMap({ paddingLeft: `min(${rowTextOffset(lane, geometry)}px, calc(100% - 80px))`, '--ref-color': `var(--graph-lane-${lane.color})` })}>
             ${bisectMark ? html`<span class="graph-bisect-tag graph-bisect-tag-${bisectMark}">${bisectMark}</span>` : nothing}
-            ${(compactBranchLabels ? compactGraphRefs(commit.refs) : commit.refs).map(refBadge)}
+            ${(compactBranchLabels ? compactGraphRefs(commit.refs) : commit.refs).map(refBadge)}${hiddenRefsBadge(commit.hiddenRefs)}
             <span class="graph-subject" title=${commit.subject}
             >${githubLinkedText(commit.subject, github, (url) => postMessage({ type: 'openGitHubLink', url }))}</span>
           </div>
