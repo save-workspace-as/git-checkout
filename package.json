@@ -1880,15 +1880,15 @@
       },
       {
         "command": "gitCheckout.sidebar.createBranch",
-        "key": "shift+ctrl+b",
-        "mac": "shift+cmd+b",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.branches)/) && config.gitCheckout.shortcuts.enabled"
+        "key": "ctrl+alt+g shift+b",
+        "mac": "cmd+alt+g shift+b",
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.createTag",
-        "key": "shift+ctrl+g",
-        "mac": "shift+cmd+g",
-        "when": "(view =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ && viewItem =~ /^(branch\\.local|branch\\.remote|section\\.tags)/) && config.gitCheckout.shortcuts.enabled"
+        "key": "ctrl+alt+g t",
+        "mac": "cmd+alt+g t",
+        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.sidebar.showLocalChanges",
@@ -1916,8 +1916,8 @@
       },
       {
         "command": "gitCheckout.quickLaunch",
-        "key": "ctrl+p",
-        "mac": "cmd+p",
+        "key": "ctrl+alt+g q",
+        "mac": "cmd+alt+g q",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
@@ -2024,38 +2024,38 @@
       },
       {
         "command": "gitCheckout.refresh",
-        "key": "f5",
-        "mac": "cmd+r",
+        "key": "ctrl+alt+g r",
+        "mac": "cmd+alt+g r",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "git.init",
-        "key": "ctrl+shift+n",
-        "mac": "ctrl+shift+n",
+        "key": "ctrl+alt+g shift+n",
+        "mac": "cmd+alt+g shift+n",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.clone",
-        "key": "ctrl+n",
-        "mac": "cmd+shift+n",
+        "key": "ctrl+alt+g n",
+        "mac": "cmd+alt+g n",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "git.openRepository",
-        "key": "ctrl+o",
-        "mac": "cmd+o",
+        "key": "ctrl+alt+g o",
+        "mac": "cmd+alt+g o",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/) && !(focusedView =~ /^gitCheckout\\.(unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.checkout",
-        "key": "ctrl+b",
-        "mac": "cmd+b",
+        "key": "ctrl+alt+g b",
+        "mac": "cmd+alt+g b",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
         "command": "gitCheckout.fetch",
-        "key": "ctrl+shift+f",
-        "mac": "cmd+shift+f",
+        "key": "ctrl+alt+g f",
+        "mac": "cmd+alt+g f",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
@@ -2066,8 +2066,8 @@
       },
       {
         "command": "gitCheckout.pull",
-        "key": "ctrl+shift+l",
-        "mac": "cmd+shift+l",
+        "key": "ctrl+alt+g l",
+        "mac": "cmd+alt+g l",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
@@ -2078,8 +2078,8 @@
       },
       {
         "command": "gitCheckout.push",
-        "key": "ctrl+shift+p",
-        "mac": "cmd+shift+p",
+        "key": "ctrl+alt+g p",
+        "mac": "cmd+alt+g p",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
@@ -2089,21 +2089,9 @@
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {
-        "command": "gitCheckout.sidebar.createBranch",
-        "key": "ctrl+shift+b",
-        "mac": "cmd+shift+b",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
-      },
-      {
-        "command": "gitCheckout.sidebar.createTag",
-        "key": "ctrl+shift+t",
-        "mac": "cmd+shift+t",
-        "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
-      },
-      {
         "command": "gitCheckout.sidebar.createStash",
-        "key": "ctrl+shift+h",
-        "mac": "cmd+shift+h",
+        "key": "ctrl+alt+g h",
+        "mac": "cmd+alt+g h",
         "when": "((activeWebviewPanelId == 'gitCheckout.main' || focusedView =~ /^gitCheckout\\.sidebar(\\.\\w+)?$/ || focusedView =~ /^gitCheckout\\.(changedFiles|commit|commitFiles|tree|treePreview|unstaged|staged)$/)) && config.gitCheckout.shortcuts.enabled"
       },
       {

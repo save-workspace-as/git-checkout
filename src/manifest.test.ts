@@ -88,7 +88,8 @@ describe('keyboard shortcuts', () => {
     ['gitCheckout.changes.focusCommit', 'ctrl+1', 'cmd+1'],
     ['gitCheckout.sidebar.showAllCommits', 'ctrl+2', 'cmd+2'],
     ['gitCheckout.graph.revealHead', 'ctrl+0', 'cmd+0'],
-    ['gitCheckout.quickLaunch', 'ctrl+p', 'cmd+p'],
+    ['gitCheckout.quickLaunch', 'ctrl+alt+g q', 'cmd+alt+g q'],
+    ['gitCheckout.quickLaunch', 'ctrl+shift+alt+k', 'ctrl+shift+alt+k'],
     ['gitCheckout.searchCommits', 'ctrl+f', 'cmd+f'],
     ['gitCheckout.searchNext', 'f3', 'f3'],
     ['gitCheckout.searchPrevious', 'shift+f3', 'shift+f3'],
@@ -103,20 +104,20 @@ describe('keyboard shortcuts', () => {
     ['gitCheckout.changes.open', 'ctrl+o', 'cmd+alt+shift+o'],
     ['gitCheckout.changes.externalDiff', 'ctrl+d', 'cmd+d'],
     ['gitCheckout.changes.copyPath', 'ctrl+c', 'cmd+c'],
-    ['gitCheckout.refresh', 'f5', 'cmd+r'],
-    ['git.init', 'ctrl+shift+n', 'ctrl+shift+n'],
-    ['gitCheckout.clone', 'ctrl+n', 'cmd+shift+n'],
-    ['git.openRepository', 'ctrl+o', 'cmd+o'],
-    ['gitCheckout.checkout', 'ctrl+b', 'cmd+b'],
-    ['gitCheckout.fetch', 'ctrl+shift+f', 'cmd+shift+f'],
+    ['gitCheckout.refresh', 'ctrl+alt+g r', 'cmd+alt+g r'],
+    ['git.init', 'ctrl+alt+g shift+n', 'cmd+alt+g shift+n'],
+    ['gitCheckout.clone', 'ctrl+alt+g n', 'cmd+alt+g n'],
+    ['git.openRepository', 'ctrl+alt+g o', 'cmd+alt+g o'],
+    ['gitCheckout.checkout', 'ctrl+alt+g b', 'cmd+alt+g b'],
+    ['gitCheckout.fetch', 'ctrl+alt+g f', 'cmd+alt+g f'],
     ['gitCheckout.quickFetch', 'ctrl+alt+shift+f', 'cmd+alt+shift+f'],
-    ['gitCheckout.pull', 'ctrl+shift+l', 'cmd+shift+l'],
+    ['gitCheckout.pull', 'ctrl+alt+g l', 'cmd+alt+g l'],
     ['gitCheckout.quickPull', 'ctrl+alt+shift+l', 'cmd+alt+shift+l'],
-    ['gitCheckout.push', 'ctrl+shift+p', 'cmd+shift+p'],
+    ['gitCheckout.push', 'ctrl+alt+g p', 'cmd+alt+g p'],
     ['gitCheckout.quickPush', 'ctrl+alt+shift+p', 'cmd+alt+shift+p'],
-    ['gitCheckout.sidebar.createBranch', 'ctrl+shift+b', 'cmd+shift+b'],
-    ['gitCheckout.sidebar.createTag', 'ctrl+shift+t', 'cmd+shift+t'],
-    ['gitCheckout.sidebar.createStash', 'ctrl+shift+h', 'cmd+shift+h'],
+    ['gitCheckout.sidebar.createBranch', 'ctrl+alt+g shift+b', 'cmd+alt+g shift+b'],
+    ['gitCheckout.sidebar.createTag', 'ctrl+alt+g t', 'cmd+alt+g t'],
+    ['gitCheckout.sidebar.createStash', 'ctrl+alt+g h', 'cmd+alt+g h'],
     ['gitCheckout.quickStash', 'ctrl+alt+shift+h', 'cmd+alt+shift+h'],
     ['gitCheckout.revealRepository', 'ctrl+alt+o', 'cmd+ctrl+o'],
     ['gitCheckout.openRepoTerminal', 'ctrl+alt+t', 'cmd+ctrl+t'],
@@ -127,6 +128,12 @@ describe('keyboard shortcuts', () => {
       ([command, key, mac]) => !bindings.some((entry) => entry.command === command && entry.key === key && (entry.mac ?? entry.key) === mac),
     );
     assert.deepEqual(missing.map(([command, key]) => `${key} ${command}`), []);
+  });
+
+  it('keeps the keys VS Code uses everywhere (Command Palette, Quick Open, Toggle Sidebar, Search, New File, Debug) free', () => {
+    const taken = new Set(['ctrl+p', 'cmd+p', 'ctrl+shift+p', 'cmd+shift+p', 'ctrl+b', 'cmd+b', 'ctrl+shift+f', 'cmd+shift+f', 'ctrl+n', 'cmd+n', 'f5']);
+    const clashes = bindings.flatMap((entry) => [entry.key, entry.mac ?? '']).filter((key) => taken.has(key));
+    assert.deepEqual(clashes, []);
   });
 
   it('scopes the shortcuts that need a row or a field to the list or view that has it', () => {
