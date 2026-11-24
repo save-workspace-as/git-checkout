@@ -1,8 +1,9 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
+import type { GraphRefDto } from './graphProtocol';
 import { ALL_COMMITS_FILTER } from './graphProtocol';
-import { compactGraphRefs, graphLogRevision } from './activeBranchGraph';
+import { activeBranchLabels, compactGraphRefs, graphLogRevision, withActiveBranchLabels } from './activeBranchGraph';
 
 
 describe('graphLogRevision', () => {
@@ -31,5 +32,40 @@ describe('compactGraphRefs', () => {
       { kind: 'local', name: 'main', isHead: true, remotes: ['origin/main', 'upstream/main'] },
       { kind: 'remote', name: 'origin/other' },
     ]);
+  });
+});
+
+describe('activeBranchLabels', () => {
+  const refs: GraphRefDto[] = [
+    { kind: 'local', name: 'main', isHead: true },
+    { kind: 'local', name: 'feature' },
+    { kind: 'remote', name: 'origin/main' },
+    { kind: 'remote', name: 'origin/feature' },
+    { kind: 'remote', name: 'upstream/main' },
+    { kind: 'tag', name: 'v1' },
+    { kind: 'stash', name: 'stash@{0}' },
+  ];
+
+  it('keeps the checked-out branch and its upstream branch only', () => {
+    assert.deepEqual(activeBranchLabels(refs, 'origin/main').map((ref) => ref.name), ['main', 'origin/main']);
+  });
+
+  it('keeps just the checked-out branch when it has no upstream branch', () => {
+    assert.deepEqual(activeBranchLabels(refs, null).map((ref) => ref.name), ['main']);
+  });
+
+  it('keeps the detached HEAD label and drops labels of a commit it does not carry', () => {
+    assert.deepEqual(activeBranchLabels([{ kind: 'head', name: 'HEAD' }, { kind: 'local', name: 'x' }], null).map((ref) => ref.name), ['HEAD']);
+    assert.deepEqual(activeBranchLabels([{ kind: 'tag', name: 'v1' }], null), []);
+  });
+});
+
+describe('withActiveBranchLabels', () => {
+  it('names the labels it leaves out, and adds nothing when none are left out', () => {
+    const commit = { sha: 'a', refs: [{ kind: 'local', name: 'main', isHead: true }, { kind: 'local', name: 'x' }, { kind: 'tag', name: 'v1' }] as GraphRefDto[] };
+    const shown = withActiveBranchLabels(commit, null);
+    assert.deepEqual(shown.refs.map((ref) => ref.name), ['main']);
+    assert.deepEqual(shown.hiddenRefs, ['x', 'v1']);
+    assert.equal('hiddenRefs' in withActiveBranchLabels({ sha: 'b', refs: [commit.refs[0]] }, null), false);
   });
 });
