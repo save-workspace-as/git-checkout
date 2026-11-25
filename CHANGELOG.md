@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.14.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.13.0...git-checkout-v0.14.0) (2026-11-24)
+
+
+### Features
+
+* **core:** notify when a Git write command runs slowly ([#103](https://github.com/save-workspace-as/git-checkout/issues/103)) ([84b4b90](https://github.com/save-workspace-as/git-checkout/commit/84b4b90425a5c03703a8fbe4fc1489b58ba58b2f))
+* **graph:** count the labels active-branch mode hides ([#101](https://github.com/save-workspace-as/git-checkout/issues/101)) ([37fe352](https://github.com/save-workspace-as/git-checkout/commit/37fe35242a00e928a13443e94993802a8544c858))
+
+
+### Bug Fixes
+
+* **graph:** color labels by their branch lane ([#100](https://github.com/save-workspace-as/git-checkout/issues/100)) ([e07cfb2](https://github.com/save-workspace-as/git-checkout/commit/e07cfb2f7ecec159b58964ba9df4e304812b1f62))
+* **shortcuts:** use Ctrl+Alt+G chords instead of VS Code's own keys ([#107](https://github.com/save-workspace-as/git-checkout/issues/107)) ([e263cc6](https://github.com/save-workspace-as/git-checkout/commit/e263cc6c72901eae739cc31f73a311eb6cb77767))
+* **sidebar:** count only the selected repository in the Activity Bar badge ([#104](https://github.com/save-workspace-as/git-checkout/issues/104)) ([2bebc80](https://github.com/save-workspace-as/git-checkout/commit/2bebc80ba5800225e8d8638232256e9bf29b5402))
+* **worktrees:** hide a worktree from the sidebar while it is being deleted ([#102](https://github.com/save-workspace-as/git-checkout/issues/102)) ([63ac339](https://github.com/save-workspace-as/git-checkout/commit/63ac339b9792b532fae6d3b4cb7e390b982f6b57))
+
 ## [0.13.0](https://github.com/save-workspace-as/git-checkout/compare/git-checkout-v0.12.0...git-checkout-v0.13.0) (2026-11-09)
 
 
