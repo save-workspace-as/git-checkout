@@ -24,8 +24,6 @@ export interface GraphCommitDto {
   authorEmail: string;
   authorDate: number;
   refs: GraphRefDto[];
-  /** Names of labels active-branch mode left out of `refs`, so the row can say how many there are. */
-  hiddenRefs?: string[];
   /** Reached only through a reflog: no branch, tag, or stash contains it. */
   reflogOnly?: boolean;
   avatarUrl?: string;

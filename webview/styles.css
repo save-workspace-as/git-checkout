@@ -1041,12 +1041,6 @@ body.vscode-high-contrast-light {
   border-style: dashed;
 }
 
-/* Stashes and the "+N" count are not on a branch line, so they do not borrow a lane's color. */
-.graph-ref-stash,
-.graph-ref-more {
-  --ref-color: var(--vscode-descriptionForeground);
-}
-
 .graph-ref-current {
   /* The checked-out branch looks like any other ref, in bold, so its text stays readable in every theme. */
   font-weight: 600;
