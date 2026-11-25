@@ -14,7 +14,7 @@ import type { StashEntryDto } from '../../shared/stash/stashProtocol';
 import { COMMIT_GRAPH_HEADER_BYTES, objectsSizeKiB, wantsCommitGraph, LARGE_REPOSITORY_KIB, type CommitGraphState } from './commitGraphFile';
 import { loadBranchActivity, MAX_FILTERED_REFS, refsFilteredOut, type BranchFilter } from '../branches/branchFilter';
 import { sameWorktreePath } from '../worktrees/worktreeParser';
-import { graphLogRevision, withActiveBranchLabels } from '../../shared/graph/activeBranchGraph';
+import { graphLogRevision } from '../../shared/graph/activeBranchGraph';
 import {
     getCollapseMerges,
     getFilterRef,
@@ -205,17 +205,6 @@ export class CommitGraphService {
   setRefsHidden(repoRoot: string, refs: readonly string[], hidden: boolean): void {
     const rest = getHiddenRefs(this.context, repoRoot).filter((ref) => !refs.includes(ref));
     setHiddenRefs(this.context, repoRoot, hidden ? [...rest, ...refs] : rest);
-  }
-
-  /** The upstream branch of the checked-out branch (`origin/main`), or null without one. */
-  private async upstreamOfHead(cli: GitCli): Promise<string | null> {
-    try {
-      return (await cli.execRead(['rev-parse', '--abbrev-ref', '--symbolic-full-name', '@{upstream}'], { showErrorToast: false })).stdout.trim() || null;
-    } catch (error) {
-      // A branch with no upstream makes this fail; that is an ordinary answer.
-      log.debug('the checked-out branch has no upstream branch', error);
-      return null;
-    }
   }
 
   /** The branch checked out in `repoRoot`; the only repository's when none is named. */
@@ -607,12 +596,7 @@ export class CommitGraphService {
       graphState.filterRef = ALL_COMMITS_FILTER;
       return this.fetchPage(repoRoot, false, limit);
     }
-    const parsed = parseGitLog(result.stdout);
-    const upstream = display.activeBranchOnly ? await this.upstreamOfHead(cli) : null;
-    const labelled = labelStashCommits(
-      display.activeBranchOnly ? parsed.map((commit) => withActiveBranchLabels(commit, upstream)) : parsed,
-      stashes,
-    );
+    const labelled = labelStashCommits(parseGitLog(result.stdout), stashes);
     const reflogOnly = graphIncludesReflog(revision, display.showReflog)
       ? await this.loadReflogOnlyShas(cli, extraRevs)
       : new Set<string>();
